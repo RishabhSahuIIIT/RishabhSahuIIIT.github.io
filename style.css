@@ -17,35 +17,43 @@ h2
 section 
 {
 	
-	height: 100vh; /* 100% of the viewport height */
+	height: 50vh; /* 100% of the viewport height */
     width: 100vw;  /* 100% of the viewport width */
     
     
 }
 #Intro
 {
-	background-color: rgb(255, 255, 128);
+	background-color:  white;
+	
 	height: 40vh;
 }
 #AboutSection
 {
-	color: white;
+	
 	background-size:cover;
-	background-color:#002628;
+	
 	
 }
 #hobby
 {
-	background-color: green;
+	background-color: cream;
 }
 #Skills
 {
-	background-color: orange;
+	background-color: rgb(255, 255, 128);
+	
 }
 #Projects
 {
 	background-color: blue;
 }	
+#Profiles
+{
+	background-color: blue;
+	background-color:#002628;
+}
+
 .center{
 	display: block;
   	margin-left: auto;
