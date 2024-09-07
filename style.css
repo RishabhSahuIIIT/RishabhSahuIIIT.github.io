@@ -41,25 +41,29 @@ section
 	
 	
 }
+body
+{
+	background-color: rgb(255, 255, 128);
+}
 #hobby
 {
 	
-	background-color: cream;
+	
 }
 #Skills
 {
 	
-	background-color: rgb(255, 255, 128);
+	
 	
 }
 #Projects
 {
-	background-color: #DDD0C8;
+	
 }	
 #Profiles
 {
 	
-	background-color:#002628;
+	
 }
 
 .center{
