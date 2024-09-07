@@ -36,7 +36,11 @@ section
 }
 #hobby
 {
-	
+	background-color: green;
+}
+#Skills
+{
+	background-color: orange;
 }
 img{
 max-width: auto;
