@@ -8,11 +8,15 @@ h1
 {
 	text-align:center;
 	color: black;
-	font-size: 2rem;
+	font-size: 10 em;
 }
 h2
 {
-	
+	font-size: 4em;
+}
+p
+{
+	font-size: 2em;
 }
 section 
 {
