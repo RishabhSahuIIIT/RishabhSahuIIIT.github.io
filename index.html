@@ -1,137 +1,407 @@
-<!DOCTYPE html>
-<html>
-  <head>
-  <!--
-  Include stylesheets, scripts in head
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rishabh Sahu — Computer Science</title>
+<meta name="description" content="Portfolio of Rishabh Sahu, MTech Computer Science student at IIIT Hyderabad." />
+<meta name="author" content="Rishabh Sahu" />
 
-  background-image: url("./images/joshsorensonKeyboard.jpg");
-  -->
-	<title>Rishabh Sahu's personal webpage.
-	</title>
-  <link rel="stylesheet" href="style.css">
-  </head>
-  <body>
+<!-- Open Graph -->
+<meta property="og:title" content="Rishabh Sahu — Computer Science" />
+<meta property="og:description" content="MTech CS @ IIIT Hyderabad. Backend, systems, and a soft spot for clean APIs." />
+<meta property="og:type" content="website" />
 
-<section id='Intro'>
-    <h1 >
-        Rishabh Sahu
-  
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..900,0..100;1,9..144,300..900,0..100&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@300;400;500;600&display=swap"
+  rel="stylesheet"
+/>
+
+<!-- Styles -->
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <a href="#top" class="mark">
+      <span class="dot" aria-hidden="true"></span>
+      <span>R.S — 2026</span>
+    </a>
+    <nav aria-label="Section navigation">
+      <a href="#about">About</a>
+      <a href="#work">Work</a>
+      <a href="#education">Education</a>
+      <a href="#skills">Skills</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </header>
+
+  <!-- HERO -->
+  <section id="top" class="hero">
+    <div class="meta">
+      <span>Hyderabad, IN</span>
+      <span>MTech CS · IIIT-H</span>
+      <span>Available 2026</span>
+    </div>
+
+    <h1>
+      Rishabh<br />
+      <span class="italic">Sahu.</span>
     </h1>
-    <img src="/images/Sweatshirt.jpg" , class="center">
-</section>
 
-<section id="AboutSection">
-  <h2>About me </h2>
-  <p>
-      Hi .I am Rishabh. I am a resident of Bhopal , Madhya Pradesh. Presently, I am Studying MTech in CSE at IIIT Hyderabad. I completed my Bachelors from The LNM Institute of Information Technology Jaipur.
-      I am aspiring to be a software developer. Since childhood I was always interested in computers and programming. It always fascinated me 
-      how programmers were able to instruct the computer to perform sophisticated tasks so elegantly. I also liked playing computer games and 
-      was curious to know how they work. This fascination and interest was the primary reason I decided to pursue computer science . 
-      
-      
+    <p class="lede">
+      Computer Science graduate student at <em>IIIT Hyderabad</em>, working
+      across backend systems, databases, and the quiet engineering that
+      keeps software honest.
     </p>
-</section>
 
-<section id="hobby">   
-    <h2>
-      Hobbies and Interests
-     </h2>
-     <p>
-      In sports I like to play badminton . Some other sports /games that I have played are football, cricket , chess, and carrom.
-    </p>
-    
-</section>
+    <div class="corner">
+      <b>Now</b>
+      MTech · Year II
+      <br />
+      <b>Then</b>
+      LNMIIT Jaipur ’23
+    </div>
+  </section>
 
-<section>
+  <!-- ABOUT -->
+  <section id="about" class="block reveal">
+    <div class="section-head">
+      <span class="num">/ 01 — Bio</span>
+      <h2>A short <em>introduction</em>.</h2>
+    </div>
+    <div class="about-grid">
+      <span class="col-label">/ Notes</span>
+      <div>
+        <p>
+          I’m a Master’s student in Computer Science at IIIT Hyderabad,
+          previously trained at LNMIIT Jaipur. My work sits at the
+          intersection of backend engineering, databases, and applied
+          machine learning — with a recent stretch building government
+          systems at CRIS, Indian Railways.
+        </p>
+        <p>
+          I like writing code that ages well: small APIs, clear contracts,
+          and infrastructure that quietly does its job.
+        </p>
+      </div>
+      <div>
+        <p>
+          Outside of coursework I’ve picked up containerised deployments
+          with Docker, built Flask services that talk to Postgres, and
+          trained classifiers with PySpark on the side.
+        </p>
+        <p>
+          When I’m off the keyboard you’ll usually find me on a badminton
+          court, or reading something that has nothing to do with
+          computers.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- WORK / PROJECTS -->
+  <section id="work" class="block reveal">
+    <div class="section-head">
+      <span class="num">/ 02 — Work</span>
+      <h2>Selected <em>projects</em> &amp; experience.</h2>
+    </div>
+
+    <div class="work-list">
+
+      <!-- Internship -->
+      <article class="work-item">
+        <span class="idx">01 / Intern</span>
+        <div>
+          <h3>Centre for Railway Information Systems</h3>
+          <div class="role">Summer Intern · Secunderabad · Jun – Jul 2025</div>
+          <p>
+            Helped prototype a mobile application for the Divyangjan
+            concession card application, working across the stack from
+            schema design to UI screens.
+          </p>
+          <ul>
+            <li>Implemented backend API routes powering the application flow</li>
+            <li>Contributed to database design and end-to-end testing</li>
+            <li>Built frontend pages for division-wise railway reports</li>
+          </ul>
+          <div class="stack">
+            <span>Flutter</span><span>Dart</span><span>Node.js</span>
+            <span>JavaScript</span><span>MySQL</span><span>Postman</span><span>Git</span>
+          </div>
+        </div>
+        <div class="meta-right">
+          Government<br/>
+          systems · Internal tooling
+        </div>
+      </article>
+
+      <!-- JSON API Server -->
+      <article class="work-item">
+        <span class="idx">02 / Project</span>
+        <div>
+          <h3>
+            <a href="#" target="_blank" rel="noopener">
+              JSON API Server
+            </a>
+          </h3>
+          <div class="role">Backend · Containerised service</div>
+          <p>
+            A small, well-behaved Flask API that exposes teacher and
+            course records from a Postgres database. Designed to be cloned,
+            <code>docker compose up</code>’d, and immediately useful.
+          </p>
+          <ul>
+            <li>Handles HTTP requests for create and view operations on relational data</li>
+            <li>Returns clean, predictable JSON responses</li>
+            <li>Bash + Docker scripts trim local setup down to a single command</li>
+          </ul>
+          <div class="stack">
+            <span>Flask</span><span>Python</span><span>PostgreSQL</span>
+            <span>Docker</span><span>BASH</span>
+          </div>
+        </div>
+        <div class="meta-right">
+          API design<br/>
+          DX · Tooling
+        </div>
+      </article>
+
+      <!-- Wine Classifier -->
+      <article class="work-item">
+        <span class="idx">03 / Project</span>
+        <div>
+          <h3>
+            <a href="#" target="_blank" rel="noopener">
+              Wine Classifier — Decision Tree
+            </a>
+          </h3>
+          <div class="role">Machine learning · Distributed evaluation</div>
+          <p>
+            A decision-tree classifier trained on scikit-learn’s wine
+            dataset, then evaluated through PySpark’s model evaluators —
+            partly to study the model, partly to learn the tooling.
+          </p>
+          <ul>
+            <li>Trained and tuned a decision-tree classifier on chemical features</li>
+            <li>Distributed evaluation via PySpark for richer metrics</li>
+            <li>Reached ~85% accuracy on held-out test data</li>
+          </ul>
+          <div class="stack">
+            <span>Python</span><span>PySpark</span><span>Pandas</span>
+            <span>scikit-learn</span>
+          </div>
+        </div>
+        <div class="meta-right">
+          Applied ML<br/>
+          Data engineering
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- EDUCATION -->
+  <section id="education" class="block reveal">
+    <div class="section-head">
+      <span class="num">/ 03 — Path</span>
+      <h2>Education &amp; <em>training</em>.</h2>
+    </div>
+
+    <div class="timeline">
+      <div class="timeline-row">
+        <div class="when">2024 — Present</div>
+        <div class="what">
+          International Institute of Information Technology, Hyderabad
+          <small>MTech, Computer Science</small>
+        </div>
+        <div class="score">CGPA<b>7.73 / 10</b></div>
+      </div>
+
+      <div class="timeline-row">
+        <div class="when">2019 — 2023</div>
+        <div class="what">
+          The LNM Institute of Information Technology, Jaipur
+          <small>BTech, Computer Science</small>
+        </div>
+        <div class="score">CGPA<b>7.43 / 10</b></div>
+      </div>
+
+      <div class="timeline-row">
+        <div class="when">2017 — 2019</div>
+        <div class="what">
+          G.V.N. The Global School, Bhopal
+          <small>Higher Secondary</small>
+        </div>
+        <div class="score">Score<b>87.2 %</b></div>
+      </div>
+
+      <div class="timeline-row">
+        <div class="when">2005 — 2017</div>
+        <div class="what">
+          Campion School, Bhopal
+          <small>Primary &amp; Middle School</small>
+        </div>
+        <div class="score">CGPA<b>10 / 10</b></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SKILLS -->
+  <section id="skills" class="block reveal">
+    <div class="section-head">
+      <span class="num">/ 04 — Tools</span>
+      <h2>What I <em>reach for</em>.</h2>
+    </div>
+
+    <div class="skills-grid">
+      <span class="col-label">/ Stack</span>
+      <div>
+        <div class="skills-cluster">
+          <h4>Languages &amp; Databases</h4>
+          <div class="tags">
+            <span>Python</span><span>C / C++</span><span>Java</span>
+            <span>SQL</span><span>MongoDB</span>
+          </div>
+        </div>
+
+        <div class="skills-cluster">
+          <h4>Web &amp; Frameworks</h4>
+          <div class="tags">
+            <span>Flask</span><span>React</span><span>Express</span>
+            <span>HTML5</span><span>CSS</span><span>JavaScript</span>
+          </div>
+        </div>
+
+        <div class="skills-cluster">
+          <h4>DevOps &amp; Tools</h4>
+          <div class="tags">
+            <span>Docker</span><span>Git</span><span>BASH</span>
+            <span>Linux Shell</span>
+          </div>
+        </div>
+
+        <div class="skills-cluster">
+          <h4>Core CS</h4>
+          <div class="tags">
+            <span>Data Structures</span><span>Algorithms</span>
+            <span>Object-Oriented Programming</span>
+          </div>
+        </div>
+
+        <div class="skills-cluster">
+          <h4>Certifications</h4>
+          <div class="tags">
+            <span>Docker · Compose · Swarm</span>
+            <span>Flask Web Apps</span>
+            <span>Java Basic — HackerRank</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RECOGNITION -->
+  <section id="recognition" class="block reveal">
+    <div class="section-head">
+      <span class="num">/ 05 — Recognition</span>
+      <h2>A few <em>milestones</em>.</h2>
+    </div>
+
+    <div class="recog-list">
+      <span class="col-label">/ Honours</span>
+      <ul>
+        <li>
+          <span class="title">All India Rank 77 — IIIT PGEE CSE</span>
+          <span class="badge">2024</span>
+        </li>
+        <li>
+          <span class="title">95.4 percentile — GATE CS / IT</span>
+          <span class="badge">2024</span>
+        </li>
+        <li>
+          <span class="title">Qualified Stage 1 — N.T.S.E., Madhya Pradesh</span>
+          <span class="badge">Scholarship</span>
+        </li>
+        <li>
+          <span class="title">Zonal Gold Medal — SOF National Cyber Olympiad</span>
+          <span class="badge">Class IX · MP Zone</span>
+        </li>
+        <li>
+          <span class="title">Delegate — Discernment International Summit MUN, Noida</span>
+          <span class="badge">2016 / 17</span>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- COLOPHON / CONTACT -->
+  <section id="contact" class="colophon reveal">
     <h2>
-    	See my profiles
+      Let’s build<br />
+      <em>something</em>.
     </h2>
-	<ul>
-	<li><a href="https://www.instagram.com/rishabh_sahu325">INSTAGRAM</a></li>
-    	<li><a href="https://www.linkedin.com/in/rishabh-sahu325">LinkedIn</a></li>
-    	<li><a href="https://github.com/Rishabhsahu325">Github</a></li>
-	</ul>
-    	
-</section>
 
-<section id='Skills'>
+    <div class="contact-grid">
+      <span class="col-label">/ Reach me</span>
+      <div class="item">
+        <h5>Email</h5>
+        <a href="mailto:rishabhsahu617@outlook.com">rishabhsahu617@outlook.com</a>
+      </div>
+      <div class="item">
+        <h5>Phone</h5>
+        <a href="tel:+917898994078">+91 78989 94078</a>
+      </div>
+      <div class="item">
+        <h5>LinkedIn</h5>
+        <a href="https://www.linkedin.com/in/rishabh-sahu325" target="_blank" rel="noopener">rishabh-sahu325</a>
+      </div>
+      <div class="item">
+        <h5>GitHub</h5>
+        <a href="https://github.com/RishabhSahuIIIT" target="_blank" rel="noopener">RishabhSahuIIIT</a>
+      </div>
+    </div>
 
-<h2>Some of my prominent technical skills are </h2>
-<ol>
-<li> C++
-</li>
-<li> Python
-</li>
-<li> BASH 
-</li>
-<li> Docker
-</li>
-<li>SQL
-</li>
+    <div class="foot">
+      <div>
+        © 2026 Rishabh Sahu<br/>
+        Set in Fraunces &amp; Manrope
+      </div>
+      <div class="glyph">rs.</div>
+      <div style="text-align: right;">
+        Hand-built<br/>
+        Hosted on GitHub Pages
+      </div>
+    </div>
+  </section>
 
-</ol>
-<h4>Other skills</h4>
-<ul>
-<li>Java
-</li>
-<li>HTML 
-</li>
-<li>CSS
-</li>
-<li>Javascript
-</li>
-</ul>
-</section>
+</div>
 
+<!-- Tiny scroll-reveal -->
+<script>
+  (function () {
+    if (!('IntersectionObserver' in window)) {
+      document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
 
-<section id='Projects'>
-<h2>Here are some projects I have worked upon</h2>
-	<ol>
-		<li>
-<b>Note taking desktop application</b>
-I created a basic offline note taking application that supports adding textual note items and assign tags to them. It can 
-work on multiple platforms. The user can then filter the notes by tags
-		</li>
-		<li>
-<b>Json API Server</b>
+    document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+  })();
+</script>
 
- In this project I created a JSON API server that can handle http requests from any external client to submit and retrieve 
-data related to Teachers and the courses which they Teach in JSON format. The data is stored in a postgresql database 
-.Complete system including database and flask server can be setup by using single command on a system,given that 
-docker and bash scripts are supported .
-		</li>
-	</ol>
-</section>    
-    <!--
-    Some helpful resources
-    https://web.dev/learn/css/
-    https://www.frontendpractice.com/projects
-    https://roadmap.sh/frontend/projects
-    -->
- </body>
-  <!--
-  Problem statement
-    1. Create your person portfolio website and publish it as a github.io page.
-     Please refer this for steps to create your github.io page - https://pages.github.com/
-
-2. Your portfolio website should contain following
-
-    Your profile picture 
-    About you, your story, hobbies, projects and your education background
-    You social media, github, linkedin links
-    Any other details that you wish to share to boost yourself
-
-3. Please ensure that you use HTML and CSS as bare minimum. However, you are welcomed to used any library, 
-JS framework of your choice.
-
-4. This is due for submission by 7-September-2024 8:00 pm IST.
-
-5. Submission Criteria - Just submit your github.io page link in a <numbernumber>.txt file as one file.
-
-Example pages:
-
-    https://spmohanty.com/
-    https://sai11101989.github.io/
-  -->
-
+</body>
 </html>
