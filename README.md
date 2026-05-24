@@ -10,7 +10,7 @@ A single-page personal portfolio. No build step, no framework — drop the files
 ```
 portfolio/
 ├── index.html   ← markup & content
-├── styles.css   ← all styling (edit me freely)
+├── style.css   ← all styling (edit me freely)
 └── README.md
 ```
 
@@ -21,14 +21,14 @@ Fonts load from Google Fonts (Fraunces + Manrope + JetBrains Mono). Everything e
 | If you want to change…              | Open                                   |
 | ----------------------------------- | -------------------------------------- |
 | Text, project copy, links, sections | `index.html`                           |
-| Colours, fonts, spacing             | `styles.css` → `:root` block at the top |
-| Section layout, animations, hover   | `styles.css` → numbered sections 4–13   |
+| Colours, fonts, spacing             | `style.css` → `:root` block at the top |
+| Section layout, animations, hover   | `style.css` → numbered sections 4–13   |
 
-`styles.css` is split into 13 commented sections (tokens, reset, top bar, hero, etc.) so you can jump straight to what you need.
+`style.css` is split into 13 commented sections (tokens, reset, top bar, hero, etc.) so you can jump straight to what you need.
 
 ### Quick retheme
 
-Open `styles.css` and change the variables in `:root`:
+Open `style.css` and change the variables in `:root`:
 
 ```css
 :root {
@@ -68,7 +68,7 @@ python3 -m http.server 8000
 # open http://localhost:8000
 ```
 
-(Opening `index.html` directly with `file://` also works — `styles.css` is loaded with a relative path.)
+(Opening `index.html` directly with `file://` also works — `style.css` is loaded with a relative path.)
 
 ## Notes
 
