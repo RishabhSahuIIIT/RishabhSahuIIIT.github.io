@@ -64,20 +64,20 @@
 
 /* ---------- 1. Tokens ---------- */
 :root {
-  /* Light mode (default) */
-  --bg:         #f3ede1;
-  --bg-soft:    #ede5d3;
-  --ink:        #18130d;
-  --ink-soft:   #4a3f31;
-  --muted:      #847562;
-  --rule:       #c9bda4;
-  --accent:     #b54520;
-  --accent-soft:#d8825c;
+  /* Nordic Frost - Light mode (default) */
+  --bg:         #eceff4;
+  --bg-soft:    #e5e9f0;
+  --ink:        #2e3440;
+  --ink-soft:   #4c566a;
+  --muted:      #81a1c1;
+  --rule:       #d8dee9;
+  --accent:     #5e81ac;
+  --accent-soft:#88c0d0;
 
   /* Grain swatches (light mode shows dark speckles on cream) */
   --grain-svg: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.05  0 0 0 0 0.04  0 0 0 0 0.02  0 0 0 0.08 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
   --grain-blend: multiply;
-  --grain-opacity: 0.35;
+  --grain-opacity: 0.25;
 
   /* System font stacks — no external fonts */
   --serif: ui-serif, "Iowan Old Style", "Apple Garamond", Baskerville, "Times New Roman", "Source Serif Pro", Georgia, serif;
@@ -92,19 +92,20 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg:         #14110b;
-    --bg-soft:    #1c1812;
-    --ink:        #ede5d3;
-    --ink-soft:   #b8a995;
-    --muted:      #80715d;
-    --rule:       #3a3225;
-    --accent:     #e07a45;
-    --accent-soft:#f0a47c;
+    /* Nordic Frost - Dark mode */
+    --bg:         #242933;
+    --bg-soft:    #2e3440;
+    --ink:        #eceff4;
+    --ink-soft:   #d8dee9;
+    --muted:      #81a1c1;
+    --rule:       #4c566a;
+    --accent:     #88c0d0;
+    --accent-soft:#8fbcbb;
 
     /* Grain in dark mode: light speckles, screen-blended for subtle highlights */
     --grain-svg: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.95  0 0 0 0 0.92  0 0 0 0 0.85  0 0 0 0.05 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
     --grain-blend: screen;
-    --grain-opacity: 0.5;
+    --grain-opacity: 0.4;
 
     color-scheme: dark;
   }
