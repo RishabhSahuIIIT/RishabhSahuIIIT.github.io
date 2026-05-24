@@ -7,20 +7,16 @@
 <meta name="description" content="Portfolio of Rishabh Sahu, MTech Computer Science student at IIIT Hyderabad." />
 <meta name="author" content="Rishabh Sahu" />
 
+<!-- Theme colour matches OS scheme so the browser chrome blends in -->
+<meta name="theme-color" content="#f3ede1" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#14110b" media="(prefers-color-scheme: dark)" />
+
 <!-- Open Graph -->
 <meta property="og:title" content="Rishabh Sahu — Computer Science" />
 <meta property="og:description" content="MTech CS @ IIIT Hyderabad. Backend, systems, and a soft spot for clean APIs." />
 <meta property="og:type" content="website" />
 
-<!-- Fonts -->
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link
-  href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..900,0..100;1,9..144,300..900,0..100&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@300;400;500;600&display=swap"
-  rel="stylesheet"
-/>
-
-<!-- Styles -->
+<!-- All assets are local to the repo -->
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -36,6 +32,7 @@
     <nav aria-label="Section navigation">
       <a href="#about">About</a>
       <a href="#work">Work</a>
+      <a href="#projects">Projects</a>
       <a href="#education">Education</a>
       <a href="#skills">Skills</a>
       <a href="#contact">Contact</a>
@@ -106,18 +103,18 @@
     </div>
   </section>
 
-  <!-- WORK / PROJECTS -->
+  <!-- WORK / SELECTED -->
   <section id="work" class="block reveal">
     <div class="section-head">
       <span class="num">/ 02 — Work</span>
-      <h2>Selected <em>projects</em> &amp; experience.</h2>
+      <h2>Selected <em>work</em>.</h2>
     </div>
 
     <div class="work-list">
 
-      <!-- Internship -->
+      <!-- Internship is hardcoded — only one for now -->
       <article class="work-item">
-        <span class="idx">01 / Intern</span>
+        <span class="idx">00 / Intern</span>
         <div>
           <h3>Centre for Railway Information Systems</h3>
           <div class="role">Summer Intern · Secunderabad · Jun – Jul 2025</div>
@@ -142,75 +139,26 @@
         </div>
       </article>
 
-      <!-- JSON API Server -->
-      <article class="work-item">
-        <span class="idx">02 / Project</span>
-        <div>
-          <h3>
-            <a href="#" target="_blank" rel="noopener">
-              JSON API Server
-            </a>
-          </h3>
-          <div class="role">Backend · Containerised service</div>
-          <p>
-            A small, well-behaved Flask API that exposes teacher and
-            course records from a Postgres database. Designed to be cloned,
-            <code>docker compose up</code>’d, and immediately useful.
-          </p>
-          <ul>
-            <li>Handles HTTP requests for create and view operations on relational data</li>
-            <li>Returns clean, predictable JSON responses</li>
-            <li>Bash + Docker scripts trim local setup down to a single command</li>
-          </ul>
-          <div class="stack">
-            <span>Flask</span><span>Python</span><span>PostgreSQL</span>
-            <span>Docker</span><span>BASH</span>
-          </div>
-        </div>
-        <div class="meta-right">
-          API design<br/>
-          DX · Tooling
-        </div>
-      </article>
-
-      <!-- Wine Classifier -->
-      <article class="work-item">
-        <span class="idx">03 / Project</span>
-        <div>
-          <h3>
-            <a href="#" target="_blank" rel="noopener">
-              Wine Classifier — Decision Tree
-            </a>
-          </h3>
-          <div class="role">Machine learning · Distributed evaluation</div>
-          <p>
-            A decision-tree classifier trained on scikit-learn’s wine
-            dataset, then evaluated through PySpark’s model evaluators —
-            partly to study the model, partly to learn the tooling.
-          </p>
-          <ul>
-            <li>Trained and tuned a decision-tree classifier on chemical features</li>
-            <li>Distributed evaluation via PySpark for richer metrics</li>
-            <li>Reached ~85% accuracy on held-out test data</li>
-          </ul>
-          <div class="stack">
-            <span>Python</span><span>PySpark</span><span>Pandas</span>
-            <span>scikit-learn</span>
-          </div>
-        </div>
-        <div class="meta-right">
-          Applied ML<br/>
-          Data engineering
-        </div>
-      </article>
+      <!-- Featured projects rendered from projects.js -->
+      <div id="featured-projects"></div>
 
     </div>
+  </section>
+
+  <!-- ALL PROJECTS (compact, data-driven) -->
+  <section id="projects" class="block reveal">
+    <div class="section-head">
+      <span class="num">/ 03 — Index</span>
+      <h2>All <em>projects</em>.</h2>
+    </div>
+
+    <div id="all-projects" class="all-projects"></div>
   </section>
 
   <!-- EDUCATION -->
   <section id="education" class="block reveal">
     <div class="section-head">
-      <span class="num">/ 03 — Path</span>
+      <span class="num">/ 04 — Path</span>
       <h2>Education &amp; <em>training</em>.</h2>
     </div>
 
@@ -256,7 +204,7 @@
   <!-- SKILLS -->
   <section id="skills" class="block reveal">
     <div class="section-head">
-      <span class="num">/ 04 — Tools</span>
+      <span class="num">/ 05 — Tools</span>
       <h2>What I <em>reach for</em>.</h2>
     </div>
 
@@ -310,7 +258,7 @@
   <!-- RECOGNITION -->
   <section id="recognition" class="block reveal">
     <div class="section-head">
-      <span class="num">/ 05 — Recognition</span>
+      <span class="num">/ 06 — Recognition</span>
       <h2>A few <em>milestones</em>.</h2>
     </div>
 
@@ -371,37 +319,21 @@
     <div class="foot">
       <div>
         © 2026 Rishabh Sahu<br/>
-        Set in Fraunces &amp; Manrope
+        Hand-built · Self-hosted
       </div>
       <div class="glyph">rs.</div>
       <div style="text-align: right;">
-        Hand-built<br/>
-        Hosted on GitHub Pages
+        Hosted on<br/>
+        GitHub Pages
       </div>
     </div>
   </section>
 
 </div>
 
-<!-- Tiny scroll-reveal -->
-<script>
-  (function () {
-    if (!('IntersectionObserver' in window)) {
-      document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
-      return;
-    }
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) {
-        if (e.isIntersecting) {
-          e.target.classList.add('in');
-          io.unobserve(e.target);
-        }
-      });
-    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
-
-    document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
-  })();
-</script>
+<!-- Data first, then renderer -->
+<script src="projects.js"></script>
+<script src="script.js"></script>
 
 </body>
 </html>
