@@ -1,338 +1,253 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Rishabh Sahu — Computer Science</title>
-<meta name="description" content="Portfolio of Rishabh Sahu, MTech Computer Science student at IIIT Hyderabad." />
-<meta name="author" content="Rishabh Sahu" />
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Rishabh Sahu — Portfolio</title>
+        <meta
+            name="description"
+            content="Rishabh Sahu — MTech Computer Science at IIIT Hyderabad. Web, backend, and systems projects."
+        />
+        <link rel="stylesheet" href="style.css" />
 
-<!-- Theme colour matches OS scheme so the browser chrome blends in -->
-<meta name="theme-color" content="#f3ede1" media="(prefers-color-scheme: light)" />
-<meta name="theme-color" content="#14110b" media="(prefers-color-scheme: dark)" />
+        <!-- Anti-FOUC theme init. Loaded synchronously here so the right
+       palette class is on <html> BEFORE any paint. Kept external (not
+       inline) so it survives strict CSPs from browsers and extensions
+       (Ulaa's built-in dark mode, Brave Shields, etc.) which block
+       <script> blocks. -->
+        <script src="theme-init.js"></script>
+    </head>
 
-<!-- Open Graph -->
-<meta property="og:title" content="Rishabh Sahu — Computer Science" />
-<meta property="og:description" content="MTech CS @ IIIT Hyderabad. Backend, systems, and a soft spot for clean APIs." />
-<meta property="og:type" content="website" />
+    <body>
+        <div class="grain" aria-hidden="true"></div>
 
-<!-- All assets are local to the repo -->
-<link rel="stylesheet" href="style.css" />
-</head>
-<body>
+        <div class="shell">
+            <!-- ============================================================
+         TOP BAR
+         ============================================================ -->
+            <header class="topbar">
+                <div class="mark">
+                    <span class="dot" aria-hidden="true"></span>
+                    <span>Rishabh Sahu — Portfolio</span>
+                </div>
+                <nav>
+                    <a href="#about">About</a>
+                    <a href="#work">Work</a>
+                    <a href="#projects-all">Projects</a>
+                    <a href="#education">Path</a>
+                    <a href="#contact">Contact</a>
+                    <div
+                        class="theme-switch"
+                        role="group"
+                        aria-label="Toggle day or night mode"
+                    >
+                        <button
+                            type="button"
+                            class="theme-opt"
+                            id="btn-day"
+                            aria-pressed="false"
+                            title="Switch to day mode"
+                        >
+                            <span aria-hidden="true">☼</span> Day
+                        </button>
+                        <button
+                            type="button"
+                            class="theme-opt"
+                            id="btn-night"
+                            aria-pressed="false"
+                            title="Switch to night mode"
+                        >
+                            <span aria-hidden="true">☾</span> Night
+                        </button>
+                    </div>
+                </nav>
+            </header>
 
-<div class="shell">
+            <!-- ============================================================
+         HERO
+         ============================================================ -->
+            <section class="hero" id="hero">
+                <div class="meta">
+                    <span>Hyderabad, IN</span>
+                    <span>MTech Computer Science</span>
+                    <span>IIIT Hyderabad · 2024–present</span>
+                </div>
 
-  <!-- TOP BAR -->
-  <header class="topbar">
-    <a href="#top" class="mark">
-      <span class="dot" aria-hidden="true"></span>
-      <span>R.S — 2026</span>
-    </a>
-    <nav aria-label="Section navigation">
-      <a href="#about">About</a>
-      <a href="#work">Work</a>
-      <a href="#projects">Projects</a>
-      <a href="#education">Education</a>
-      <a href="#skills">Skills</a>
-      <a href="#contact">Contact</a>
-    </nav>
-  </header>
+                <h1>
+                    Rishabh<br />
+                    <span class="italic">Sahu.</span>
+                </h1>
 
-  <!-- HERO -->
-  <section id="top" class="hero">
-    <div class="meta">
-      <span>Hyderabad, IN</span>
-      <span>MTech CS · IIIT-H</span>
-      <span>Available 2026</span>
-    </div>
+                <p class="lede">
+                    Engineer in training. I build small, reliable backends,
+                    containerised services, and the occasional
+                    <em>ML</em> experiment — most recently a JSON API on Flask +
+                    Postgres, and a Spark-backed wine classifier.
+                </p>
 
-    <h1>
-      Rishabh<br />
-      <span class="italic">Sahu.</span>
-    </h1>
+                <div class="corner">
+                    Available for<br />
+                    <b>2026 internships<br />&amp; new grad roles</b>
+                </div>
+            </section>
 
-    <p class="lede">
-      Computer Science graduate student at <em>IIIT Hyderabad</em>, working
-      across backend systems, databases, and the quiet engineering that
-      keeps software honest.
-    </p>
+            <!-- ============================================================
+         ABOUT
+         ============================================================ -->
+            <section class="block reveal" id="about">
+                <span class="col-label">/ 01 — bio</span>
+                <div class="section-head">
+                    <h2>
+                        I work where <em>code</em> meets the rough edges of
+                        reality.
+                    </h2>
+                </div>
+                <div class="about-grid">
+                    <div></div>
+                    <p>
+                        Currently doing my MTech in CS at <b>IIIT Hyderabad</b>.
+                        Before that, a BTech from LNMIIT Jaipur. I like Python
+                        and Flask for the speed of iteration, Docker for the
+                        calm it brings to "works on my machine", and a little
+                        bit of Pyspark when the data deserves the extra muscle.
+                    </p>
+                    <p>
+                        Last summer I interned at <b>C.R.I.S. Secunderabad</b>,
+                        helping prototype a mobile app and backend routes for a
+                        Divyangjan card application. I'm looking for problems
+                        that are small enough to ship, hard enough to learn
+                        from.
+                    </p>
+                </div>
+            </section>
 
-    <div class="corner">
-      <b>Now</b>
-      MTech · Year II
-      <br />
-      <b>Then</b>
-      LNMIIT Jaipur ’23
-    </div>
-  </section>
+            <!-- ============================================================
+         WORK — internships + featured projects
+         ============================================================ -->
+            <section class="block reveal" id="work">
+                <span class="col-label">/ 02 — work</span>
+                <div class="section-head">
+                    <h2>Selected <em>work</em>.</h2>
+                </div>
 
-  <!-- ABOUT -->
-  <section id="about" class="block reveal">
-    <div class="section-head">
-      <span class="num">/ 01 — Bio</span>
-      <h2>A short <em>introduction</em>.</h2>
-    </div>
-    <div class="about-grid">
-      <span class="col-label">/ Notes</span>
-      <div>
-        <p>
-          I’m a Master’s student in Computer Science at IIIT Hyderabad,
-          previously trained at LNMIIT Jaipur. My work sits at the
-          intersection of backend engineering, databases, and applied
-          machine learning . I have also interned at Center for Railway information
-          systems Secunderabad.
-        </p>
-        <p>
-          I like writing code that ages well: small APIs, clear contracts,
-          and infrastructure that quietly does its job.
-        </p>
-      </div>
-      <div>
-        <p>
-          Outside of coursework I’ve picked up containerised deployments
-          with Docker, built Flask services that talk to Postgres.
-        </p>
-        <p>
-          When I’m off the keyboard you’ll usually find me solving puzzles,
-          or reading something that has nothing to do with
-          computers.
-        </p>
-      </div>
-    </div>
-  </section>
+                <!-- Internships mount -->
+                <div class="work-list" id="internship-list"></div>
 
-  <!-- WORK / SELECTED -->
-  <section id="work" class="block reveal">
-    <div class="section-head">
-      <span class="num">/ 02 — Work</span>
-      <h2>Selected <em>work</em>.</h2>
-    </div>
+                <!-- Featured projects mount -->
+                <div class="work-list" id="featured-projects"></div>
+            </section>
 
-    <div class="work-list">
+            <!-- ============================================================
+         ALL PROJECTS
+         ============================================================ -->
+            <section class="block reveal" id="projects-all">
+                <span class="col-label">/ 03 — index</span>
+                <div class="section-head">
+                    <h2>All <em>projects</em>.</h2>
+                </div>
+                <div class="all-projects" id="all-projects"></div>
+            </section>
 
-      <!-- Internship is hardcoded — only one for now -->
-      <article class="work-item">
-        <span class="idx">00 / Intern</span>
-        <div>
-          <h3>Centre for Railway Information Systems</h3>
-          <div class="role">Summer Intern · Secunderabad · Jun – Jul 2025</div>
-          <p>
-            Helped prototype a mobile application for the Divyangjan
-            concession card application, working across the stack from
-            schema design to UI screens.
-          </p>
-          <ul>
-            <li>Implemented backend API routes powering the application flow</li>
-            <li>Contributed to database design and end-to-end testing</li>
-            <li>Built frontend pages for division-wise railway reports</li>
-          </ul>
-          <div class="stack">
-            <span>Flutter</span><span>Dart</span><span>Node.js</span>
-            <span>JavaScript</span><span>MySQL</span><span>Postman</span><span>Git</span>
-          </div>
+            <!-- ============================================================
+         EDUCATION
+         ============================================================ -->
+            <section class="block reveal" id="education">
+                <span class="col-label">/ 04 — path</span>
+                <div class="section-head">
+                    <h2>Where I've <em>studied</em>.</h2>
+                </div>
+                <div class="timeline" id="education-list"></div>
+            </section>
+
+            <!-- ============================================================
+         SKILLS
+         ============================================================ -->
+            <section class="block reveal" id="skills">
+                <span class="col-label">/ 05 — tools</span>
+                <div class="section-head">
+                    <h2>What I <em>use</em>.</h2>
+                </div>
+                <div class="skills-grid">
+                    <div aria-hidden="true"></div>
+                    <div id="skills-list"></div>
+                </div>
+            </section>
+
+            <!-- ============================================================
+         RECOGNITION
+         ============================================================ -->
+            <section class="block reveal" id="recognition">
+                <span class="col-label">/ 06 — recognition</span>
+                <div class="section-head">
+                    <h2><em>Notes</em> from the road.</h2>
+                </div>
+                <div class="recog-list">
+                    <div aria-hidden="true"></div>
+                    <ul id="accomplishments-list"></ul>
+                </div>
+            </section>
+
+            <!-- ============================================================
+         CONTACT / COLOPHON
+         ============================================================ -->
+            <section class="colophon reveal" id="contact">
+                <span class="col-label">/ 07 — contact</span>
+                <h2>Say <em>hello</em>.</h2>
+
+                <div class="contact-grid">
+                    <div class="item">
+                        <h5>Email</h5>
+                        <a id="contact-email" href="#">—</a>
+                    </div>
+                    <div class="item">
+                        <h5>Phone</h5>
+                        <a id="contact-phone" href="#">—</a>
+                    </div>
+                    <div class="item">
+                        <h5>LinkedIn</h5>
+                        <a
+                            id="contact-linkedin"
+                            href="#"
+                            target="_blank"
+                            rel="noopener"
+                            >—</a
+                        >
+                    </div>
+                    <div class="item">
+                        <h5>GitHub</h5>
+                        <a
+                            id="contact-github"
+                            href="#"
+                            target="_blank"
+                            rel="noopener"
+                            >—</a
+                        >
+                    </div>
+                    <div class="item">
+                        <h5>GitLab</h5>
+                        <a
+                            id="contact-gitlab"
+                            href="#"
+                            target="_blank"
+                            rel="noopener"
+                            >—</a
+                        >
+                    </div>
+                </div>
+
+                <div class="foot">
+                    <span>© <span id="year"></span> Rishabh Sahu</span>
+                    <span class="glyph"
+                        >Built by hand · Set in system serif &amp; sans</span
+                    >
+                </div>
+            </section>
         </div>
-        <div class="meta-right">
-          Government<br/>
-          systems · Internal tooling
-        </div>
-      </article>
 
-      <!-- Featured projects rendered from projects.js -->
-      <div id="featured-projects"></div>
-
-    </div>
-  </section>
-
-  <!-- ALL PROJECTS (compact, data-driven) -->
-  <section id="projects" class="block reveal">
-    <div class="section-head">
-      <span class="num">/ 03 — Index</span>
-      <h2>All <em>projects</em>.</h2>
-    </div>
-
-    <div id="all-projects" class="all-projects"></div>
-  </section>
-
-  <!-- EDUCATION -->
-  <section id="education" class="block reveal">
-    <div class="section-head">
-      <span class="num">/ 04 — Path</span>
-      <h2>Education &amp; <em>training</em>.</h2>
-    </div>
-
-    <div class="timeline">
-      <div class="timeline-row">
-        <div class="when">2024 — Present</div>
-        <div class="what">
-          International Institute of Information Technology, Hyderabad
-          <small>MTech, Computer Science</small>
-        </div>
-        <div class="score">CGPA<b>7.73 / 10</b></div>
-      </div>
-
-      <div class="timeline-row">
-        <div class="when">2019 — 2023</div>
-        <div class="what">
-          The LNM Institute of Information Technology, Jaipur
-          <small>BTech, Computer Science</small>
-        </div>
-        <div class="score">CGPA<b>7.43 / 10</b></div>
-      </div>
-
-      <div class="timeline-row">
-        <div class="when">2017 — 2019</div>
-        <div class="what">
-          G.V.N. The Global School, Bhopal
-          <small>Higher Secondary</small>
-        </div>
-        <div class="score">Score<b>87.2 %</b></div>
-      </div>
-
-      <div class="timeline-row">
-        <div class="when">2005 — 2017</div>
-        <div class="what">
-          Campion School, Bhopal
-          <small>Primary &amp; Middle School</small>
-        </div>
-        <div class="score">CGPA<b>10 / 10</b></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- SKILLS -->
-  <section id="skills" class="block reveal">
-    <div class="section-head">
-      <span class="num">/ 05 — Tools</span>
-      <h2>What I <em>reach for</em>.</h2>
-    </div>
-
-    <div class="skills-grid">
-      <span class="col-label">/ Stack</span>
-      <div>
-        <div class="skills-cluster">
-          <h4>Languages &amp; Databases</h4>
-          <div class="tags">
-            <span>Python</span><span>C / C++</span><span>Java</span>
-            <span>SQL</span><span>MongoDB</span>
-          </div>
-        </div>
-
-        <div class="skills-cluster">
-          <h4>Web &amp; Frameworks</h4>
-          <div class="tags">
-            <span>Flask</span><span>React</span><span>Express</span>
-            <span>HTML5</span><span>CSS</span><span>JavaScript</span>
-          </div>
-        </div>
-
-        <div class="skills-cluster">
-          <h4>DevOps &amp; Tools</h4>
-          <div class="tags">
-            <span>Docker</span><span>Git</span><span>BASH</span>
-            <span>Linux Shell</span>
-          </div>
-        </div>
-
-        <div class="skills-cluster">
-          <h4>Core CS</h4>
-          <div class="tags">
-            <span>Data Structures</span><span>Algorithms</span>
-            <span>Object-Oriented Programming</span>
-          </div>
-        </div>
-
-        <div class="skills-cluster">
-          <h4>Certifications</h4>
-          <div class="tags">
-            <span>Docker · Compose · Swarm</span>
-            <span>Flask Web Apps</span>
-            <span>Java Basic — HackerRank</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- RECOGNITION -->
-  <section id="recognition" class="block reveal">
-    <div class="section-head">
-      <span class="num">/ 06 — Recognition</span>
-      <h2>A few <em>milestones</em>.</h2>
-    </div>
-
-    <div class="recog-list">
-      <span class="col-label">/ Honours</span>
-      <ul>
-        <li>
-          <span class="title">All India Rank 77 — IIIT PGEE CSE</span>
-          <span class="badge">2024</span>
-        </li>
-        <li>
-          <span class="title">95.4 percentile — GATE CS / IT</span>
-          <span class="badge">2024</span>
-        </li>
-        <li>
-          <span class="title">Qualified Stage 1 — N.T.S.E., Madhya Pradesh</span>
-          <span class="badge">Scholarship</span>
-        </li>
-        <li>
-          <span class="title">Zonal Gold Medal — SOF National Cyber Olympiad</span>
-          <span class="badge">Class IX · MP Zone</span>
-        </li>
-        <li>
-          <span class="title">Delegate — Discernment International Summit MUN, Noida</span>
-          <span class="badge">2016 / 17</span>
-        </li>
-      </ul>
-    </div>
-  </section>
-
-  <!-- COLOPHON / CONTACT -->
-  <section id="contact" class="colophon reveal">
-    <h2>
-      Let’s build<br />
-      <em>something</em>.
-    </h2>
-
-    <div class="contact-grid">
-      <span class="col-label">/ Reach me</span>
-      <div class="item">
-        <h5>Email</h5>
-        <a href="mailto:rishabhsahu617@outlook.com">rishabhsahu617@outlook.com</a>
-      </div>
-      <div class="item">
-        <h5>Phone</h5>
-        <a href="tel:+917898994078">+91 78989 94078</a>
-      </div>
-      <div class="item">
-        <h5>LinkedIn</h5>
-        <a href="https://www.linkedin.com/in/rishabh-sahu325" target="_blank" rel="noopener">rishabh-sahu325</a>
-      </div>
-      <div class="item">
-        <h5>GitHub</h5>
-        <a href="https://github.com/RishabhSahuIIIT" target="_blank" rel="noopener">RishabhSahuIIIT</a>
-      </div>
-    </div>
-
-    <div class="foot">
-      <div>
-        © 2026 Rishabh Sahu<br/>
-        Hand-built · Self-hosted
-      </div>
-      <div class="glyph">rs.</div>
-      <div style="text-align: right;">
-        Hosted on<br/>
-        GitHub Pages
-      </div>
-    </div>
-  </section>
-
-</div>
-
-<!-- Data first, then renderer -->
-<script src="projects.js"></script>
-<script src="script.js"></script>
-
-</body>
+        <!-- All page logic (year setter, theme toggle handler, LaTeX parser
+       and renderer) lives in external files so they survive CSPs that
+       block inline <script>. -->
+        <script src="projects.js"></script>
+        <script src="script.js"></script>
+    </body>
 </html>

@@ -1,0 +1,201 @@
+\documentclass{article}
+
+% --- Control global line spacing for body text ---
+\usepackage{setspace}
+\setstretch{0.9}     % Multiplier for line spacing; 1 = normal, <1 = tighter lines
+
+% --- Section and subsection heading spacing ---
+\usepackage{titlesec}
+\titlespacing*{\section}{0pt}{0.1ex}{0pt}
+\titlespacing*{\subsection}{0pt}{0.05ex}{0pt}
+
+% --- Section formatting with integrated horizontal line using titlerule ---
+\titleformat{\section}
+  {\normalfont\Large\bfseries}  % format
+  {}                             % label
+  {0em}                          % sep between label and title
+  {}                             % before-code
+  [\vspace{0.05cm}\titlerule\vspace{0.05cm}]  % after-code: adds line after section title
+
+% --- Make subsection titles larger ---
+\titleformat{\subsection}{\normalfont\large\bfseries}{}{0em}{}
+
+% --- Custom command for slightly larger item text ---
+\newcommand{\itemsize}{\fontsize{11.5pt}{13.5pt}\selectfont}
+
+% --- Bulleted/numbered list spacing configuration ---
+\usepackage{enumitem}
+\setlist[itemize]{
+    leftmargin=15pt,   % Indentation from the left margin for bullets
+    itemsep=2pt,       % Vertical space between list items
+    topsep=0pt,        % Space above and below the entire list
+    parsep=0pt,        % Space between paragraphs inside an item
+    partopsep=0pt      % Extra space added when environment starts a new paragraph
+}
+\setlist[enumerate]{
+    leftmargin=15pt,
+    itemsep=2pt,
+    topsep=0pt,
+    parsep=0pt,
+    partopsep=0pt
+}
+
+% --- Table column formatting ---
+\usepackage{array}
+
+% --- Font configuration ---
+\usepackage[quiet]{fontspec}
+\setmainfont[
+    Ligatures={TeX, Common},             % Enable TeX and common ligatures
+    Numbers=Lining,                      % Use lining style numbers
+    BoldFont={Linux Libertine O Bold},   % Specify bold font variant
+    BoldFeatures={Weight=3}              % Increase bold weight for emphasis
+]{Linux Libertine O}
+
+% --- Fix math font error by using unicode-math and Libertinus Math ---
+\usepackage{unicode-math}
+\setmathfont{Libertinus Math}  % Scalable math font compatible with Linux Libertine
+
+% --- Icon and hyperlink support ---
+\usepackage{fontawesome5}              % FontAwesome icons for symbols
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,               % Enable colored links
+    linkcolor=black,
+    filecolor=black,
+    urlcolor=black,
+}
+
+% --- Page margin and layout settings ---
+\usepackage[a4paper, margin=0.5cm]{geometry} % Narrow margins for dense text
+
+% --- Remove paragraph indent and extra paragraph spacing ---
+\setlength{\parindent}{0pt}  % No paragraph indentation
+\setlength{\parskip}{0pt}    % No extra space between paragraphs
+
+\begin{document}
+\fontsize{11pt}{13pt}\selectfont  % Font size 11pt, baseline skip 13pt (line height) to avoid font errors
+
+% --- Title section ---
+% -----------------------------------
+% HEADER (Compact & Readable)
+% -----------------------------------
+\begin{center}
+	{\Huge \textbf{Rishabh Sahu}} \\ \vspace{3pt}
+
+	% Address: Slightly smaller than body text to keep it on one line
+	{\fontsize{12pt}{12.5pt}\selectfont \faIcon{map-marker-alt}\enspace \textbf{Address:} Lig 139 Harshwardhan Nagar, Bhopal, Madhya Pradesh, India} \\ \vspace{3pt}
+
+	% Contact Info: 10.5pt Font
+	{\fontsize{12pt}{12.5pt}\selectfont
+		\faIcon{envelope}\enspace \textbf{Email:} \href{mailto:rishabhsahu617@outlook.com}{rishabhsahu617@outlook.com}
+		\quad \textbullet \quad
+		\faIcon{mobile-alt}\enspace \textbf{Phone:} (+91) 7898994078
+	} \\ \vspace{3pt}
+
+	% Links: 10.5pt Font
+	{\fontsize{12pt}{12.5pt}\selectfont
+		\faIcon{linkedin}\enspace \textbf{LinkedIn:} \href{https://www.linkedin.com/in/rishabh-sahu325}{rishabh-sahu325}
+		\quad \textbullet \quad
+		\faIcon{github}\enspace \textbf{GitHub:} \href{https://github.com/RishabhSahuIIIT}{RishabhSahuIIIT}
+		\quad \textbullet \quad
+		\faIcon{gitlab}\enspace \textbf{GitLab:} \href{https://gitlab.com/rishabhsahu325}{rishabhsahu325}
+	}
+\end{center}
+% -----------------------------------
+\section*{Education}
+\begin{flushleft}
+	\noindent\large\textbf{International Institute of Information Technology Hyderabad} \hfill July 2024 -- Present \\
+	MTech. Computer Science \hfill CGPA: 7.73/10\\
+	\vspace{0.1cm}
+	\noindent\large\textbf{The LNM Institute of Information Technology Jaipur} \hfill July 2019 -- June 2023 \\
+	BTech. Computer Science \hfill CGPA: 7.43/10\\
+	\vspace{0.1cm}
+	\noindent\large\textbf{G.V.N. The Global School Bhopal} \hfill April 2017 -- March 2019 \\ High School \hfill 87.2\%\\
+	\vspace{0.1cm}
+	\noindent\large\textbf{Campion School Bhopal} \hfill April 2005 -- March 2017 \\ Primary and Middle School \hfill CGPA: 10/10\\
+\end{flushleft}
+
+% -----------------------------------
+
+\section*{Internships}
+
+\noindent\large\textbf{Web and Mobile app development Intern at C.R.I.S. Secunderabad} \hfill 1 June 2025 -- 30 July 2025
+
+\vspace{2pt}
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords: Git, Flutter, Dart, Javascript, Nodejs, MySQL, POSTMAN}} \hfill \href{https://gitlab.com/rishabhsahu325/cris_sec25_divjan}{\faIcon{link}\textbf{Project repository}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Worked on a prototype mobile application for Divyangjan card application website}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Implemented backend API routes}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Contributed in database design and testing}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Added frontend pages for Railway division wise reports}
+\end{itemize}
+
+
+% -----------------------------------
+
+\section*{Projects}
+
+% --- PROJECT 1: JSON API SERVER ---
+\subsection*{JSON API server}
+
+\vspace{2pt}
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords: Flask, Docker, Python, API design, Postgresql} \hfill \href{https://gitlab.com/projectsa2/jsonapiserver}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Handles external http requests to fetch data from Postgresql Database}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Perform create and view operations for teacher and course data in the database}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Retrieve responses to http requests in JSON format}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Utilized Docker and BASH to reduce setup time}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : Wine classifier based on decision tree  ---
+\subsection*{Wine Classifier based on Decision Tree}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:Python, Pyspark, Pandas, Decision Tree classification} \hfill \href{https://gitlab.com/projectsa2/wineclassifier}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont  Generated ML classifier model to classify Wine from characteristics}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Classifier trained on sklearn's wine dataset}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Evaluated trained model through pyspark's model evaluator}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Achieved reasonably good accuracy of 85\% on test metrics}
+
+\end{itemize}
+
+% -----------------------------------
+\section*{Certifications}
+\begin{itemize}
+	\item \href{https://www.educative.io/verify-certificate/Y5xyKBov0ppTp41gXrqlx5c3LGP7RAWBVHJ}{\faIcon{link}Working with containers}: Docker, Docker compose, Docker Swarm (EDUCATIVE.IO)
+	\item \href{https://www.educative.io/verify-certificate/j2l3BzfZ3O94zqGqKSjXR9PNLqr7uA}{\faIcon{link}Flask Develop web applications in Python}: Flask, Python, CSS, HTML (EDUCATIVE.IO)
+	\item \href{https://www.hackerrank.com/certificates/388867dc0d5f}{\faIcon{link}Java basic certification} (HACKERRANK)
+\end{itemize}
+
+% -----------------------------------
+\section*{Skills}
+% Using a simple itemize with zero margin allows text to flow naturally
+\begin{itemize}[leftmargin=*, itemsep=0pt, parsep=0pt]
+	\item \textbf{Programming and Databases :} Python, C/C++, Rust, Java, SQL, MongoDB
+	\item \textbf{Web Technologies:} Flask, React, Express, HTML5, CSS, Javascript
+	\item \textbf{DevOps \& Tools:} BASH, Linux Shell, Docker, Git
+	\item \textbf{Core Concepts:} Data Structures and Algorithms, Object Oriented Programming
+\end{itemize}
+
+% -----------------------------------
+\section*{Accomplishments}
+\begin{itemize}
+	\item Accomplished 77 All India Rank in IIIT PGEE CSE 2024 exam
+	\item Achieved 95.4 percentile in GATE exam CS/IT 2024
+	\item Qualified Stage 1 of N.T.S.E. in Madhya Pradesh
+	\item Zonal Gold medalist in SOF National cyber Olympiad Madhya Pradesh zone class 9th
+\end{itemize}
+
+% -----------------------------------
+\section*{Interests and Extracurricular Activities}
+\begin{itemize}
+	\item Playing badminton
+	\item Participated in Discernment International Summit M.U.N. 2016-17 at Noida
+\end{itemize}
+\end{document}
