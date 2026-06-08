@@ -11,11 +11,11 @@
 
 % --- Section formatting with integrated horizontal line using titlerule ---
 \titleformat{\section}
-  {\normalfont\Large\bfseries}  % format
-  {}                             % label
-  {0em}                          % sep between label and title
-  {}                             % before-code
-  [\vspace{0.05cm}\titlerule\vspace{0.05cm}]  % after-code: adds line after section title
+{\normalfont\Large\bfseries}  % format
+{}                             % label
+{0em}                          % sep between label and title
+{}                             % before-code
+[\vspace{0.05cm}\titlerule\vspace{0.05cm}]  % after-code: adds line after section title
 
 % --- Make subsection titles larger ---
 \titleformat{\subsection}{\normalfont\large\bfseries}{}{0em}{}
@@ -26,18 +26,18 @@
 % --- Bulleted/numbered list spacing configuration ---
 \usepackage{enumitem}
 \setlist[itemize]{
-    leftmargin=15pt,   % Indentation from the left margin for bullets
-    itemsep=2pt,       % Vertical space between list items
-    topsep=0pt,        % Space above and below the entire list
-    parsep=0pt,        % Space between paragraphs inside an item
-    partopsep=0pt      % Extra space added when environment starts a new paragraph
+	leftmargin=15pt,   % Indentation from the left margin for bullets
+	itemsep=2pt,       % Vertical space between list items
+	topsep=0pt,        % Space above and below the entire list
+	parsep=0pt,        % Space between paragraphs inside an item
+	partopsep=0pt      % Extra space added when environment starts a new paragraph
 }
 \setlist[enumerate]{
-    leftmargin=15pt,
-    itemsep=2pt,
-    topsep=0pt,
-    parsep=0pt,
-    partopsep=0pt
+	leftmargin=15pt,
+	itemsep=2pt,
+	topsep=0pt,
+	parsep=0pt,
+	partopsep=0pt
 }
 
 % --- Table column formatting ---
@@ -46,10 +46,10 @@
 % --- Font configuration ---
 \usepackage[quiet]{fontspec}
 \setmainfont[
-    Ligatures={TeX, Common},             % Enable TeX and common ligatures
-    Numbers=Lining,                      % Use lining style numbers
-    BoldFont={Linux Libertine O Bold},   % Specify bold font variant
-    BoldFeatures={Weight=3}              % Increase bold weight for emphasis
+	Ligatures={TeX, Common},             % Enable TeX and common ligatures
+	Numbers=Lining,                      % Use lining style numbers
+	BoldFont={Linux Libertine O Bold},   % Specify bold font variant
+	BoldFeatures={Weight=3}              % Increase bold weight for emphasis
 ]{Linux Libertine O}
 
 % --- Fix math font error by using unicode-math and Libertinus Math ---
@@ -60,14 +60,20 @@
 \usepackage{fontawesome5}              % FontAwesome icons for symbols
 \usepackage{hyperref}
 \hypersetup{
-    colorlinks=true,               % Enable colored links
-    linkcolor=black,
-    filecolor=black,
-    urlcolor=black,
+	colorlinks=true,               % Enable colored links
+	linkcolor=black,
+	filecolor=black,
+	urlcolor=black,
 }
 
 % --- Page margin and layout settings ---
 \usepackage[a4paper, margin=0.5cm]{geometry} % Narrow margins for dense text
+
+% --- Multi-line comment environment (used for site-only metadata) ---
+% Provides \begin{comment}...\end{comment} blocks that are invisible
+% in the rendered PDF. The portfolio site parses these for things like
+% paragraph project descriptions that would otherwise crowd the resume.
+\usepackage{verbatim}
 
 % --- Remove paragraph indent and extra paragraph spacing ---
 \setlength{\parindent}{0pt}  % No paragraph indentation
@@ -76,14 +82,14 @@
 \begin{document}
 \fontsize{11pt}{13pt}\selectfont  % Font size 11pt, baseline skip 13pt (line height) to avoid font errors
 
-% --- Title section ---
+% --- Safe & Compact Title Section ---
 % -----------------------------------
 % HEADER (Compact & Readable)
 % -----------------------------------
 \begin{center}
 	{\Huge \textbf{Rishabh Sahu}} \\ \vspace{3pt}
 
-	% Address: Slightly smaller than body text to keep it on one line
+	% multiset<int>towerTops;Address: Slightly smaller than body text to keep it on one line
 	{\fontsize{12pt}{12.5pt}\selectfont \faIcon{map-marker-alt}\enspace \textbf{Address:} Lig 139 Harshwardhan Nagar, Bhopal, Madhya Pradesh, India} \\ \vspace{3pt}
 
 	% Contact Info: 10.5pt Font
@@ -100,6 +106,8 @@
 		\faIcon{github}\enspace \textbf{GitHub:} \href{https://github.com/RishabhSahuIIIT}{RishabhSahuIIIT}
 		\quad \textbullet \quad
 		\faIcon{gitlab}\enspace \textbf{GitLab:} \href{https://gitlab.com/rishabhsahu325}{rishabhsahu325}
+		\quad \textbullet \quad
+		\faIcon{globe}\enspace \textbf{Portfolio:} \href{https://rishabhsahuiiit.github.io/}{rishabhsahuiiit.github.io}
 	}
 \end{center}
 % -----------------------------------
@@ -123,7 +131,7 @@
 \noindent\large\textbf{Web and Mobile app development Intern at C.R.I.S. Secunderabad} \hfill 1 June 2025 -- 30 July 2025
 
 \vspace{2pt}
-\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords: Git, Flutter, Dart, Javascript, Nodejs, MySQL, POSTMAN}} \hfill \href{https://gitlab.com/rishabhsahu325/cris_sec25_divjan}{\faIcon{link}\textbf{Project repository}}
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Git, Flutter, Dart, Javascript, Nodejs, MySQL, POSTMAN} \hfill \href{https://gitlab.com/rishabhsahu325/cris_sec25_divjan}{\faIcon{link}\textbf{Project repository}}
 
 \begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
 	\item {\fontsize{11.5pt}{13.5pt}\selectfont Worked on a prototype mobile application for Divyangjan card application website}
@@ -138,10 +146,17 @@
 \section*{Projects}
 
 % --- PROJECT 1: JSON API SERVER ---
-\subsection*{JSON API server}
+\begin{comment}
+description:
+A small backend service exposing teacher and course data from a
+Postgres database as JSON. Built as a sandbox for Flask routing
+patterns, request handling, and one-command containerised deployment
+with Docker and Bash.
+\end{comment}
+\subsection*{JSON API server \hfill {\normalfont\itshape\small Backend Development}}
 
 \vspace{2pt}
-\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords: Flask, Docker, Python, API design, Postgresql} \hfill \href{https://gitlab.com/projectsa2/jsonapiserver}{\faIcon{link}\textbf{Project repository}}}
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Flask, Docker, Python, API design, Postgresql \hfill \href{https://gitlab.com/projectsa2/jsonapiserver}{\faIcon{link}\textbf{Project repository}}}
 
 \begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
 	\item {\fontsize{11.5pt}{13.5pt}\selectfont Handles external http requests to fetch data from Postgresql Database}
@@ -150,19 +165,209 @@
 	\item {\fontsize{11.5pt}{13.5pt}\selectfont Utilized Docker and BASH to reduce setup time}
 \end{itemize}
 
+
 \centerline{\rule{0.8\textwidth}{0.05pt}}
 
 % --- PROJECT : Wine classifier based on decision tree  ---
-\subsection*{Wine Classifier based on Decision Tree}
+\begin{comment}
+description:
+A decision-tree classifier trained on sklearn's wine dataset. Used to
+walk through the full supervised-learning workflow end to end -- data
+loading, model fitting with scikit-learn, and evaluation through
+Pyspark's model evaluator.
+\end{comment}
+\subsection*{Wine Classifier based on Decision Tree \hfill {\normalfont\itshape\small Machine Learning}}
 
-\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:Python, Pyspark, Pandas, Decision Tree classification} \hfill \href{https://gitlab.com/projectsa2/wineclassifier}{\faIcon{link}\textbf{Project repository}}}
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Python, Pyspark, Pandas, Decision Tree classification \hfill \href{https://gitlab.com/projectsa2/wineclassifier}{\faIcon{link}\textbf{Project repository}}}
 
 \begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
-	\item {\fontsize{11.5pt}{13.5pt}\selectfont  Generated ML classifier model to classify Wine from characteristics}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Generated ML classifier model to classify Wine from characteristics}
 	\item {\fontsize{11.5pt}{13.5pt}\selectfont Classifier trained on sklearn's wine dataset}
 	\item {\fontsize{11.5pt}{13.5pt}\selectfont Evaluated trained model through pyspark's model evaluator}
 	\item {\fontsize{11.5pt}{13.5pt}\selectfont Achieved reasonably good accuracy of 85\% on test metrics}
 
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : N-gram Language Model ---
+\begin{comment}
+description:
+A typing word predictor that reads the starting letters and fills the complete word by choosing among prediction options generated by n gram model trained on a text corpus.
+\end{comment}
+\subsection*{N-gram Language Model for Next-Word Prediction\hfill {\normalfont\itshape\small Machine Learning}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Python, Character N-gram, Curses (TUI)  \hfill \href{https://gitlab.com/projectsa2/wineclassifier}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\itemsize Developed a Character-level N-gram model to suggest word completions in real-time as the user types.}
+	\item {\itemsize Implemented Maximum Likelihood Estimation (MLE) to calculate transition probabilities between character sequences.}
+	\item {\itemsize Built a low-latency Terminal User Interface (TUI) using \texttt{curses} that tracks keystroke efficiency metrics live.}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : Secure Telemedical ---
+\begin{comment}
+description:
+This project implements a simulation of a secure telemedical conferencing system that enables confidential communication between a doctor and multiple patients.
+The system uses cryptographic techniques including ElGamal encryption/digital signatures and AES encryption to ensure secure authentication, key exchange, and encrypted communication.
+\end{comment}
+\subsection*{Secure many to one communication system with Digital Signatures\hfill {\normalfont\itshape\small Cybersecurity}}
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Python, Cryptography, Network Security, Socket Programming  \hfill \href{https://gitlab.com/iiith2426-ris/assignments/sns/a2-telemedical-ds}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\itemsize Engineered a secure communication protocol ensuring confidentiality using AES-256 and ElGamal encryption}
+	\item {\itemsize Implemented mutual authentication and integrity verification mechanisms using ElGamal Digital Signatures}
+	\item {\itemsize Mitigated replay attacks via timestamp validation and enforced access control through temporary blocking}
+	\item {\itemsize Orchestrated secure session management with dynamic group key generation for encrypted broadcast messaging}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : Multithreaded HTTP Server ---
+\begin{comment}
+description:
+This project implements a simple multithreaded server in rust that caters to multiple http requests through a thread pool and handles concurrency through Rust primitives like Arc, Mutex and channels.
+\end{comment}
+\subsection*{Multithreaded HTTP Server\hfill {\normalfont\itshape\small Systems Programming}}
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Rust, Multithreading, TCP, HTTP, Thread Pool, Concurrency  \hfill \href{https://github.com/RishabhSahuIIIT/rustMultithreadServer}{\faIcon{link}\textbf{Project repository}}}
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Built an HTTP/1.1 server from scratch using Rust's standard library }
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Implemented a fixed-size thread pool dispatching jobs across workers}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Handled GET request routing with \texttt{200 OK}, simulated latency \texttt{/sleep}, and \texttt{404 NOT FOUND} responses}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Applied Rust ownership and concurrency primitives like Arc, Mutex and channels for safe parallel execution}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : Custom Shell ---
+\begin{comment}
+description:
+A custom C++ shell that replicates core command-line functionalities. Engineered to handle external program execution, output redirection, and inter-process communication using native Linux APIs.
+\end{comment}
+\subsection*{Shell \hfill {\normalfont\itshape\small Systems Programming}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} C++, Linux API, Process handling, System calls \hfill \href{https://github.com/RishabhSahuIIIT/codecrafters-shell-cpp}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Implemented external program execution through fork and exec}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Developed shell built-ins including \texttt{cd}, utilizing OS function calls for directory changes rather than internal state management}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Integrated the readline library for tab-autocompletion, applied specifically to built-in commands}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Orchestrated inter-process communication via pipes}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Manipulated file descriptors to enable output redirection}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : HTML Autocomplete with Lex ---
+\begin{comment}
+description:
+A command-line tool that performs lexical analysis on HTML files using GNU Flex
+and provides autocomplete suggestions for HTML tags and attributes. A Trie data
+structure built in C matches partial token prefixes against all recognised HTML
+tokens, demonstrating practical application of compiler front-end techniques.
+\end{comment}
+\subsection*{HTML Autocomplete using Lexer \hfill {\normalfont\itshape\small Compilers}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} GNU Flex/Lex, C, Lexical Analysis, Trie, Compiler Design \hfill \href{https://gitlab.com/iiith2426-ris/assignments/compilers/a2-html-autocomplete-lex}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\itemsize Implemented an HTML lexer using GNU Flex with custom grammar rules to tokenise HTML documents}
+	\item {\itemsize Built a Trie-based string matching engine in C to provide autocomplete suggestions from partial HTML tags and attributes}
+	\item {\itemsize Extended token coverage beyond standard HTML spec to support tags like \texttt{img}, \texttt{header}, and \texttt{srcset}}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : Network Intrusion Detection and Prevention System ---
+\begin{comment}
+description:
+A Network-based Intrusion Detection and Prevention System (NIDPS) that monitors
+live TCP traffic using Scapy, detects port scanning and OS fingerprinting attacks
+via sliding-window signature analysis, and automatically blocks malicious IPs
+using platform-specific firewall commands. Multi-threaded design keeps the CLI
+responsive while capture runs in the background.
+\end{comment}
+\subsection*{Network Intrusion Detection and Prevention System \hfill {\normalfont\itshape\small Cybersecurity}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Python, Scapy, Network Security, iptables, Multithreading \hfill \href{https://gitlab.com/iiith2426-ris/assignments/sns/a3}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\itemsize Performed real-time TCP packet capture and analysis using Scapy's low-level network sniffing capabilities}
+	\item {\itemsize Implemented signature-based detection for port scanning (sliding time-window) and OS fingerprinting (TCP flag pattern matching)}
+	\item {\itemsize Automated threat response by dynamically blocking attacker IPs via iptables (Linux) and Windows Firewall (Windows)}
+	\item {\itemsize Decoupled packet capture from the management CLI using multi-threading for continuous monitoring without UI blocking}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : Agentic AI Research Assistant ---
+\begin{comment}
+description:
+A multi-agent system built on the Moya framework that processes academic PDF
+papers end-to-end: parsing with PyMuPDF, structured summarisation, cross-paper
+synthesis, and mini-survey generation with inline citations. A dual Ollama
+architecture runs orchestration and task execution on separate local LLM instances
+to prevent blocking, with every decision and output logged to timestamped JSONL
+trace files for full observability.
+\end{comment}
+\subsection*{Agentic AI Research Assistant \hfill {\normalfont\itshape\small Artificial Intelligence}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Python, Moya framework, Ollama, Llama 3.1, PyMuPDF, Multi-agent systems \hfill \href{https://github.com/RishabhSahuIIIT/AgenticAIResearchAssistant_Moya}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\itemsize Built a multi-agent pipeline using the Moya framework to parse, summarise, synthesise, and survey academic PDF papers}
+	\item {\itemsize Orchestrated dual Ollama (Llama 3.1) instances on separate ports to decouple decision-making from task execution, preventing LLM blocking}
+	\item {\itemsize Implemented full observability by logging every agent decision, LLM prompt, and output to timestamped JSONL trace files per run}
+	\item {\itemsize Generated structured mini-surveys ($\leq$800 words) with inline citations synthesised across multiple research papers}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : Citestat ---
+\begin{comment}
+description:
+A browser-only academic citation analytics dashboard that fetches paper and author
+metadata from the Crossref and OpenCitations REST APIs. Users can look up
+any DOI or ORCID to see yearwise citation histograms (Chart.js), citation network
+graphs (Reagraph / D3.js), and bibliometric impact metrics (h-index, m-quotient)
+computed entirely on the client. Deployed on Vercel with automatic CI/CD on each
+merge to master.
+\end{comment}
+\subsection*{Citestat -- Academic Citation Analytics Dashboard \hfill {\normalfont\itshape\small Web Development}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} React, TypeScript, Vite, Tailwind CSS, Chart.js, Reagraph, Crossref API, OpenCitations API \hfill \href{https://github.com/RishabhSahuIIIT/citestat}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\itemsize Built a client-side citation analytics dashboard that queries Crossref and OpenCitations REST APIs for paper and author metadata}
+	\item {\itemsize Visualised yearly citation trends as histograms using Chart.js and citation network graphs using Reagraph (backed by D3.js)}
+	\item {\itemsize Computed bibliometric impact metrics (h-index, m-quotient) fully in the browser with no backend dependency}
+	\item {\itemsize Deployed to Vercel's free tier with CI/CD; every merge to master automatically triggers a production deployment at \href{https://citestat.vercel.app}{citestat.vercel.app}}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : CRDT Collaborative Text Editor ---
+\begin{comment}
+description:
+A fully-distributed real-time collaborative text editor built on two complementary
+CRDT approaches: an operation-based Replicated Growable Array (RGA) for document
+text and a state-based Last-Write-Wins (LWW) Register for metadata. Multiple
+users can concurrently edit the same document over a WebSocket relay with
+guaranteed convergence — even after network partitions or reordered delivery —
+plus offline editing backed by IndexedDB, HMAC-based access control, and cursor
+presence.
+\end{comment}
+\subsection*{Real-Time Collaborative Text Editor using CRDT \hfill {\normalfont\itshape\small Distributed Systems}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} TypeScript, React, CodeMirror 6, WebSocket, CRDT, RGA, LWW Register, IndexedDB \hfill \href{https://github.com/RishabhSahuIIIT/CRDT_collaborative_text_editor}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\itemsize Implemented an operation-based RGA CRDT for document text, ensuring convergence across concurrent edits via vector clocks and causal delivery}
+	\item {\itemsize Implemented a state-based LWW Register CRDT for metadata (title, cursors), with timestamp + siteId total order for deterministic conflict resolution}
+	\item {\itemsize Built a WebSocket relay server and React/CodeMirror 6 browser editor with IndexedDB-backed offline editing and automatic reconnect sync}
+	\item {\itemsize Enforced per-message access control using HMAC-signed role tokens, applied at the relay so role changes take effect immediately without reconnection}
 \end{itemize}
 
 % -----------------------------------

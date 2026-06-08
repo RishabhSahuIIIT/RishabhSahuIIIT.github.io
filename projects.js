@@ -1,26 +1,33 @@
 /* ============================================================
    projects.js — portfolio configuration
    --------------------------------------------------------------
-   By default, EVERYTHING in resume.tex shows up on the page.
-   You only add entries here when you want to deviate from that:
+   By default, EVERYTHING in resume.tex shows up on the page, in
+   the "All projects" section. To promote a project into the
+   prominent "Selected work" section, set `featured: true` on it.
 
-     • hide an entry          →  { show: false }
-     • move a project to the
-       compact "All projects" →  { featured: false }
-     • give a project a
-       category (for grouping)→  { category: "Backend" }
-     • override the resume's
-       text with custom copy  →  { useAlt: true, altData: { ... } }
-     • add a web-only entry
-       not in the resume      →  { useAlt: true, altData: { ... } }
+   Project categories are auto-extracted from each subsection
+   title in resume.tex (the right-aligned tag after \hfill):
 
-   Every per-entry block is optional. Sections you don't touch
-   keep using whatever resume.tex provides.
+       \subsection*{JSON API server \hfill
+                    {\normalfont\itshape\small Backend Development}}
+
+   Per-project keys (all optional):
+     featured: true             move into "Selected work" (also stays
+                                in All projects unless featuredOnly)
+     featuredOnly: true         show only in "Selected work", hide
+                                from "All projects" (needs featured:true)
+     show: false                drop the entry entirely
+     hideDescription: true      hide the % description: comment
+     useAlt: true               override resume's text with altData
+     altData: {...}             title, role, summary, bullets, stack, links
+
+   The same per-project block also accepts web-only entries — set
+   useAlt:true and provide all the fields the resume would have.
    ============================================================ */
 
 window.PORTFOLIO_CONFIG = {
   /* ============================================================
-     SECTION-LEVEL TOGGLES (all default to sensible values)
+     SECTION-LEVEL TOGGLES
      ============================================================ */
   sections: {
     // showEducation:       false,    // hide whole education section
@@ -30,18 +37,21 @@ window.PORTFOLIO_CONFIG = {
     // showAccomplishments: false,
 
     // Group projects under category headings. On by default.
-    // Set to false for a flat list.
     groupProjectsByCategory: true,
 
-    // Order of category groups. Categories you list here appear in
-    // this order; any others are appended at the end as encountered.
-    projectCategoryOrder: [
-      "Web Development",
-      "Backend",
-      "Systems",
-      "AI / ML",
-      "Cybersecurity",
-    ],
+    // Order of category groups on the page and in nav dropdowns.
+    // Categories listed here appear in this order; any others fall
+    // in after them as they're encountered in the resume. Strings
+    // must match the category tag in resume.tex EXACTLY.
+    projectCategoryOrder: ["Backend Development", "Machine Learning"],
+
+    // Should the per-project "Details" dropdowns in the All-projects
+    // section be expanded by default? false = closed (cleaner page).
+    expandAllProjectsByDefault: false,
+
+    // Show paragraph descriptions parsed from `% description:` LaTeX
+    // comments in resume.tex. Flip to false to hide them site-wide.
+    showProjectDescriptions: true,
   },
 
   /* ============================================================
@@ -55,46 +65,50 @@ window.PORTFOLIO_CONFIG = {
      INTERNSHIPS — keyed by title from resume.tex
      ============================================================ */
   internships: {
-    // (nothing needed — internships render straight from the resume)
+    // (internships render straight from the resume by default)
   },
 
   /* ============================================================
-     PROJECTS — keyed by \subsection*{...} title in resume.tex
-     Default: every project is featured (shows as a full card in
-     "Selected work"). Only add an entry to deviate.
+     PROJECTS — keyed by \subsection*{...} title (the LEFT side
+     of \hfill in the title; the RIGHT side is the category and
+     is read straight from the resume).
+
+     DEFAULT: every project shows in "All projects" only.
+     Add `featured: true` to put a project in "Selected work"
+     (it'll still appear in All projects unless you also set
+     `featuredOnly: true`).
      ============================================================ */
   projects: {
-    // Group by category — this is the most common reason to add
-    // a project entry. Uncategorized projects still render fine.
-    "JSON API server": { category: "Backend" },
-    "Wine Classifier based on Decision Tree": { category: "AI / ML" },
-
-    // Demote to the compact "All projects" list:
-    // "Some Old Project": { featured: false, category: "Misc" }
-
+    // Examples — uncomment and adjust as needed:
+    // Promote to "Selected work" (mirrors in All projects too):
+    // "JSON API server": { featured: true },
+    // Promote AND hide from All projects:
+    // "JSON API server": { featured: true, featuredOnly: true },
+    // Hide a project's description paragraph site-wide:
+    // "Wine Classifier based on Decision Tree": { hideDescription: true },
     // Override with a richer web description:
     // "JSON API server": {
-    //   category: "Backend",
+    //   featured: true,
     //   useAlt:   true,
     //   altData: {
-    //     title:    "JSON API Server",
-    //     role:     "Containerised Flask service",
-    //     summary:  "A small REST API over Postgres, ready to run from " +
-    //               "one `docker compose up`.",
-    //     bullets:  ["…"],
-    //     stack:    ["Flask", "Python", "PostgreSQL", "Docker"],
+    //     title:   "JSON API Server",
+    //     role:    "Containerised Flask service",
+    //     summary: "A small REST API over Postgres, ready to run from " +
+    //              "one `docker compose up`.",
+    //     bullets: ["..."],
+    //     stack:   ["Flask", "Python", "PostgreSQL", "Docker"],
     //     links: [{ label: "GitLab", url: "https://gitlab.com/projectsa2/jsonapiserver" }]
     //   }
     // },
-
     // Add a project not in the resume (web-only):
     // "Portfolio Site": {
-    //   category: "Web Development",
+    //   featured: true,
     //   useAlt:   true,
     //   altData: {
-    //     title:   "This portfolio",
-    //     summary: "The site you're looking at — parses my LaTeX resume on load.",
-    //     stack:   ["HTML", "CSS", "Vanilla JS"],
+    //     title:    "This portfolio",
+    //     category: "Web Development",
+    //     summary:  "The site you're looking at — parses my LaTeX resume on load.",
+    //     stack:    ["HTML", "CSS", "Vanilla JS"],
     //     links: [{ label: "GitHub", url: "https://github.com/RishabhSahuIIIT/RishabhSahuIIIT.github.io" }]
     //   }
     // }
@@ -112,7 +126,7 @@ window.PORTFOLIO_CONFIG = {
      accomplishment line in resume.tex. Use a distinctive phrase
      that appears LITERALLY in the resume (e.g. "N.T.S.E." with
      dots, not "NTSE").
-     Per-entry: { show: false } to drop, { altText: "…" } to rewrite.
+     Per-entry: { show: false } to drop, { altText: "..." } to rewrite.
      ============================================================ */
   accomplishments: {
     // "GATE":     { altText: "GATE CS/IT 2024 — 95.4 percentile (top 5%)" },

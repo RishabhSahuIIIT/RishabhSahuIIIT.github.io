@@ -1,231 +1,296 @@
-# Rishabh Sahu — Portfolio
+# Portfolio site — Rishabh Sahu
+
+A single-page personal portfolio that parses `resume.tex` on load and renders
+its content as an editorial-style site. Pure HTML, CSS, and vanilla JavaScript
+— no build step, no frameworks. Deployable directly to GitHub Pages.
 
 Live: <https://rishabhsahuiiit.github.io/>
 
-A single-page editorial portfolio that **parses `resume.tex` at load** and
-renders every data-driven section from it. Formatting lives in HTML/CSS;
-the resume file is the single source of truth for content.
 
-## Files
+## Quick start
 
-| File                  | What it does                                                              |
-|-----------------------|---------------------------------------------------------------------------|
-| `index.html`          | Page shell — section headers + empty mount points the script populates.   |
-| `style.css`           | Active stylesheet.                                                        |
-| `style-rust-cream.css`| Palette variant: **Rust on cream**, light −26 / dark +7.                  |
-| `style-aegean-clay.css`| Palette variant: **Aegean clay**, light −7 / dark +11.                  |
-| `style-forest-green.css`| Palette variant: **Forest green**, light −7 / dark +11.                |
-| `style-day-night.css` | Palette variant: **Day & Night**, light −24 / dark +11.                   |
-| `resume.tex`          | **Your resume.** Edit this to change real content.                        |
-| `script.js`           | Parser + renderer. Fetches `resume.tex`, parses, fills mount points.      |
-| `projects.js`         | Portfolio configuration — section toggles, per-entry overrides, grouping. |
-| `generate-palettes.js`| Regenerates the four palette variants. Run `node generate-palettes.js`.   |
+```bash
+# preview locally — pick one:
+python3 -m http.server 8000          # plain server
+python3 dev-server.py 8000           # dev server with interactive style swap
 
-To switch palettes, copy/rename one of `style-*.css` to `style.css`
-(or change the `<link>` in `index.html` to point at a specific variant).
-
-## How content flows
-
-```
-  resume.tex  ────────► parser  ─┐
-                                 ├──► merger ──► renderer ──► mount points in index.html
-  projects.js ────────► config  ─┘                           
+# then open http://localhost:8000/
 ```
 
-- `resume.tex` is the source of truth for: contact info, education,
-  internships, projects, skills, accomplishments.
-- `projects.js` decides what shows, what's featured, what's overridden,
-  and how projects are grouped. **Every section can now be customised**
-  (not just projects).
-- `index.html` holds only the static scaffolding (hero copy, about
-  paragraphs, section headings) and the mount points.
+The site fetches `resume.tex` over HTTP, so opening `index.html` via `file://`
+won't work — you need a local server (or GitHub Pages).
 
-## projects.js — config is optional
 
-**By default, every entry in `resume.tex` shows up on the page.** You only
-add entries to `projects.js` when you want to deviate:
+## What's in the folder
 
-| You want to…                                  | Add this                                          |
-|-----------------------------------------------|---------------------------------------------------|
-| Hide an entry                                 | `{ show: false }`                                 |
-| Move a project to the compact "All projects"  | `{ featured: false }`                             |
-| Give a project a category for grouping        | `{ category: "Backend" }`                         |
-| Rewrite the text with custom web copy         | `{ useAlt: true, altData: { … } }`                |
-| Add an entry that isn't in the resume         | `{ useAlt: true, altData: { … } }`                |
-| Rewrite an accomplishment line                | `{ altText: "…" }`                                |
+| File | Purpose |
+|---|---|
+| `index.html` | Page shell with mount points the renderer fills in |
+| `style.css` | Default palette (rust-on-cream) |
+| `style-*.css` | Alternate palettes — aegean-clay, forest-green, day-night, rust-cream |
+| `script.js` | LaTeX parser + renderer + dynamic nav + console helpers |
+| `theme-init.js` | Runs in `<head>` before paint — applies stored theme and `?style=` URL param |
+| `projects.js` | User-edited config (which projects to feature, sections to hide, etc.) |
+| `resume.tex` | Source of truth for all resume content |
+| `dev-server.py` | Local HTTP server with interactive style-swap commands |
+| `generate-palettes.js` | Regenerates `style-*.css` from base `style.css` after CSS edits |
 
-Sections you don't touch render straight from `resume.tex`. Empty
-sections in `projects.js` are fine.
 
-### Full config shape
+## Editing the resume
+
+The site reads everything from `resume.tex`. To change what appears on the
+page, edit the LaTeX — the PDF stays in sync, the website stays in sync,
+one source.
+
+### Standard LaTeX conventions the parser understands
+
+- `\section*{...}` — top-level sections (Education, Internships, Projects,
+  Skills, Accomplishments, Interests…)
+- `\subsection*{...}` — individual projects
+- `\textbf{Keywords:} foo, bar, baz` — comma-separated skill chips
+- `\href{url}{label}` — clickable repository links
+- `\begin{itemize}...\end{itemize}` — bullet points (rendered as a list)
+
+### Project categories — auto-extracted from the title
+
+Append the category to each project subsection using `\hfill` and a small
+italic formatting group. The category renders in the PDF as a right-aligned
+italic tag and shows up on the site as the group heading.
+
+```latex
+\subsection*{JSON API server \hfill {\normalfont\itshape\small Backend Development}}
+```
+
+Categories drive:
+- Group headings inside Selected Work and All Projects
+- The hover dropdown next to "Work" / "Projects" in the nav
+
+To control which order categories appear in, set
+`sections.projectCategoryOrder` in `projects.js`. Names must match the
+resume tag exactly.
+
+### Project descriptions — multi-line LaTeX comments
+
+For a paragraph-length description that should appear on the site but NOT
+in the PDF, use a `\begin{comment}...\end{comment}` block with the
+`description:` marker. Requires `\usepackage{verbatim}` in the preamble
+(already added).
+
+```latex
+\begin{comment}
+description:
+A small backend service exposing teacher and course data from a Postgres
+database as JSON. Built as a sandbox for Flask routing patterns, request
+handling, and one-command containerised deployment with Docker.
+\end{comment}
+\subsection*{JSON API server \hfill {\normalfont\itshape\small Backend Development}}
+```
+
+- The first non-blank content must start with `description:` — that's the marker.
+- Everything from after the marker to `\end{comment}` is the description body.
+- Newlines collapse into spaces (one paragraph).
+- The block is invisible in the rendered PDF.
+- For short descriptions, a single-line `% description: ...` is also accepted.
+- `\iffalse...\fi` works too, if you don't want the `verbatim` package.
+
+
+## Configuring the site — `projects.js`
+
+By default, *everything in `resume.tex` shows up on the site*. You only edit
+`projects.js` to deviate from that — hide entries, promote projects, override
+text, or add web-only items.
+
+### Section-level toggles
 
 ```js
-window.PORTFOLIO_CONFIG = {
+sections: {
+  showEducation:       true,
+  showInternships:     true,
+  showProjects:        true,
+  showSkills:          true,
+  showAccomplishments: true,
 
-  sections: {
-    // showEducation:       false,    // hide an entire section
-    // showInternships:     false,
-    // showProjects:        false,
-    // showSkills:          false,
-    // showAccomplishments: false,
-
-    groupProjectsByCategory: true,    // default
-    projectCategoryOrder: ["Web Development", "Backend", "Systems",
-                          "AI / ML", "Cybersecurity"]
-  },
-
-  education:       { /* per-institution overrides */ },
-  internships:     { /* per-title overrides */ },
-  projects:        { /* per-title overrides + category */ },
-  skills:          { /* per-cluster overrides */ },
-  accomplishments: { /* substring-keyed overrides */ }
-
-};
-```
-
-### How project sections work
-
-- **Selected work** holds every project from your resume by default,
-  rendered as full editorial cards.
-- **All projects** is a compact list reserved for projects you've
-  explicitly demoted (`featured: false`). When nothing is demoted, the
-  whole section hides itself — no empty section, no placeholder copy.
-- If `groupProjectsByCategory: true` and your projects have `category`
-  fields, **both sections split into category groups**. The grouping
-  preserves the `projectCategoryOrder` you set, with anything else
-  appended at the end.
-
-### Examples
-
-**Hide an entry**
-```js
-education: {
-  "Campion School Bhopal": { show: false }   // skip primary school on the web
+  groupProjectsByCategory:     true,
+  projectCategoryOrder:        ["Backend Development", "Machine Learning"],
+  expandAllProjectsByDefault:  false,
+  showProjectDescriptions:     true
 }
 ```
 
-**Move a project to the compact "All projects" list**
+### Featured vs All projects
+
+The default is **inverted from what most portfolio tools do**:
+
+- Every project lands in **All projects** by default.
+- A project moves into the prominent **Selected work** section ONLY when
+  `projects.js` explicitly marks it `featured: true`.
+- A featured project still appears in All projects too — unless you also
+  set `featuredOnly: true` to remove it from the mirror.
+
 ```js
 projects: {
-  "Some Old Project": { featured: false, category: "Misc" }
+  "JSON API server":              { featured: true },                   // in BOTH sections
+  "Wine Classifier ...":          { featured: true, featuredOnly: true }, // ONLY in Selected Work
+  "Old course project":           { hideDescription: true },             // hide the paragraph
+  "Throwaway prototype":          { show: false }                        // hide entirely
 }
 ```
 
-**Override a resume entry with richer web copy**
-```js
-projects: {
-  "JSON API server": {
-    category: "Backend",
-    useAlt:   true,
-    altData: {
-      title:   "JSON API Server",
-      role:    "Containerised Flask service",
-      summary: "A small REST API over Postgres — one `docker compose up`.",
-      stack:   ["Flask", "Python", "PostgreSQL", "Docker"]
-    }
-  }
-}
+Per-project keys recognised:
+
+| Key | Effect |
+|---|---|
+| `featured: true` | Promote to Selected work (still shown in All projects) |
+| `featuredOnly: true` | Combined with `featured: true`, removes the All-projects mirror |
+| `show: false` | Drop the entry entirely |
+| `hideDescription: true` | Suppress the paragraph description for this project |
+| `useAlt: true` + `altData: {...}` | Override the resume text with custom copy (also how to add a web-only project not in `resume.tex`) |
+
+
+## Color palettes
+
+Four palettes ship by default:
+
+- `style.css` — rust on cream (default)
+- `style-rust-cream.css` — same as default, named explicitly
+- `style-aegean-clay.css` — muted blue on warm sand
+- `style-forest-green.css` — deep green on stone
+- `style-day-night.css` — high-contrast sun-and-midnight
+
+### Switching the default palette (deployed site)
+
+Edit `index.html` and change the `href` on the stylesheet link:
+
+```html
+<link id="main-style" rel="stylesheet" href="style-aegean-clay.css">
 ```
 
-**Add a project that isn't in the resume (web-only)**
-```js
-projects: {
-  "Portfolio Site": {
-    category: "Web Development",
-    useAlt:   true,
-    altData: {
-      title:   "This portfolio",
-      summary: "The site you're looking at — parses my LaTeX resume on load.",
-      stack:   ["HTML", "CSS", "Vanilla JS"],
-      links:   [{ label: "GitHub", url: "https://github.com/RishabhSahuIIIT/RishabhSahuIIIT.github.io" }]
-    }
-  }
-}
-```
+### Regenerating the alternate palettes after editing `style.css`
 
-**Rewrite an accomplishment**
-```js
-accomplishments: {
-  "GATE":     { altText: "GATE CS/IT 2024 — 95.4 percentile (top ~5%)" },
-  "N.T.S.E.": { show: false }   // substring must match the literal text
-}
-```
+The `style-*.css` files are auto-generated derivatives of `style.css` with
+HSL offsets applied to the background tones. After any visual change to
+`style.css`, regenerate them:
 
-### Grouping projects by category
-
-Default is on. Just tag each project:
-```js
-projects: {
-  "JSON API server":            { category: "Backend" },
-  "Wine Classifier …":          { category: "AI / ML" }
-}
-```
-
-Both "Selected work" and "All projects" split into labelled groups
-following `sections.projectCategoryOrder`. Categories not in that list
-appear after the ordered ones, in encounter order. Uncategorized
-projects land in "Other".
-
-## Palette variants
-
-Four CSS files are shipped, each a complete stylesheet with tuned tokens
-baked in. Pick one as your `style.css`:
-
-| File                     | Palette        | Light offset | Dark offset |
-|--------------------------|----------------|--------------|-------------|
-| `style-rust-cream.css`   | Rust on cream  | −26          | +7          |
-| `style-aegean-clay.css`  | Aegean clay    | −7           | +11         |
-| `style-forest-green.css` | Forest green   | −7           | +11         |
-| `style-day-night.css`    | Day & Night    | −24          | +11         |
-
-Offsets are HSL **lightness** percentage points applied to `--bg`,
-`--bg-soft`, and `--rule`. Other tokens (`--ink`, `--accent`) stay
-fixed so the palette's character is preserved while the surface
-brightness tunes to taste.
-
-To tweak further, edit `generate-palettes.js` and rerun:
 ```bash
 node generate-palettes.js
 ```
 
-## Legibility
 
-Small metadata text (mono labels, section numbers, stack tags) is set at
-**13.5–14 px with weight 500**, up from the earlier 10.5–12.5 px @ 400.
-Significantly more readable, especially on the muted backgrounds.
+## Live style preview (local dev only)
 
-## Local preview
+Three independent ways to preview a different palette without editing files:
 
-`fetch()` won't work over the `file://` protocol — run a local server:
+### 1. CLI command (server-wide)
+
+Run `dev-server.py` instead of `python -m http.server`:
 
 ```bash
-cd RishabhSahuIIIT.github.io
-python3 -m http.server 8000
-# visit http://localhost:8000
+$ python3 dev-server.py 8000
+
+dev server: http://localhost:8000/
+serving:    /path/to/portfolio
+
+dev> list
+  aegean-clay         ->  style-aegean-clay.css
+  day-night           ->  style-day-night.css
+  forest-green        ->  style-forest-green.css
+  rust-cream          ->  style-rust-cream.css
+
+dev> style aegean-clay
+  now serving 'style-aegean-clay.css' as /style.css. Refresh the page.
+
+dev> style ../experiments/sunset.css
+  now serving '../experiments/sunset.css' as /style.css. Refresh the page.
+
+dev> style default
+  reset - serving style.css unchanged. Refresh the page.
+
+dev> quit
 ```
 
-On GitHub Pages this is a non-issue.
+- The actual `style.css` on disk is never modified.
+- HTTP caching is disabled, so a normal browser refresh picks up changes.
+- Accepts both palette names (`aegean-clay`) and arbitrary file paths.
+- Affects every browser tab that loads `/style.css` from this server.
 
-## What the parser understands
+### 2. URL parameter (per-tab, persists across reloads)
 
-The parser is tuned to *your* `resume.tex` patterns:
+```
+http://localhost:8000/?style=aegean-clay
+http://localhost:8000/?style=forest-green
+http://localhost:8000/?style=default
+```
 
-- `\section*{Name}` — top-level sections
-- `\subsection*{Title}` — projects
-- `\textbf{Keywords: …}` + `\hfill \href{URL}{…}` — project/intern metadata
-- `\begin{itemize} … \end{itemize}` — bullets
-- LaTeX comments (`%`) are stripped, so commented-out projects don't render.
+The chosen style is also stored in `localStorage`, so future visits (even
+without the URL param) remember it. To clear, use `clearStyle()` below.
 
-If you change those patterns significantly, the parser may need
-adjustments in `script.js` (`parseEducation`, `parseInternships`,
-`parseProjects`, `parseSkills`).
+### 3. DevTools console (per-tab, live)
 
-## Deploy
+Open the browser's DevTools Console and type:
+
+```js
+setStyle('aegean-clay')   // swap immediately
+setStyle('default')        // back to style.css
+listStyles()               // print available palettes
+clearStyle()               // reset and clear stored choice
+```
+
+
+## Theme toggle (Day / Night)
+
+A pill switch in the top bar lets the user override the OS-level dark-mode
+preference. The choice persists in `localStorage` and is applied before
+first paint by `theme-init.js` (no flash of wrong colour).
+
+
+## Nav behavior
+
+The top-bar nav rebuilds itself after the page renders:
+
+- Empty sections drop out — if no projects are featured, the "Work" link
+  disappears; if no project is demoted to All projects only, the "Projects"
+  link disappears.
+- Sections with categorised content get a hover dropdown — for example,
+  if Selected Work has projects in two categories, hovering "Work" reveals
+  each category as a clickable sub-link.
+
+
+## Deployment to GitHub Pages
+
+The repo is a user site at `https://rishabhsahuiiit.github.io/`. Pushing
+to the `main` branch is the deploy.
 
 ```bash
 git add .
-git commit -m "Update content"
-git push
+git commit -m "update resume"
+git push origin main
 ```
 
-Make sure `resume.tex` is committed and not in `.gitignore`.
+GitHub Pages serves the files as-is — no build step. Wait ~30 seconds for
+the rebuild.
+
+
+## Troubleshooting
+
+**Page loads but no content / sections are empty.** The browser couldn't
+fetch `resume.tex`. Open DevTools → Console — if you see a red error
+banner, follow the troubleshooting list it shows. The usual causes are
+opening `index.html` via `file://` (you need an HTTP server), or running
+the server from the wrong directory.
+
+**Styles don't apply (only plain HTML shows).** A browser extension or
+built-in tracker protection is blocking inline scripts or CSS. Try
+incognito mode. Ulaa, Brave, and similar privacy-first browsers are the
+common culprits — turn shields off for `localhost`.
+
+**Console says `[Portfolio] resume.tex response: HTTP 404`.** The file
+isn't where the server expects. Run `python3 -m http.server` from the
+same folder that contains `index.html` AND `resume.tex`.
+
+**Changes to `style.css` aren't showing up.** Hard-refresh
+(Cmd/Ctrl+Shift+R) to bypass browser cache. If you're using `dev-server.py`,
+a normal refresh is enough (caching is disabled).
+
+**Categories show in the nav dropdown but in the wrong order.** Edit
+`sections.projectCategoryOrder` in `projects.js`. Strings must match the
+resume tag exactly (case-sensitive, full text).
