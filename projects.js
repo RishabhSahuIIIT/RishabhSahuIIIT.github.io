@@ -52,6 +52,12 @@ window.PORTFOLIO_CONFIG = {
     // Show paragraph descriptions parsed from `% description:` LaTeX
     // comments in resume.tex. Flip to false to hide them site-wide.
     showProjectDescriptions: true,
+
+    // Keep the Featured section a concise highlight reel: show each
+    // project's description paragraph but NOT its detail bullets (the
+    // full bullets still live in the All-projects "Details" dropdown).
+    // Flip to true to show bullets on the featured cards too.
+    showFeaturedBullets: false,
   },
 
   /* ============================================================
@@ -79,6 +85,16 @@ window.PORTFOLIO_CONFIG = {
      `featuredOnly: true`).
      ============================================================ */
   projects: {
+    // ---- Selected work (featured) ----
+    // Keys must match the parsed \subsection* title EXACTLY. Note the
+    // en-dash (–) in the Citestat key: resume "--" is rendered as an
+    // en-dash by the parser, so a literal "--" here would NOT match.
+    "Real-Time Collaborative Text Editor using CRDT":    { featured: true },
+    "Agentic AI Research Assistant":                     { featured: true },
+    "Network Intrusion Detection and Prevention System": { featured: true },
+    "Citestat – Academic Citation Analytics Dashboard":  { featured: true },
+    "Racket-to-LLVM Compiler Frontend":                  { featured: true },
+
     // Examples — uncomment and adjust as needed:
     // Promote to "Selected work" (mirrors in All projects too):
     // "JSON API server": { featured: true },

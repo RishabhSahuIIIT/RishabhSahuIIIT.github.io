@@ -135,18 +135,31 @@
     return result.replace(/\s+/g, ' ').trim();
   }
 
+  // Find the next real \item delimiter, skipping longer commands that merely
+  // start with "\item" (e.g. the custom \itemsize, or \itemize). A genuine
+  // \item is never followed by a letter — it's followed by space, [ or {.
+  function nextItemDelimiter(text, fromIndex) {
+    let p = fromIndex;
+    while ((p = text.indexOf('\\item', p)) !== -1) {
+      const after = text[p + '\\item'.length];
+      if (after === undefined || !/[a-zA-Z]/.test(after)) return p;
+      p += '\\item'.length;
+    }
+    return -1;
+  }
+
   function extractItems(itemizeContent) {
     const items = [];
     let i = 0;
     const len = itemizeContent.length;
-    while ((i = itemizeContent.indexOf('\\item', i)) !== -1) {
+    while ((i = nextItemDelimiter(itemizeContent, i)) !== -1) {
       let j = i + '\\item'.length;
       while (j < len && /\s/.test(itemizeContent[j])) j++;
       if (itemizeContent[j] === '[') {
         const close = itemizeContent.indexOf(']', j);
         if (close !== -1) j = close + 1;
       }
-      const nextItem = itemizeContent.indexOf('\\item', i + 5);
+      const nextItem = nextItemDelimiter(itemizeContent, i + 5);
       const end = nextItem === -1 ? len : nextItem;
       const cleaned = stripFormatting(itemizeContent.slice(j, end));
       if (cleaned) items.push({ cleaned });
@@ -279,8 +292,21 @@
       const kwText = stripFormatting(block.slice(start, end));
       item.stack = kwText.split(',').map(s => s.trim()).filter(s => s);
     }
-    const hrefMatch = /\\href\s*\{([^}]+)\}/.exec(block);
-    if (hrefMatch) item.url = hrefMatch[1];
+    /* Collect link(s) from the header portion only (before the bullet
+       list), so an \href inside a bullet can't be mistaken for a project
+       link. A project may carry several — e.g. a live demo and a repo. */
+    const itemizeStart = block.indexOf('\\begin{itemize}');
+    const headerPart = itemizeStart === -1 ? block : block.slice(0, itemizeStart);
+    const links = [];
+    const hrefRe = /\\href\s*\{([^}]+)\}\s*\{[^}]*\}/g;
+    let hm;
+    while ((hm = hrefRe.exec(headerPart)) !== null) {
+      links.push({ url: hm[1], label: inferLinkLabel(hm[1]) });
+    }
+    if (links.length) {
+      item.links = links;
+      item.url = links[0].url;
+    }
     const itemize = findItemizeBlock(block);
     if (itemize) item.bullets = extractItems(itemize.content).map(p => p.cleaned);
     return item;
@@ -579,6 +605,7 @@
     if (url.includes('gitlab.com')) return 'GitLab';
     if (url.includes('github.com')) return 'GitHub';
     if (url.includes('bitbucket'))  return 'Bitbucket';
+    if (/vercel\.app|netlify\.app|github\.io|herokuapp\.com|onrender\.com|pages\.dev/.test(url)) return 'Live demo';
     return 'Repo';
   }
 
@@ -691,7 +718,7 @@
         (project.role ? '<div class="role">' + escapeHTML(project.role) + '</div>' : '') +
         (project.summary ? '<p>' + escapeHTML(project.summary) + '</p>' : '') +
         (showDesc ? '<p class="project-description">' + escapeHTML(project.description) + '</p>' : '') +
-        renderBullets(project.bullets) +
+        (opts.showBullets ? renderBullets(project.bullets) : '') +
         renderStack(project.stack, 'stack', project.category) +
       '</div>' +
       '<div class="meta-right">' + renderLinks(links) + '</div>' +
@@ -758,7 +785,8 @@
       showDescription: opts.showDescriptions !== false
     };
     const featuredOpts  = {
-      showDescription: opts.showDescriptions !== false
+      showDescription: opts.showDescriptions !== false,
+      showBullets:     !!opts.showFeaturedBullets
     };
 
     /* Inverted default: a project is in "Selected work" only when
@@ -770,10 +798,13 @@
 
     /* ---- Selected work (featured) ---- */
     const featuredEl = document.getElementById('featured-projects');
+    const featuredSection = document.getElementById('featured');
     if (featuredEl) {
       if (!featured.length) {
         featuredEl.innerHTML = '';
+        if (featuredSection) featuredSection.style.display = 'none';
       } else {
+        if (featuredSection) featuredSection.style.display = '';
         const hasCategories = featured.some(p => p.category);
         if (groupByCat && hasCategories) {
           const groups = groupByCategory(featured, categoryOrder);
@@ -991,7 +1022,7 @@
      7c. Dynamic nav builder
      ----------------------------------------------------------
      Rebuilds the top-bar nav based on what's actually rendered:
-       • Empty sections (Work / Projects / Path) drop out of nav.
+       • Empty sections (Experience / Featured / Projects / Education) drop out of nav.
        • Sections with categorised content (e.g. Selected Work
          grouped by Backend / AI · ML / Systems) get a hover
          dropdown listing each category as a sub-link.
@@ -1028,15 +1059,19 @@
     const items = [];
     items.push({ type: 'link', label: 'About', href: '#about' });
 
-    if (state.workHasContent) {
-      const cats = state.workCategories || [];
+    if (state.experienceHasContent) {
+      items.push({ type: 'link', label: 'Experience', href: '#work' });
+    }
+
+    if (state.featuredHasContent) {
+      const cats = state.featuredCategories || [];
       if (cats.length) {
         items.push({
-          type: 'group', label: 'Work', href: '#work',
+          type: 'group', label: 'Featured', href: '#featured',
           children: cats.map(c => ({ label: c, href: '#work-cat-' + slug(c) }))
         });
       } else {
-        items.push({ type: 'link', label: 'Work', href: '#work' });
+        items.push({ type: 'link', label: 'Featured', href: '#featured' });
       }
     }
 
@@ -1053,7 +1088,7 @@
     }
 
     if (state.educationHasContent) {
-      items.push({ type: 'link', label: 'Path', href: '#education' });
+      items.push({ type: 'link', label: 'Education', href: '#education' });
     }
 
     items.push({ type: 'link', label: 'Contact', href: '#contact' });
@@ -1122,11 +1157,8 @@
 
         // Section toggles — hide whole sections when requested.
         if (sec.showEducation       === false) hideSection('education');
-        if (sec.showInternships     === false || sec.showProjects === false) {
-          // "Selected work" hosts both — hide only if BOTH are off.
-          if (sec.showInternships === false && sec.showProjects === false) hideSection('work');
-        }
-        if (sec.showProjects        === false) hideSection('projects-all');
+        if (sec.showInternships     === false) hideSection('work');
+        if (sec.showProjects        === false) { hideSection('featured'); hideSection('projects-all'); }
         if (sec.showSkills          === false) hideSection('skills');
         if (sec.showAccomplishments === false) hideSection('recognition');
 
@@ -1145,7 +1177,8 @@
             categoryOrder:          sec.projectCategoryOrder,
             groupByCategory:        sec.groupProjectsByCategory !== false,
             expandAllProjects:      !!sec.expandAllProjectsByDefault,
-            showDescriptions:       sec.showProjectDescriptions !== false
+            showDescriptions:       sec.showProjectDescriptions !== false,
+            showFeaturedBullets:    sec.showFeaturedBullets === true
           });
         }
         if (sec.showSkills          !== false) renderSkills(skills);
@@ -1171,8 +1204,9 @@
         const educationVisible   = (sec.showEducation   !== false) && education.length > 0;
 
         buildNav({
-          workHasContent:          internshipsVisible || featuredVisible,
-          workCategories:          featuredVisible ? workCats : [],
+          experienceHasContent:    internshipsVisible,
+          featuredHasContent:      featuredVisible,
+          featuredCategories:      featuredVisible ? workCats : [],
           projectsAllHasContent:   restVisible,
           projectsAllCategories:   restVisible ? restCats : [],
           educationHasContent:     educationVisible

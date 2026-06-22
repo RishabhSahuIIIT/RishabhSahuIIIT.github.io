@@ -228,15 +228,15 @@ The system uses cryptographic techniques including ElGamal encryption/digital si
 % --- PROJECT : Multithreaded HTTP Server ---
 \begin{comment}
 description:
-This project implements a simple multithreaded server in rust that caters to multiple http requests through a thread pool and handles concurrency through Rust primitives like Arc, Mutex and channels.
+A hands-on project to learn Rust, built by working through the capstone exercise of the official Rust book (``The Rust Programming Language''). Implements a multithreaded HTTP server backed by a thread pool, used as a vehicle to get practical experience with Rust's ownership model and concurrency primitives -- Arc, Mutex, and channels.
 \end{comment}
 \subsection*{Multithreaded HTTP Server\hfill {\normalfont\itshape\small Systems Programming}}
 \noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Rust, Multithreading, TCP, HTTP, Thread Pool, Concurrency  \hfill \href{https://github.com/RishabhSahuIIIT/rustMultithreadServer}{\faIcon{link}\textbf{Project repository}}}
 \begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
-	\item {\fontsize{11.5pt}{13.5pt}\selectfont Built an HTTP/1.1 server from scratch using Rust's standard library }
-	\item {\fontsize{11.5pt}{13.5pt}\selectfont Implemented a fixed-size thread pool dispatching jobs across workers}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Built a multithreaded HTTP/1.1 server using only Rust's standard library, following the official Rust book's capstone project to pick up the language}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Implemented a fixed-size thread pool that dispatches incoming requests across worker threads}
 	\item {\fontsize{11.5pt}{13.5pt}\selectfont Handled GET request routing with \texttt{200 OK}, simulated latency \texttt{/sleep}, and \texttt{404 NOT FOUND} responses}
-	\item {\fontsize{11.5pt}{13.5pt}\selectfont Applied Rust ownership and concurrency primitives like Arc, Mutex and channels for safe parallel execution}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Gained hands-on experience with Rust's ownership model and concurrency primitives (Arc, Mutex, channels) for safe parallel execution}
 \end{itemize}
 
 \centerline{\rule{0.8\textwidth}{0.05pt}}
@@ -306,19 +306,20 @@ responsive while capture runs in the background.
 \begin{comment}
 description:
 A multi-agent system built on the Moya framework that processes academic PDF
-papers end-to-end: parsing with PyMuPDF, structured summarisation, cross-paper
-synthesis, and mini-survey generation with inline citations. A dual Ollama
-architecture runs orchestration and task execution on separate local LLM instances
-to prevent blocking, with every decision and output logged to timestamped JSONL
-trace files for full observability.
+papers end-to-end: parsing with PyMuPDF, structured (map-reduce) summarisation,
+cross-paper synthesis, and mini-survey generation with inline citations. A dual
+Ollama architecture runs orchestration (a lightweight Llama 3.2 for routing) and
+task execution (Llama 3.1) on separate local instances to prevent blocking, with
+every decision and output logged to timestamped JSONL trace files for full
+observability.
 \end{comment}
 \subsection*{Agentic AI Research Assistant \hfill {\normalfont\itshape\small Artificial Intelligence}}
 
-\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Python, Moya framework, Ollama, Llama 3.1, PyMuPDF, Multi-agent systems \hfill \href{https://github.com/RishabhSahuIIIT/AgenticAIResearchAssistant_Moya}{\faIcon{link}\textbf{Project repository}}}
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Python, Moya framework, Ollama, Llama 3.1/3.2, PyMuPDF, Multi-agent systems \hfill \href{https://github.com/RishabhSahuIIIT/AgenticAIResearchAssistant_Moya}{\faIcon{link}\textbf{Project repository}}}
 
 \begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
-	\item {\itemsize Built a multi-agent pipeline using the Moya framework to parse, summarise, synthesise, and survey academic PDF papers}
-	\item {\itemsize Orchestrated dual Ollama (Llama 3.1) instances on separate ports to decouple decision-making from task execution, preventing LLM blocking}
+	\item {\itemsize Built a multi-agent pipeline on the Moya framework to parse, summarise, synthesise, and survey academic PDF papers, with map-reduce chunking for papers exceeding the LLM context window}
+	\item {\itemsize Orchestrated dual Ollama instances on separate ports -- a lightweight Llama 3.2 for routing and Llama 3.1 for task execution -- to decouple decision-making from work and prevent LLM blocking}
 	\item {\itemsize Implemented full observability by logging every agent decision, LLM prompt, and output to timestamped JSONL trace files per run}
 	\item {\itemsize Generated structured mini-surveys ($\leq$800 words) with inline citations synthesised across multiple research papers}
 \end{itemize}
@@ -332,18 +333,17 @@ A browser-only academic citation analytics dashboard that fetches paper and auth
 metadata from the Crossref and OpenCitations REST APIs. Users can look up
 any DOI or ORCID to see yearwise citation histograms (Chart.js), citation network
 graphs (Reagraph / D3.js), and bibliometric impact metrics (h-index, m-quotient)
-computed entirely on the client. Deployed on Vercel with automatic CI/CD on each
-merge to master.
+computed entirely on the client. The app is deployed live at citestat.vercel.app.
+A 3-person team project.
 \end{comment}
 \subsection*{Citestat -- Academic Citation Analytics Dashboard \hfill {\normalfont\itshape\small Web Development}}
 
-\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} React, TypeScript, Vite, Tailwind CSS, Chart.js, Reagraph, Crossref API, OpenCitations API \hfill \href{https://github.com/RishabhSahuIIIT/citestat}{\faIcon{link}\textbf{Project repository}}}
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} React, TypeScript, Vite, Tailwind CSS, Chart.js, Reagraph, Crossref API, OpenCitations API \hfill \href{https://citestat.vercel.app}{\faIcon{globe}\textbf{Live demo}} \quad \href{https://github.com/RishabhSahuIIIT/citestat}{\faIcon{link}\textbf{Project repository}}}
 
 \begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
-	\item {\itemsize Built a client-side citation analytics dashboard that queries Crossref and OpenCitations REST APIs for paper and author metadata}
+	\item {\itemsize As part of a 3-person team, built a client-side citation analytics dashboard that queries Crossref and OpenCitations REST APIs for paper and author metadata}
 	\item {\itemsize Visualised yearly citation trends as histograms using Chart.js and citation network graphs using Reagraph (backed by D3.js)}
 	\item {\itemsize Computed bibliometric impact metrics (h-index, m-quotient) fully in the browser with no backend dependency}
-	\item {\itemsize Deployed to Vercel's free tier with CI/CD; every merge to master automatically triggers a production deployment at \href{https://citestat.vercel.app}{citestat.vercel.app}}
 \end{itemize}
 
 \centerline{\rule{0.8\textwidth}{0.05pt}}
@@ -357,17 +357,166 @@ text and a state-based Last-Write-Wins (LWW) Register for metadata. Multiple
 users can concurrently edit the same document over a WebSocket relay with
 guaranteed convergence — even after network partitions or reordered delivery —
 plus offline editing backed by IndexedDB, HMAC-based access control, and cursor
-presence.
+presence. A 3-person team project.
 \end{comment}
 \subsection*{Real-Time Collaborative Text Editor using CRDT \hfill {\normalfont\itshape\small Distributed Systems}}
 
 \noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} TypeScript, React, CodeMirror 6, WebSocket, CRDT, RGA, LWW Register, IndexedDB \hfill \href{https://github.com/RishabhSahuIIIT/CRDT_collaborative_text_editor}{\faIcon{link}\textbf{Project repository}}}
 
 \begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
-	\item {\itemsize Implemented an operation-based RGA CRDT for document text, ensuring convergence across concurrent edits via vector clocks and causal delivery}
+	\item {\itemsize As part of a 3-person team, implemented an operation-based RGA CRDT for document text, ensuring convergence across concurrent edits via vector clocks and causal delivery}
 	\item {\itemsize Implemented a state-based LWW Register CRDT for metadata (title, cursors), with timestamp + siteId total order for deterministic conflict resolution}
 	\item {\itemsize Built a WebSocket relay server and React/CodeMirror 6 browser editor with IndexedDB-backed offline editing and automatic reconnect sync}
 	\item {\itemsize Enforced per-message access control using HMAC-signed role tokens, applied at the relay so role changes take effect immediately without reconnection}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : Distributed kNN and Task Queue (gRPC) ---
+\begin{comment}
+description:
+Two independent distributed systems built over gRPC and Protocol Buffers: a
+master--worker k-Nearest-Neighbours engine that partitions a dataset across
+worker servers and merges per-worker top-k results, and a fault-tolerant
+task-queue manager that pushes CPU/IO jobs to capability-matched workers via
+server-side streaming and re-queues work abandoned by failed workers.
+\end{comment}
+\subsection*{Distributed k-NN \& Task Queue over gRPC \hfill {\normalfont\itshape\small Distributed Systems}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Python, gRPC, Protocol Buffers, Distributed Systems, Concurrency \hfill \href{https://gitlab.com/iiith2426-ris/assignments/ds/knn_tq_grpc}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\itemsize Built two distributed systems over gRPC/Protocol Buffers: a master--worker k-NN engine and a fault-tolerant task-queue manager}
+	\item {\itemsize Partitioned datasets across worker servers, broadcast queries in parallel, and merged per-worker results into the global top-k by Euclidean distance}
+	\item {\itemsize Pushed CPU/IO tasks to capability-matched workers from FIFO queues using server-side streaming RPCs}
+	\item {\itemsize Implemented heartbeat-based failure detection that re-queues in-progress tasks from dead workers onto healthy ones}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : MPI + SLURM Parallel Minimum Spanning Tree ---
+\begin{comment}
+description:
+A distributed parallel implementation of Boruvka's minimum-spanning-tree
+algorithm in MPI, orchestrated on a SLURM cluster, with a performance harness
+that measures speedup, parallel efficiency, and computation-versus-communication
+profiling across process counts.
+\end{comment}
+\subsection*{Parallel Minimum Spanning Tree (MPI + SLURM) \hfill {\normalfont\itshape\small Parallel Computing}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} C++, MPI, SLURM, Parallel Computing, Union-Find \hfill \href{https://gitlab.com/iiith2426-ris/assignments/ds/mpi_slurm_mst}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\itemsize Implemented parallel Boruvka's MST, distributing graph edges across MPI processes on a SLURM cluster}
+	\item {\itemsize Drove each round with MPI collectives (Scatterv, Allreduce, Allgatherv) for minimum-edge selection and component merging}
+	\item {\itemsize Tracked connected components using Union-Find with path compression and union by rank}
+	\item {\itemsize Built a performance harness reporting speedup, parallel efficiency, and computation-vs-communication profiling}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : LLVM Optimization Passes ---
+\begin{comment}
+description:
+A collection of out-of-tree LLVM optimization and analysis passes built on the
+new pass manager and loaded into opt as plugins -- CFG printing, static
+function-call counting, constant propagation, identity-operand instruction
+rewriting, and dead-code elimination driven by live-variable dataflow analysis.
+A 2-person team project.
+\end{comment}
+\subsection*{LLVM Optimization Passes \hfill {\normalfont\itshape\small Compilers}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} C++, LLVM, Compiler Design, Static Analysis, Dataflow Analysis \hfill \href{https://gitlab.com/iiith2426-ris/assignments/compilers/llvm-opt-passes}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\itemsize As part of a 2-person team, built out-of-tree LLVM passes on the new pass manager, compiled as shared-library plugins loaded via \texttt{opt}}
+	\item {\itemsize Implemented analysis passes: control-flow-graph DOT printing and static per-function call counting}
+	\item {\itemsize Implemented transformation passes over LLVM IR: constant folding/propagation and identity-operand instruction rewriting}
+	\item {\itemsize Implemented dead-code elimination using a fixed-point live-variable dataflow analysis}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : Racket-to-LLVM Compiler Frontend ---
+\begin{comment}
+description:
+A compiler frontend that translates a subset of the Racket language to LLVM IR
+through a full lexer--parser--semantic-analyzer--codegen pipeline, built
+incrementally to add booleans, while loops, fixed-length tuples, and recursive
+user-defined functions. A 2-person team project.
+\end{comment}
+\subsection*{Racket-to-LLVM Compiler Frontend \hfill {\normalfont\itshape\small Compilers}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} C++, LLVM, Compiler Design, Recursive-Descent Parsing, Code Generation \hfill \href{https://gitlab.com/iiith2426-ris/assignments/compilers/rlcp}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\itemsize As part of a 2-person team, built a compiler frontend translating a subset of Racket to LLVM IR (lexer, recursive-descent parser, semantic analyzer, code generator)}
+	\item {\itemsize Applied the visitor pattern for both static type checking and IR generation over the AST}
+	\item {\itemsize Resolved lexical scoping with a scope-stack symbol table and performed bottom-up static type checking}
+	\item {\itemsize Generated SSA-style IR with PHI nodes for conditionals, basic blocks for loops, heap-allocated tuples, and recursive functions}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : Bernstein Trajectory Fitting and CEM Obstacle Avoidance ---
+\begin{comment}
+description:
+Trajectory generation for a non-holonomic robot: fitting order-5 Bernstein
+polynomials to paths under velocity, acceleration, and orientation boundary
+constraints, then using the Cross-Entropy Method to search for waypoints that
+steer the trajectory around static obstacles.
+\end{comment}
+\subsection*{Bernstein Trajectory Fitting \& CEM Obstacle Avoidance \hfill {\normalfont\itshape\small Robotics}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Python, NumPy, Trajectory Optimization, Cross-Entropy Method, Robotics \hfill \href{https://gitlab.com/iiith2426-ris/assignments/robotics-planning-and-navigation/bernstein_cem}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\itemsize Fit order-5 Bernstein polynomials to non-holonomic robot trajectories under velocity, acceleration, and orientation boundary constraints}
+	\item {\itemsize Solved per-axis constrained least-squares via the Moore--Penrose pseudo-inverse across under-, exactly-, and over-determined regimes}
+	\item {\itemsize Applied the Cross-Entropy Method (CEM) to sample waypoints yielding collision-free paths around static obstacles}
+	\item {\itemsize Validated collision avoidance on rolled-out trajectories and rendered simulation videos}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : Franka Robot Arm Motion Planning ---
+\begin{comment}
+description:
+Sampling-based motion planning for a 7-DOF Franka Panda arm in a cluttered
+scene, using bidirectional RRT (RRT-Connect) with custom joint-limit-aware
+sampling and extension, simulated and recorded in PyBullet.
+\end{comment}
+\subsection*{Franka Robot Arm Motion Planning \hfill {\normalfont\itshape\small Robotics}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Python, PyBullet, Motion Planning, RRT-Connect, Sampling-based Planning \hfill \href{https://gitlab.com/iiith2426-ris/assignments/robotics-planning-and-navigation/franka-robot-arm-navigation}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\itemsize Planned collision-free motion for a 7-DOF Franka Panda arm in a cluttered scene using bidirectional RRT (RRT-Connect)}
+	\item {\itemsize Implemented custom sample and extend functions in configuration space respecting URDF joint limits}
+	\item {\itemsize Performed edge collision checking and path interpolation/smoothing before execution}
+	\item {\itemsize Simulated and auto-recorded trajectory execution in PyBullet}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : Tabular Reinforcement Learning (Windy Gridworld) ---
+\begin{comment}
+description:
+Five tabular reinforcement-learning methods implemented from scratch in NumPy --
+Value Iteration, Policy Iteration, Monte Carlo control, SARSA(lambda), and
+Q-learning -- solving a stochastic Windy Gridworld and comparing model-based
+planning against model-free learning via convergence and regret analysis.
+A 5-person team project.
+\end{comment}
+\subsection*{Tabular Reinforcement Learning -- Windy Gridworld \hfill {\normalfont\itshape\small Reinforcement Learning}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Python, NumPy, Reinforcement Learning, Dynamic Programming, Q-learning \hfill \href{https://gitlab.com/iiith2426-ris/assignments/rl/wg_rl}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\itemsize As part of a 5-person team, implemented five tabular RL methods from scratch in NumPy (Value/Policy Iteration, Monte Carlo, SARSA($\lambda$), Q-learning) for a stochastic Windy Gridworld}
+	\item {\itemsize Compared model-based planning against model-free learning on a $10\times7$ grid with stochastic upward wind}
+	\item {\itemsize Modeled the task as an infinite-horizon discounted MDP with an absorbing goal}
+	\item {\itemsize Analyzed convergence and instantaneous/cumulative regret against an exact Value-Iteration baseline}
 \end{itemize}
 
 % -----------------------------------
