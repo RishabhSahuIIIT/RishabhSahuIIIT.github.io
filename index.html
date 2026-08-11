@@ -1,256 +1,265 @@
 <!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Rishabh Sahu — Portfolio</title>
-        <meta
-            name="description"
-            content="Rishabh Sahu — MTech Computer Science at IIIT Hyderabad. Web, backend, and systems projects."
-        />
-        <link id="main-style" rel="stylesheet" href="style.css" />
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rishabh Sahu — Portfolio</title>
 
-        <!-- Anti-FOUC theme init. Loaded synchronously here so the right
+  <!-- Inline SVG favicon: an RS monogram that picks up the page's accent
+       colour. Data-URI so there's no extra file and no 404 in the console. -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23241f17'/%3E%3Ctext x='32' y='43' font-family='Georgia,serif' font-size='30' font-weight='600' fill='%23f3ede1' text-anchor='middle'%3ERS%3C/text%3E%3C/svg%3E">
+  <meta name="description" content="Rishabh Sahu — MTech Computer Science at IIIT Hyderabad. Web, backend, and systems projects.">
+  <link id="main-style" rel="stylesheet" href="style.css">
+
+  <!-- Anti-FOUC theme init. Loaded synchronously here so the right
        palette class is on <html> BEFORE any paint. Kept external (not
        inline) so it survives strict CSPs from browsers and extensions
        (Ulaa's built-in dark mode, Brave Shields, etc.) which block
        <script> blocks. -->
-        <script src="theme-init.js"></script>
-    </head>
+  <script src="theme-init.js"></script>
+</head>
 
-    <body>
-        <div class="grain" aria-hidden="true"></div>
+<body>
+  <div class="grain" aria-hidden="true"></div>
 
-        <div class="shell">
-            <!-- ============================================================
+  <div class="shell">
+
+    <!-- ============================================================
          TOP BAR
          ============================================================ -->
-            <header class="topbar">
-                <div class="mark">
-                    <span class="dot" aria-hidden="true"></span>
-                    <span>Rishabh Sahu — Portfolio</span>
-                </div>
-                <nav>
-                    <a href="#about">About</a>
-                    <a href="#work">Experience</a>
-                    <a href="#featured">Featured</a>
-                    <a href="#projects-all">Projects</a>
-                    <a href="#education">Education</a>
-                    <a href="#contact">Contact</a>
-                    <div
-                        class="theme-switch"
-                        role="group"
-                        aria-label="Toggle day or night mode"
-                    >
-                        <button
-                            type="button"
-                            class="theme-opt"
-                            id="btn-day"
-                            aria-pressed="false"
-                            title="Switch to day mode"
-                        >
-                            <span aria-hidden="true">☼</span> Day
-                        </button>
-                        <button
-                            type="button"
-                            class="theme-opt"
-                            id="btn-night"
-                            aria-pressed="false"
-                            title="Switch to night mode"
-                        >
-                            <span aria-hidden="true">☾</span> Night
-                        </button>
-                    </div>
-                </nav>
-            </header>
+    <header class="topbar">
+      <div class="mark">
+        <span class="dot" aria-hidden="true"></span>
+        <span>Rishabh Sahu — Portfolio</span>
+      </div>
+      <nav>
+        <a href="#about">About</a>
+        <a href="#work">Work</a>
+        <a href="#projects-all">Projects</a>
+        <a href="#education">Path</a>
+        <a href="#contact">Contact</a>
+        <div class="theme-switch" role="group" aria-label="Toggle day or night mode">
+          <button type="button" class="theme-opt" id="btn-day" aria-pressed="false" title="Switch to day mode">
+            <span aria-hidden="true">☼</span> Day
+          </button>
+          <button type="button" class="theme-opt" id="btn-night" aria-pressed="false" title="Switch to night mode">
+            <span aria-hidden="true">☾</span> Night
+          </button>
+        </div>
+      </nav>
+    </header>
 
-            <!-- ============================================================
+    <!-- ============================================================
          HERO
          ============================================================ -->
-            <section class="hero" id="hero">
-                <div class="meta">
-                    <span>Hyderabad, IN</span>
-                    <span>MTech Computer Science</span>
-                    <span>IIIT Hyderabad · 2024–present</span>
-                </div>
+    <section class="hero" id="hero">
+      <div class="meta" id="hero-meta">
+        <span>Hyderabad, IN</span>
+        <span>MTech Computer Science</span>
+        <span>IIIT Hyderabad · 2024–present</span>
+      </div>
 
-                <h1>
-                    Rishabh<br />
-                    <span class="italic">Sahu.</span>
-                </h1>
+      <h1>
+        Rishabh<br>
+        <span class="italic">Sahu.</span>
+      </h1>
 
-                <p class="lede">
-                    MTech Computer Science student at IIIT Hyderabad, after a
-                    BTech at LNMIIT. Comfortable picking up
-                    <em>new stacks and domains</em> as the work demands.
-                </p>
+      <p class="lede" id="hero-lede">
+        MTech Computer Science student at IIIT Hyderabad, after a BTech at
+        LNMIIT. Comfortable picking up <em>new stacks and domains</em> as
+        the work demands.
+      </p>
 
-                <div class="corner">
-                    Open to<br />
-                    <b>new-grad roles<br />&amp; 2026 internships</b>
-                </div>
-            </section>
+      <div class="corner">
+        Open to<br>
+        <b>new-grad roles<br>&amp; 2026 internships</b>
+      </div>
+    </section>
 
-            <!-- ============================================================
+    <!-- ============================================================
          ABOUT
          ============================================================ -->
-            <section class="block reveal" id="about">
-                <span class="col-label">/ 01 — bio</span>
-                <div class="section-head">
-                    <h2><em>About</em>.</h2>
-                </div>
-                <div class="about-grid">
-                    <div></div>
-                    <p>
-                        I focus on understanding the fundamentals — how systems,
-                        networks, and data structures actually work — rather
-                        than tying my learning to a specific framework or
-                        language.
-                    </p>
-                    <p>
-                        That keeps me <em>technology-agnostic</em>. I pick the
-                        tools that fit a problem instead of fitting every
-                        problem to a familiar stack, and new languages or
-                        frameworks are easier to learn when the underlying
-                        concepts are already in place.
-                    </p>
-                </div>
-            </section>
+    <section class="block reveal" id="about">
+      <span class="col-label">/ 01 — bio</span>
+      <div class="section-head">
+        <h2 data-section-title="About"><em>Approach</em>.</h2>
+      </div>
+      <div class="about-grid" id="about-copy">
+        <div></div>
+        <p>
+          I focus on understanding the fundamentals — how systems,
+          networks, and data structures actually work — rather than
+          tying my learning to a specific framework or language.
+        </p>
+        <p>
+          That keeps me <em>technology-agnostic</em>. I pick the tools
+          that fit a problem instead of fitting every problem to a
+          familiar stack, and new languages or frameworks are easier
+          to learn when the underlying concepts are already in place.
+        </p>
+      </div>
+    </section>
 
-            <!-- ============================================================
+    <!-- ============================================================
          EXPERIENCE — internships
          ============================================================ -->
-            <section class="block reveal" id="work">
-                <span class="col-label">/ 02 — experience</span>
-                <div class="section-head">
-                    <h2><em>Experience</em>.</h2>
-                </div>
+    <section class="block reveal" id="work">
+      <span class="col-label">/ 02 — experience</span>
+      <div class="section-head">
+        <h2 data-section-title="Work">Where I've <em>worked</em>.</h2>
+      </div>
+      <div class="work-list" id="internship-list"></div>
+    </section>
 
-                <!-- Internships mount -->
-                <div class="work-list" id="internship-list"></div>
-            </section>
-
-            <!-- ============================================================
-         FEATURED PROJECTS
+    <!-- ============================================================
+         SELECTED WORK — featured projects
          ============================================================ -->
-            <section class="block reveal" id="featured">
-                <span class="col-label">/ 03 — featured</span>
-                <div class="section-head">
-                    <h2><em>Featured</em> projects.</h2>
-                </div>
+    <section class="block reveal" id="featured">
+      <span class="col-label">/ 03 — selected work</span>
+      <div class="section-head">
+        <h2 data-section-title="Featured">Selected <em>projects</em>.</h2>
+      </div>
+      <div class="work-list" id="featured-projects"></div>
+    </section>
 
-                <!-- Featured projects mount -->
-                <div class="work-list" id="featured-projects"></div>
-            </section>
-
-            <!-- ============================================================
+    <!-- ============================================================
          ALL PROJECTS
          ============================================================ -->
-            <section class="block reveal" id="projects-all">
-                <span class="col-label">/ 04 — index</span>
-                <div class="section-head">
-                    <h2>All <em>projects</em>.</h2>
-                </div>
-                <div class="all-projects" id="all-projects"></div>
-            </section>
+    <section class="block reveal" id="projects-all">
+      <span class="col-label">/ 03 — index</span>
+      <div class="section-head">
+        <h2 data-section-title="Projects">All <em>projects</em>.</h2>
+      </div>
 
-            <!-- ============================================================
+      <!-- Filter controls: combine-logic switch + live status readout.
+           Populated by script.js once resume.tex has parsed. -->
+      <div class="pf-controls">
+        <div class="pf-logic" role="group" aria-label="How filters combine">
+          <span class="pf-logic-label">Combine</span>
+          <button type="button" class="pf-lg" data-logic="and">AND</button>
+          <button type="button" class="pf-lg" data-logic="or">OR</button>
+          <button type="button" class="pf-lg is-on" data-logic="hybrid">Hybrid</button>
+        </div>
+        <div class="pf-status">
+          <span id="pf-count"></span>
+          <button type="button" class="pf-clear" id="pf-clear" hidden>clear all</button>
+          <span class="pf-hover-hint" id="pf-hover-hint" aria-live="polite"></span>
+        </div>
+      </div>
+
+      <!-- Mobile-only filter chips (hidden on wide screens by CSS) -->
+      <div class="pf-chips" id="pf-chips"></div>
+
+      <!-- Wide-screen layout: filter rail | SVG gutter | project list.
+           On narrow screens CSS collapses this to a single column and the
+           rail + gutter are hidden in favour of .pf-chips above. -->
+      <div class="pf-wire" id="pf-wire">
+        <div class="pf-rail" id="pf-rail"></div>
+        <div class="pf-gutter" id="pf-gutter" aria-hidden="true">
+          <svg id="pf-lines" xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
+        <div class="all-projects" id="all-projects"></div>
+      </div>
+    </section>
+
+    <!-- ============================================================
          EDUCATION
          ============================================================ -->
-            <section class="block reveal" id="education">
-                <span class="col-label">/ 05 — education</span>
-                <div class="section-head">
-                    <h2>Where I've <em>studied</em>.</h2>
-                </div>
-                <div class="timeline" id="education-list"></div>
-            </section>
+    <section class="block reveal" id="education">
+      <span class="col-label">/ 04 — path</span>
+      <div class="section-head">
+        <h2 data-section-title="Education">Where I've <em>studied</em>.</h2>
+      </div>
+      <div class="timeline" id="education-list"></div>
+    </section>
 
-            <!-- ============================================================
+    <!-- ============================================================
          SKILLS
          ============================================================ -->
-            <section class="block reveal" id="skills">
-                <span class="col-label">/ 06 — tools</span>
-                <div class="section-head">
-                    <h2>Worked with</h2>
-                </div>
-                <div class="skills-grid">
-                    <div aria-hidden="true"></div>
-                    <div id="skills-list"></div>
-                </div>
-            </section>
+    <section class="block reveal" id="skills">
+      <span class="col-label">/ 05 — tools</span>
+      <div class="section-head">
+        <h2 data-section-title="Skills">What I <em>use</em>.</h2>
+      </div>
+      <div class="skills-grid">
+        <div aria-hidden="true"></div>
+        <div id="skills-list"></div>
+      </div>
+    </section>
 
-            <!-- ============================================================
-         ACHIEVMENTS
+    <!-- ============================================================
+         RECOGNITION
          ============================================================ -->
-            <section class="block reveal" id="recognition">
-                <span class="col-label">/ 07 — achievements</span>
-                <div class="section-head">
-                    <h2><em>Achievements</em>.</h2>
-                </div>
-                <div class="recog-list">
-                    <div aria-hidden="true"></div>
-                    <ul id="accomplishments-list"></ul>
-                </div>
-            </section>
+    <section class="block reveal" id="recognition">
+      <span class="col-label">/ 06 — recognition</span>
+      <div class="section-head">
+        <h2><em>Recognition</em>.</h2>
+      </div>
+      <div class="recog-list">
+        <div aria-hidden="true"></div>
+        <ul id="accomplishments-list"></ul>
+      </div>
+    </section>
 
-            <!-- ============================================================
+    <!-- ============================================================
          CONTACT / COLOPHON
          ============================================================ -->
-            <section class="colophon reveal" id="contact">
-                <span class="col-label">/ 08 — contact</span>
-                <h2>Say <em>hello</em>.</h2>
+    <section class="colophon reveal" id="contact">
+      <span class="col-label">/ 07 — contact</span>
+      <h2 data-section-title="Contact">Say <em>hello</em>.</h2>
 
-                <div class="contact-grid">
-                    <div class="item">
-                        <h5>Email</h5>
-                        <a id="contact-email" href="#">—</a>
-                    </div>
-                    <div class="item">
-                        <h5>Phone</h5>
-                        <a id="contact-phone" href="#">—</a>
-                    </div>
-                    <div class="item">
-                        <h5>LinkedIn</h5>
-                        <a
-                            id="contact-linkedin"
-                            href="#"
-                            target="_blank"
-                            rel="noopener"
-                            >—</a
-                        >
-                    </div>
-                    <div class="item">
-                        <h5>GitHub</h5>
-                        <a
-                            id="contact-github"
-                            href="#"
-                            target="_blank"
-                            rel="noopener"
-                            >—</a
-                        >
-                    </div>
-                    <div class="item">
-                        <h5>GitLab</h5>
-                        <a
-                            id="contact-gitlab"
-                            href="#"
-                            target="_blank"
-                            rel="noopener"
-                            >—</a
-                        >
-                    </div>
-                </div>
-
-                <div class="foot">
-                    <span>© <span id="year"></span> Rishabh Sahu</span>
-                </div>
-            </section>
+      <div class="contact-grid">
+        <div class="item">
+          <h5>Email</h5>
+          <a id="contact-email" href="#">—</a>
         </div>
+        <div class="item">
+          <h5>Phone</h5>
+          <a id="contact-phone" href="#">—</a>
+        </div>
+        <div class="item">
+          <h5>LinkedIn</h5>
+          <a id="contact-linkedin" href="#" target="_blank" rel="noopener">—</a>
+        </div>
+        <div class="item">
+          <h5>GitHub</h5>
+          <a id="contact-github" href="#" target="_blank" rel="noopener">—</a>
+        </div>
+        <div class="item">
+          <h5>GitLab</h5>
+          <a id="contact-gitlab" href="#" target="_blank" rel="noopener">—</a>
+        </div>
+      </div>
 
-        <!-- All page logic (year setter, theme toggle handler, LaTeX parser
+      <div class="foot">
+        <span>© <span id="year"></span> Rishabh Sahu</span>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- All page logic (year setter, theme toggle handler, LaTeX parser
        and renderer) lives in external files so they survive CSPs that
        block inline <script>. -->
-        <script src="projects.js"></script>
-        <script src="script.js"></script>
-    </body>
+  <script src="projects.js"></script>
+  <script src="script.js"></script>
+
+  <!-- Dev-only style editor. Rather than shipping a <script src> that every
+       visitor downloads just to have the file disable itself, this loads
+       editor.js ONLY on a local address. On the hosted site the condition is
+       false and nothing is fetched — the editor costs visitors zero bytes.
+       Force it with ?editor=1, suppress it with ?editor=0. -->
+  <script>
+    (function () {
+      var h = location.hostname, q = location.search;
+      var local = h === 'localhost' || h === '127.0.0.1' || h === '::1' ||
+                  h === '' || /^192\.168\./.test(h);
+      if (/[?&]editor=0/.test(q)) return;
+      if (!local && !/[?&]editor=1/.test(q)) return;
+      var s = document.createElement('script');
+      s.src = 'editor.js';
+      document.body.appendChild(s);
+    })();
+  </script>
+</body>
 </html>

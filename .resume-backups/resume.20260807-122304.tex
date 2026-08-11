@@ -1,0 +1,523 @@
+\documentclass{article}
+
+% --- Control global line spacing for body text ---
+\usepackage{setspace}
+\setstretch{0.9}     % Multiplier for line spacing; 1 = normal, <1 = tighter lines
+
+% --- Section and subsection heading spacing ---
+\usepackage{titlesec}
+\titlespacing*{\section}{0pt}{0.1ex}{0pt}
+\titlespacing*{\subsection}{0pt}{0.05ex}{0pt}
+
+% --- Section formatting with integrated horizontal line using titlerule ---
+\titleformat{\section}
+{\normalfont\Large\bfseries}  % format
+{}                             % label
+{0em}                          % sep between label and title
+{}                             % before-code
+[\vspace{0.05cm}\titlerule\vspace{0.05cm}]  % after-code: adds line after section title
+
+% --- Make subsection titles larger ---
+\titleformat{\subsection}{\normalfont\large\bfseries}{}{0em}{}
+
+% --- Custom command for slightly larger item text ---
+\newcommand{\itemsize}{\fontsize{11.5pt}{13.5pt}\selectfont}
+
+% --- Bulleted/numbered list spacing configuration ---
+\usepackage{enumitem}
+\setlist[itemize]{
+	leftmargin=15pt,   % Indentation from the left margin for bullets
+	itemsep=2pt,       % Vertical space between list items
+	topsep=0pt,        % Space above and below the entire list
+	parsep=0pt,        % Space between paragraphs inside an item
+	partopsep=0pt      % Extra space added when environment starts a new paragraph
+}
+\setlist[enumerate]{
+	leftmargin=15pt,
+	itemsep=2pt,
+	topsep=0pt,
+	parsep=0pt,
+	partopsep=0pt
+}
+
+% --- Table column formatting ---
+\usepackage{array}
+
+% --- Font configuration ---
+\usepackage[quiet]{fontspec}
+\setmainfont[
+	Ligatures={TeX, Common},             % Enable TeX and common ligatures
+	Numbers=Lining,                      % Use lining style numbers
+	BoldFont={Linux Libertine O Bold},   % Specify bold font variant
+	BoldFeatures={Weight=3}              % Increase bold weight for emphasis
+]{Linux Libertine O}
+
+% --- Fix math font error by using unicode-math and Libertinus Math ---
+\usepackage{unicode-math}
+\setmathfont{Libertinus Math}  % Scalable math font compatible with Linux Libertine
+
+% --- Icon and hyperlink support ---
+\usepackage{fontawesome5}              % FontAwesome icons for symbols
+\usepackage{hyperref}
+\hypersetup{
+	colorlinks=true,               % Enable colored links
+	linkcolor=black,
+	filecolor=black,
+	urlcolor=black,
+}
+
+% --- Page margin and layout settings ---
+\usepackage[a4paper, margin=0.5cm]{geometry} % Narrow margins for dense text
+
+% --- Multi-line comment environment (used for site-only metadata) ---
+% Provides \begin{comment}...\end{comment} blocks that are invisible
+% in the rendered PDF. The portfolio site parses these for things like
+% paragraph project descriptions that would otherwise crowd the resume.
+\usepackage{verbatim}
+
+% --- Remove paragraph indent and extra paragraph spacing ---
+\setlength{\parindent}{0pt}  % No paragraph indentation
+\setlength{\parskip}{0pt}    % No extra space between paragraphs
+
+\begin{document}
+\fontsize{11pt}{13pt}\selectfont  % Font size 11pt, baseline skip 13pt (line height) to avoid font errors
+
+% --- Safe & Compact Title Section ---
+% -----------------------------------
+% HEADER (Compact & Readable)
+% -----------------------------------
+\begin{center}
+	{\Huge \textbf{Rishabh Sahu}} \\ \vspace{3pt}
+
+	% multiset<int>towerTops;Address: Slightly smaller than body text to keep it on one line
+	{\fontsize{12pt}{12.5pt}\selectfont \faIcon{map-marker-alt}\enspace \textbf{Address:} Lig 139 Harshwardhan Nagar, Bhopal, Madhya Pradesh, India} \\ \vspace{3pt}
+
+	% Contact Info: 10.5pt Font
+	{\fontsize{12pt}{12.5pt}\selectfont
+		\faIcon{envelope}\enspace \textbf{Email:} \href{mailto:rishabhsahu617@outlook.com}{rishabhsahu617@outlook.com}
+		\quad \textbullet \quad
+		\faIcon{mobile-alt}\enspace \textbf{Phone:} (+91) 7898994078
+	} \\ \vspace{3pt}
+
+	% Links: 10.5pt Font
+	{\fontsize{12pt}{12.5pt}\selectfont
+		\faIcon{linkedin}\enspace \textbf{LinkedIn:} \href{https://www.linkedin.com/in/rishabh-sahu325}{rishabh-sahu325}
+		\quad \textbullet \quad
+		\faIcon{github}\enspace \textbf{GitHub:} \href{https://github.com/RishabhSahuIIIT}{RishabhSahuIIIT}
+		\quad \textbullet \quad
+		\faIcon{gitlab}\enspace \textbf{GitLab:} \href{https://gitlab.com/rishabhsahu325}{rishabhsahu325}
+		\quad \textbullet \quad
+		\faIcon{globe}\enspace \textbf{Portfolio:} \href{https://rishabhsahuiiit.github.io/}{rishabhsahuiiit.github.io}
+	}
+\end{center}
+% -----------------------------------
+\section*{Education}
+\begin{flushleft}
+	\noindent\large\textbf{International Institute of Information Technology Hyderabad} \hfill July 2024 -- Present \\
+	MTech. Computer Science \hfill CGPA: 7.73/10\\
+	\vspace{0.1cm}
+	\noindent\large\textbf{The LNM Institute of Information Technology Jaipur} \hfill July 2019 -- June 2023 \\
+	BTech. Computer Science \hfill CGPA: 7.43/10\\
+	\vspace{0.1cm}
+	\noindent\large\textbf{G.V.N. The Global School Bhopal} \hfill April 2017 -- March 2019 \\ High School \hfill 87.2\%\\
+	\vspace{0.1cm}
+	\noindent\large\textbf{Campion School Bhopal} \hfill April 2005 -- March 2017 \\ Primary and Middle School \hfill CGPA: 10/10\\
+\end{flushleft}
+
+% -----------------------------------
+
+\section*{Internships}
+
+\noindent\large\textbf{Web and Mobile app development Intern at C.R.I.S. Secunderabad} \hfill 1 June 2025 -- 30 July 2025
+
+\vspace{2pt}
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Git, Flutter, Dart, Javascript, Nodejs, MySQL, POSTMAN} \hfill \href{https://gitlab.com/rishabhsahu325/cris_sec25_divjan}{\faIcon{link}\textbf{Project repository}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Worked on a prototype mobile application for Divyangjan card application website}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Implemented backend API routes}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Contributed in database design and testing}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Added frontend pages for Railway division wise reports}
+\end{itemize}
+
+
+% -----------------------------------
+
+\section*{Projects}
+
+% --- PROJECT 1: JSON API SERVER ---
+\begin{comment}
+topics: Backend Development
+description:
+A small backend service exposing teacher and course data from a Postgres database as JSON. Built as a sandbox for Flask routing patterns, request handling, and one-command containerised deployment.
+\end{comment}
+\subsection*{JSON API server \hfill {\normalfont\itshape\small Backend Development}}
+
+\vspace{2pt}
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Flask, Docker, Python, API design, Postgresql\hfill \href{https://gitlab.com/projectsa2/jsonapiserver}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Handles external http requests to fetch data from Postgresql Database}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Perform create and view operations for teacher and course data in the database}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Retrieve responses to http requests in JSON format}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Utilized Docker and BASH to reduce setup time}
+\end{itemize}
+
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : Wine classifier based on decision tree  ---
+\begin{comment}
+topics: Machine Learning
+description:
+A decision-tree classifier trained on sklearn's wine dataset, walking through the full supervised-learning workflow from data loading to evaluation.
+\end{comment}
+\subsection*{Wine Classifier based on Decision Tree \hfill {\normalfont\itshape\small Machine Learning}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Python, Pyspark, Pandas, Decision Tree classification\hfill \href{https://gitlab.com/projectsa2/wineclassifier}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Generated ML classifier model to classify Wine from characteristics}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Classifier trained on sklearn's wine dataset}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Evaluated trained model through pyspark's model evaluator}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Achieved reasonably good accuracy of 85\% on test metrics}
+
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : N-gram Language Model ---
+\begin{comment}
+topics: Machine Learning
+description:
+A character-level N-gram model predicting word completions in real time, with a terminal UI that tracks keystroke efficiency as you type.
+\end{comment}
+\subsection*{N-gram Language Model for Next-Word Prediction\hfill {\normalfont\itshape\small Machine Learning}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Python, Character N-gram, Curses (TUI)\hfill \href{https://gitlab.com/projectsa2/wineclassifier}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\itemsize Developed a Character-level N-gram model to suggest word completions in real-time as the user types.}
+	\item {\itemsize Implemented Maximum Likelihood Estimation (MLE) to calculate transition probabilities between character sequences.}
+	\item {\itemsize Built a low-latency Terminal User Interface (TUI) using \texttt{curses} that tracks keystroke efficiency metrics live.}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : Secure Telemedical ---
+\begin{comment}
+topics: Security > Cryptography; Networking
+description:
+A secure many-to-one messaging protocol combining AES-256 for confidentiality with ElGamal digital signatures for authentication and integrity.
+\end{comment}
+\subsection*{Secure many to one communication system with Digital Signatures\hfill {\normalfont\itshape\small Cryptography, Networking}}
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Security, Python, Cryptography, Network Security, Socket Programming\hfill \href{https://gitlab.com/iiith2426-ris/assignments/sns/a2-telemedical-ds}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\itemsize Engineered a secure communication protocol ensuring confidentiality using AES-256 and ElGamal encryption}
+	\item {\itemsize Implemented mutual authentication and integrity verification mechanisms using ElGamal Digital Signatures}
+	\item {\itemsize Mitigated replay attacks via timestamp validation and enforced access control through temporary blocking}
+	\item {\itemsize Orchestrated secure session management with dynamic group key generation for encrypted broadcast messaging}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : Multithreaded HTTP Server ---
+\begin{comment}
+topics: Systems Programming > Concurrency; Networking
+description:
+An HTTP/1.1 server written against Rust's standard library alone, using a fixed-size thread pool to dispatch requests across worker threads.
+\end{comment}
+\subsection*{Multithreaded HTTP Server\hfill {\normalfont\itshape\small Concurrency, Networking}}
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Systems Programming, Rust, Multithreading, TCP, HTTP, Thread Pool, Concurrency\hfill \href{https://github.com/RishabhSahuIIIT/rustMultithreadServer}{\faIcon{link}\textbf{Project repository}}}
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Built a multithreaded HTTP/1.1 server using only Rust's standard library, following the official Rust book's capstone project to pick up the language}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Implemented a fixed-size thread pool that dispatches incoming requests across worker threads}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Handled GET request routing with \texttt{200 OK}, simulated latency \texttt{/sleep}, and \texttt{404 NOT FOUND} responses}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Gained hands-on experience with Rust's ownership model and concurrency primitives (Arc, Mutex, channels) for safe parallel execution}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : Custom Shell ---
+\begin{comment}
+topics: Systems Programming
+description:
+A Unix shell supporting external command execution, built-ins, pipes, output redirection, and readline-backed tab completion.
+\end{comment}
+\subsection*{Shell \hfill {\normalfont\itshape\small Systems Programming}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} C++, Linux API, Process handling, System calls\hfill \href{https://github.com/RishabhSahuIIIT/codecrafters-shell-cpp}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Implemented external program execution through fork and exec}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Developed shell built-ins including \texttt{cd}, utilizing OS function calls for directory changes rather than internal state management}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Integrated the readline library for tab-autocompletion, applied specifically to built-in commands}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Orchestrated inter-process communication via pipes}
+	\item {\fontsize{11.5pt}{13.5pt}\selectfont Manipulated file descriptors to enable output redirection}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : HTML Autocomplete with Lex ---
+\begin{comment}
+topics: Compilers; Data Structures
+description:
+An HTML lexer built with GNU Flex, paired with a Trie-based matching engine that suggests completions from partial tags and attributes.
+\end{comment}
+\subsection*{HTML Autocomplete using Lexer \hfill {\normalfont\itshape\small Compilers, Data Structures}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} GNU Flex/Lex, C, Lexical Analysis, Trie, Compiler Design\hfill \href{https://gitlab.com/iiith2426-ris/assignments/compilers/a2-html-autocomplete-lex}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\itemsize Implemented an HTML lexer using GNU Flex with custom grammar rules to tokenise HTML documents}
+	\item {\itemsize Built a Trie-based string matching engine in C to provide autocomplete suggestions from partial HTML tags and attributes}
+	\item {\itemsize Extended token coverage beyond standard HTML spec to support tags like \texttt{img}, \texttt{header}, and \texttt{srcset}}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : Network Intrusion Detection and Prevention System ---
+\begin{comment}
+featured: true
+topics: Security > Network Security; Systems Programming > Concurrency
+description:
+Real-time TCP packet capture with signature-based detection for port scans and OS fingerprinting, automatically blocking attacker IPs through the host firewall.
+\end{comment}
+\subsection*{Network Intrusion Detection and Prevention System \hfill {\normalfont\itshape\small Network Security, Concurrency}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Security, Systems Programming, Python, Scapy, Network Security, iptables, Multithreading\hfill \href{https://gitlab.com/iiith2426-ris/assignments/sns/a3}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\itemsize Performed real-time TCP packet capture and analysis using Scapy's low-level network sniffing capabilities}
+	\item {\itemsize Implemented signature-based detection for port scanning (sliding time-window) and OS fingerprinting (TCP flag pattern matching)}
+	\item {\itemsize Automated threat response by dynamically blocking attacker IPs via iptables (Linux) and Windows Firewall (Windows)}
+	\item {\itemsize Decoupled packet capture from the management CLI using multi-threading for continuous monitoring without UI blocking}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : Agentic AI Research Assistant ---
+\begin{comment}
+featured: true
+topics: Artificial Intelligence > Agents; Natural Language Processing
+description:
+A multi-agent pipeline that parses, summarises, and surveys academic PDFs, using map-reduce chunking for papers exceeding the model context window.
+\end{comment}
+\subsection*{Agentic AI Research Assistant \hfill {\normalfont\itshape\small Agents, Natural Language Processing}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Artificial Intelligence, Python, Moya framework, Ollama, Llama 3.1/3.2, PyMuPDF, Multi-agent systems\hfill \href{https://github.com/RishabhSahuIIIT/AgenticAIResearchAssistant_Moya}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\itemsize Built a multi-agent pipeline on the Moya framework to parse, summarise, synthesise, and survey academic PDF papers, with map-reduce chunking for papers exceeding the LLM context window}
+	\item {\itemsize Orchestrated dual Ollama instances on separate ports -- a lightweight Llama 3.2 for routing and Llama 3.1 for task execution -- to decouple decision-making from work and prevent LLM blocking}
+	\item {\itemsize Implemented full observability by logging every agent decision, LLM prompt, and output to timestamped JSONL trace files per run}
+	\item {\itemsize Generated structured mini-surveys ($\leq$800 words) with inline citations synthesised across multiple research papers}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : Citestat ---
+\begin{comment}
+featured: true
+topics: Web Development
+description:
+A client-side citation analytics dashboard querying Crossref and OpenCitations, computing bibliometric metrics entirely in the browser with no backend.
+\end{comment}
+\subsection*{Citestat -- Academic Citation Analytics Dashboard \hfill {\normalfont\itshape\small Web Development}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} React, TypeScript, Vite, Tailwind CSS, Chart.js, Reagraph, Crossref API, OpenCitations API\hfill \href{https://citestat.vercel.app}{\faIcon{globe}\textbf{Live demo}} \quad \href{https://github.com/RishabhSahuIIIT/citestat}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\itemsize As part of a 3-person team, built a client-side citation analytics dashboard that queries Crossref and OpenCitations REST APIs for paper and author metadata}
+	\item {\itemsize Visualised yearly citation trends as histograms using Chart.js and citation network graphs using Reagraph (backed by D3.js)}
+	\item {\itemsize Computed bibliometric impact metrics (h-index, m-quotient) fully in the browser with no backend dependency}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : CRDT Collaborative Text Editor ---
+\begin{comment}
+featured: true
+topics: Distributed Systems
+description:
+An operation-based RGA CRDT for collaborative document editing, ensuring convergence across concurrent edits via vector clocks and causal delivery.
+\end{comment}
+\subsection*{Real-Time Collaborative Text Editor using CRDT \hfill {\normalfont\itshape\small Distributed Systems}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} TypeScript, React, CodeMirror 6, WebSocket, CRDT, RGA, LWW Register, IndexedDB\hfill \href{https://github.com/RishabhSahuIIIT/CRDT_collaborative_text_editor}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\itemsize As part of a 3-person team, implemented an operation-based RGA CRDT for document text, ensuring convergence across concurrent edits via vector clocks and causal delivery}
+	\item {\itemsize Implemented a state-based LWW Register CRDT for metadata (title, cursors), with timestamp + siteId total order for deterministic conflict resolution}
+	\item {\itemsize Built a WebSocket relay server and React/CodeMirror 6 browser editor with IndexedDB-backed offline editing and automatic reconnect sync}
+	\item {\itemsize Enforced per-message access control using HMAC-signed role tokens, applied at the relay so role changes take effect immediately without reconnection}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : Distributed kNN and Task Queue (gRPC) ---
+\begin{comment}
+topics: Distributed Systems; Systems Programming > Concurrency
+description:
+Two distributed systems over gRPC: a master-worker k-NN engine partitioning datasets across servers, and a fault-tolerant task queue with heartbeat failure detection.
+\end{comment}
+\subsection*{Distributed k-NN \& Task Queue over gRPC \hfill {\normalfont\itshape\small Distributed Systems, Concurrency}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Python, gRPC, Protocol Buffers, Distributed Systems, Systems Programming, Concurrency\hfill \href{https://gitlab.com/iiith2426-ris/assignments/ds/knn_tq_grpc}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\itemsize Built two distributed systems over gRPC/Protocol Buffers: a master--worker k-NN engine and a fault-tolerant task-queue manager}
+	\item {\itemsize Partitioned datasets across worker servers, broadcast queries in parallel, and merged per-worker results into the global top-k by Euclidean distance}
+	\item {\itemsize Pushed CPU/IO tasks to capability-matched workers from FIFO queues using server-side streaming RPCs}
+	\item {\itemsize Implemented heartbeat-based failure detection that re-queues in-progress tasks from dead workers onto healthy ones}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : MPI + SLURM Parallel Minimum Spanning Tree ---
+\begin{comment}
+topics: Parallel Computing; Algorithms
+description:
+A parallel Boruvka MST distributing graph edges across MPI processes on a SLURM cluster, with a harness reporting speedup and parallel efficiency.
+\end{comment}
+\subsection*{Parallel Minimum Spanning Tree (MPI + SLURM) \hfill {\normalfont\itshape\small Parallel Computing, Algorithms}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} C++, MPI, SLURM, Parallel Computing, Union-Find\hfill \href{https://gitlab.com/iiith2426-ris/assignments/ds/mpi_slurm_mst}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\itemsize Implemented parallel Boruvka's MST, distributing graph edges across MPI processes on a SLURM cluster}
+	\item {\itemsize Drove each round with MPI collectives (Scatterv, Allreduce, Allgatherv) for minimum-edge selection and component merging}
+	\item {\itemsize Tracked connected components using Union-Find with path compression and union by rank}
+	\item {\itemsize Built a performance harness reporting speedup, parallel efficiency, and computation-vs-communication profiling}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : LLVM Optimization Passes ---
+\begin{comment}
+topics: Compilers
+description:
+Out-of-tree LLVM passes on the new pass manager, implementing dataflow analyses and IR transformations including constant folding and dead-code elimination.
+\end{comment}
+\subsection*{LLVM Optimization Passes \hfill {\normalfont\itshape\small Compilers}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} C++, LLVM, Compiler Design, Static Analysis, Dataflow Analysis\hfill \href{https://gitlab.com/iiith2426-ris/assignments/compilers/llvm-opt-passes}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\itemsize As part of a 2-person team, built out-of-tree LLVM passes on the new pass manager, compiled as shared-library plugins loaded via \texttt{opt}}
+	\item {\itemsize Implemented analysis passes: control-flow-graph DOT printing and static per-function call counting}
+	\item {\itemsize Implemented transformation passes over LLVM IR: constant folding/propagation and identity-operand instruction rewriting}
+	\item {\itemsize Implemented dead-code elimination using a fixed-point live-variable dataflow analysis}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : Racket-to-LLVM Compiler Frontend ---
+\begin{comment}
+topics: Compilers; Programming Languages > Type Systems
+description:
+A compiler frontend translating a subset of Racket to LLVM IR, covering lexing, recursive-descent parsing, static type checking, and SSA-style code generation.
+\end{comment}
+\subsection*{Racket-to-LLVM Compiler Frontend \hfill {\normalfont\itshape\small Compilers, Type Systems}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Programming Languages, C++, LLVM, Compiler Design, Recursive-Descent Parsing, Code Generation\hfill \href{https://gitlab.com/iiith2426-ris/assignments/compilers/rlcp}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\itemsize As part of a 2-person team, built a compiler frontend translating a subset of Racket to LLVM IR (lexer, recursive-descent parser, semantic analyzer, code generator)}
+	\item {\itemsize Applied the visitor pattern for both static type checking and IR generation over the AST}
+	\item {\itemsize Resolved lexical scoping with a scope-stack symbol table and performed bottom-up static type checking}
+	\item {\itemsize Generated SSA-style IR with PHI nodes for conditionals, basic blocks for loops, heap-allocated tuples, and recursive functions}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : Bernstein Trajectory Fitting and CEM Obstacle Avoidance ---
+\begin{comment}
+topics: Robotics > Motion Planning; Optimization
+description:
+Order-5 Bernstein polynomials fitted to non-holonomic robot trajectories under velocity and acceleration constraints, with Cross-Entropy Method sampling for collision-free paths.
+\end{comment}
+\subsection*{Bernstein Trajectory Fitting \& CEM Obstacle Avoidance \hfill {\normalfont\itshape\small Motion Planning, Optimization}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Robotics, Python, NumPy, Trajectory Optimization, Cross-Entropy Method\hfill \href{https://gitlab.com/iiith2426-ris/assignments/robotics-planning-and-navigation/bernstein_cem}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\itemsize Fit order-5 Bernstein polynomials to non-holonomic robot trajectories under velocity, acceleration, and orientation boundary constraints}
+	\item {\itemsize Solved per-axis constrained least-squares via the Moore--Penrose pseudo-inverse across under-, exactly-, and over-determined regimes}
+	\item {\itemsize Applied the Cross-Entropy Method (CEM) to sample waypoints yielding collision-free paths around static obstacles}
+	\item {\itemsize Validated collision avoidance on rolled-out trajectories and rendered simulation videos}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : Franka Robot Arm Motion Planning ---
+\begin{comment}
+topics: Robotics > Motion Planning
+description:
+Collision-free motion planning for a 7-DOF Franka Panda arm in cluttered scenes using bidirectional RRT-Connect with custom sampling in configuration space.
+\end{comment}
+\subsection*{Franka Robot Arm Motion Planning \hfill {\normalfont\itshape\small Motion Planning}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Robotics, Python, PyBullet, Motion Planning, RRT-Connect, Sampling-based Planning\hfill \href{https://gitlab.com/iiith2426-ris/assignments/robotics-planning-and-navigation/franka-robot-arm-navigation}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\itemsize Planned collision-free motion for a 7-DOF Franka Panda arm in a cluttered scene using bidirectional RRT (RRT-Connect)}
+	\item {\itemsize Implemented custom sample and extend functions in configuration space respecting URDF joint limits}
+	\item {\itemsize Performed edge collision checking and path interpolation/smoothing before execution}
+	\item {\itemsize Simulated and auto-recorded trajectory execution in PyBullet}
+\end{itemize}
+
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : Tabular Reinforcement Learning (Windy Gridworld) ---
+\begin{comment}
+topics: Reinforcement Learning; Algorithms
+description:
+Five tabular RL methods implemented from scratch on a stochastic gridworld, comparing model-based planning against model-free learning with regret analysis.
+\end{comment}
+\subsection*{Tabular Reinforcement Learning -- Windy Gridworld \hfill {\normalfont\itshape\small Reinforcement Learning, Algorithms}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Python, NumPy, Reinforcement Learning, Dynamic Programming, Q-learning\hfill \href{https://gitlab.com/iiith2426-ris/assignments/rl/wg_rl}{\faIcon{link}\textbf{Project repository}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+	\item {\itemsize As part of a 5-person team, implemented five tabular RL methods from scratch in NumPy (Value/Policy Iteration, Monte Carlo, SARSA($\lambda$), Q-learning) for a stochastic Windy Gridworld}
+	\item {\itemsize Compared model-based planning against model-free learning on a $10\times7$ grid with stochastic upward wind}
+	\item {\itemsize Modeled the task as an infinite-horizon discounted MDP with an absorbing goal}
+	\item {\itemsize Analyzed convergence and instantaneous/cumulative regret against an exact Value-Iteration baseline}
+\end{itemize}
+
+% -----------------------------------
+\section*{Certifications}
+\begin{itemize}
+	\item \href{https://www.educative.io/verify-certificate/Y5xyKBov0ppTp41gXrqlx5c3LGP7RAWBVHJ}{\faIcon{link}Working with containers}: Docker, Docker compose, Docker Swarm (EDUCATIVE.IO)
+	\item \href{https://www.educative.io/verify-certificate/j2l3BzfZ3O94zqGqKSjXR9PNLqr7uA}{\faIcon{link}Flask Develop web applications in Python}: Flask, Python, CSS, HTML (EDUCATIVE.IO)
+	\item \href{https://www.hackerrank.com/certificates/388867dc0d5f}{\faIcon{link}Java basic certification} (HACKERRANK)
+\end{itemize}
+
+% -----------------------------------
+\section*{Skills}
+% Using a simple itemize with zero margin allows text to flow naturally
+\begin{itemize}[leftmargin=*, itemsep=0pt, parsep=0pt]
+	\item \textbf{Programming and Databases :} Python, C/C++, Rust, Java, TypeScript, Dart, SQL, PostgreSQL, MongoDB
+	\item \textbf{Web Technologies:} Flask, React, Node.js, Express, Flutter, HTML5, CSS, Javascript
+	\item \textbf{DevOps \& Tools:} BASH, Linux, Docker, Git, LLVM, MPI
+	\item \textbf{Core Concepts:} Data Structures and Algorithms, Object Oriented Programming
+\end{itemize}
+
+% -----------------------------------
+\section*{Accomplishments}
+\begin{itemize}
+	\item Accomplished 77 All India Rank in IIIT PGEE CSE 2024 exam
+	\item Achieved 95.4 percentile in GATE exam CS/IT 2024
+	\item Qualified Stage 1 of N.T.S.E. in Madhya Pradesh
+	\item Zonal Gold medalist in SOF National cyber Olympiad Madhya Pradesh zone class 9th
+\end{itemize}
+
+% -----------------------------------
+\section*{Interests and Extracurricular Activities}
+\begin{itemize}
+	\item Playing badminton
+	\item Participated in Discernment International Summit M.U.N. 2016-17 at Noida
+\end{itemize}
+\end{document}

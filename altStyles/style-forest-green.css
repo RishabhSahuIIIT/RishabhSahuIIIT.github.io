@@ -1122,3 +1122,831 @@ details[open] > .pc-summary::before {
   margin-bottom: 4px;
   line-height: 1.5;
 }
+
+
+/* ============================================================
+   ALL PROJECTS — filter rail, connector lines, grouped mobile
+   ------------------------------------------------------------
+   Wide screens: a filter rail on the left, an SVG gutter, and the
+   project list on the right. Selecting filters draws connector
+   lines from each active filter to the projects it matches, using
+   three anti-overlap techniques together:
+     1. lanes   — each active filter routes through its own column
+     2. hover   — hovering a filter dims every other filter's lines
+     4. anchors — lines arriving at one card stagger vertically
+
+   Narrow screens: no lines. Filter chips sit above the list, and
+   the list re-groups — projects matching several filters first,
+   then one group per filter, then faded non-matches.
+   ============================================================ */
+
+.pf-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.pf-logic {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pf-logic-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.pf-lg {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 4px 11px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.pf-lg:hover { border-color: var(--ink-soft); }
+.pf-lg.is-on {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+.pf-lg:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.pf-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+.pf-clear {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  padding: 3px 10px;
+  border: 1px solid var(--rule);
+  border-radius: 100px;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.pf-clear:hover { border-color: var(--ink-soft); color: var(--ink); }
+.pf-hover-hint { color: var(--muted); font-size: 10.5px; }
+
+/* ---- filter buttons (rail on desktop, chips on mobile) ---- */
+.pf-group-label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 10px 0 3px;
+}
+.pf-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 5px 9px;
+  border: 1px solid var(--rule);
+  border-radius: 7px;
+  background: var(--bg-soft);
+  color: var(--ink-soft);
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 7px;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.pf-btn .pf-n { font-size: 9.5px; opacity: 0.6; }
+.pf-btn:hover { border-color: var(--ink-soft); }
+.pf-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---- wide-screen wiring layout ---- */
+.pf-wire {
+  display: grid;
+  grid-template-columns: 132px 120px 1fr;
+  gap: 0;
+  position: relative;
+}
+.pf-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  position: sticky;
+  top: calc(var(--topbar-h, 56px) + 18px);
+  align-self: start;
+}
+.pf-gutter { position: relative; }
+.pf-gutter svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* Mobile chip bar — hidden on wide screens */
+.pf-chips { display: none; }
+
+/* ---- project cards ---- */
+.all-projects { display: flex; flex-direction: column; gap: 9px; }
+
+.pc-card {
+  background: var(--bg-soft);
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--rule);
+  border-radius: 10px;
+  padding: 12px 14px;
+  transition: opacity 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  position: relative;
+}
+.pc-card.is-faded { opacity: 0.24; }
+.pc-card.is-hit   { box-shadow: 0 2px 16px rgba(0,0,0,0.08); }
+
+.pc-card-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 5px;
+}
+.pc-card-title { font-size: 16px; font-weight: 600; margin: 0; }
+.pc-card-title a { text-decoration: none; border-bottom: 1px solid var(--rule); }
+.pc-live {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  border-radius: 100px;
+  background: var(--live, #0F7B54);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.pc-live::before {
+  content: "";
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.85);
+}
+.pc-match-dots { display: inline-flex; gap: 3px; margin-left: auto; }
+.pc-match-dots span { width: 8px; height: 8px; border-radius: 50%; }
+
+.pc-topics { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px; }
+.pc-topic {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 5px;
+}
+.pc-desc {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  margin: 0 0 7px;
+}
+.pc-tech { display: flex; gap: 4px; flex-wrap: wrap; }
+.pc-tech span {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  border: 1px solid var(--rule);
+  padding: 1px 7px;
+  border-radius: 100px;
+}
+.pc-links { display: flex; gap: 10px; margin-top: 8px; }
+.pc-links a {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--accent);
+  text-decoration: none;
+}
+.pc-links a:hover { text-decoration: underline; }
+
+/* Multi-filter match: split colour bar down the left edge */
+.pc-card.is-multi { border-left-width: 0; padding-left: 18px; }
+.pc-multi-edge {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+  border-radius: 10px 0 0 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.pc-multi-edge span { flex: 1; }
+
+/* ---- mobile grouping headers ---- */
+.pf-group-head {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 14px 0 5px;
+}
+.pf-group-head .pf-sw { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.pf-group-head .pf-sw-multi { display: inline-flex; gap: 2px; }
+.pf-group-head .pf-sw-multi span { width: 5px; height: 10px; border-radius: 1px; }
+.pf-group-head .pf-gn { color: var(--muted); font-weight: 400; }
+.pf-group-note {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--muted);
+  font-weight: 400;
+  margin-left: auto;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.pf-divider {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 16px 0 6px;
+  border-top: 1px dashed var(--rule);
+  margin-top: 10px;
+}
+
+/* ============================================================
+   Narrow screens — drop the rail and lines, use chips + groups
+   ============================================================ */
+@media (max-width: 860px) {
+  .pf-wire { grid-template-columns: 1fr; }
+  .pf-rail, .pf-gutter { display: none; }
+  /* Compact dropdown filter bar, pinned directly beneath the topbar.
+     `--topbar-h` is measured at runtime by script.js, so the bar sits
+     flush against it instead of guessing a height and leaving a gap
+     that content scrolls through. */
+  .pf-chips {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 6px;
+    align-items: center;
+    margin: 0 0 12px;
+    padding: 9px 0;
+    position: sticky;
+    top: var(--topbar-h, 56px);
+    background: var(--bg);
+    border-bottom: 1px solid var(--rule);
+    z-index: 6;
+    overflow: visible;
+  }
+  .pf-controls { gap: 8px; }
+}
+
+/* ============================================================
+   Mobile filter dropdowns
+   ------------------------------------------------------------
+   On narrow screens the filter chips are replaced by compact
+   dropdown menus (Status / Domain / Tech). Each opens a panel of
+   checkable options, so a dozen filters take one row instead of
+   wrapping into a wall. Multi-select is preserved — the trigger
+   shows a count badge when filters in that group are active.
+   ============================================================ */
+.pf-dd { position: relative; flex: 1 1 0; min-width: 0; }
+.pf-dd-trigger {
+  width: 100%;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  padding: 7px 9px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--bg-soft);
+  color: var(--ink-soft);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.pf-dd-trigger .pf-dd-caret { font-size: 9px; opacity: 0.6; flex-shrink: 0; }
+.pf-dd-trigger .pf-dd-badge {
+  font-size: 9.5px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 100px;
+  background: var(--accent);
+  color: var(--bg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.pf-dd.is-open .pf-dd-trigger { border-color: var(--ink-soft); }
+
+.pf-dd-panel {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
+  min-width: 168px;
+  max-height: 48vh;
+  overflow-y: auto;
+  background: var(--bg-soft);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 5px;
+  z-index: 40;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.16);
+  display: none;
+}
+.pf-dd.is-open .pf-dd-panel { display: block; }
+.pf-dd-panel .pf-opt {
+  width: 100%;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+}
+.pf-dd-panel .pf-opt:hover { background: var(--bg); }
+.pf-dd-panel .pf-opt .pf-tick {
+  width: 14px; height: 14px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  line-height: 1;
+}
+.pf-dd-panel .pf-opt.is-on .pf-tick { color: #fff; border-color: transparent; }
+.pf-dd-panel .pf-opt .pf-opt-n { margin-left: auto; font-size: 9.5px; opacity: 0.55; }
+
+/* Dropdowns only exist on narrow screens */
+@media (min-width: 861px) { .pf-dd { display: none; } }
+
+/* ============================================================
+   Size + density system
+   ------------------------------------------------------------
+   site-config.json sets these on :root at load. Everything here
+   defaults to 1 (unchanged), so the stylesheet renders exactly
+   as before when no config is present.
+
+     --text-scale   multiplies body/heading sizes
+     --density      multiplies vertical padding and gaps
+     --site-max-w   overrides the content column width
+
+   Per-section overrides are applied as inline styles on the
+   section element by script.js, using the same variable names.
+   ============================================================ */
+:root {
+  --text-scale: 1;
+  --density: 1;
+  --site-max-w: 720px;
+
+  /* Filter / connector colours. Domain colours are generated from --accent
+     at runtime (see buildDomainPalette in script.js) unless site-config.json
+     pins them explicitly, in which case these are ignored for that domain. */
+  --live: #0F7B54;
+  --filter-tech: var(--ink-soft);
+  --line-opacity: 0.82;
+}
+
+body { font-size: calc(1rem * var(--text-scale)); }
+
+.block {
+  padding-top:    calc(var(--block-pad-y, 4.5rem) * var(--density));
+  padding-bottom: calc(var(--block-pad-y, 4.5rem) * var(--density));
+  max-width: var(--site-max-w);
+}
+
+.block h2      { font-size: calc(var(--h2-size, 1.75rem) * var(--text-scale)); }
+.block h3      { font-size: calc(var(--h3-size, 1.15rem) * var(--text-scale)); }
+.col-label     { font-size: calc(0.7rem * var(--text-scale)); }
+.pc-card-title { font-size: calc(1rem * var(--text-scale)); }
+.pc-desc       { font-size: calc(0.85rem * var(--text-scale)); }
+
+.all-projects  { gap: calc(0.55rem * var(--density)); }
+.work-list     { gap: calc(1.6rem  * var(--density)); }
+
+/* Icons / representative images beside headings and cards */
+.sec-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.5em;
+  font-size: 0.9em;
+  line-height: 1;
+  vertical-align: baseline;
+}
+.sec-icon img,
+.pc-icon img {
+  width: 1.2em;
+  height: 1.2em;
+  object-fit: cover;
+  border-radius: 3px;
+  display: block;
+}
+.pc-icon {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 0.4em;
+  font-size: 0.95em;
+  line-height: 1;
+}
+.pc-thumb {
+  width: 100%;
+  max-height: 150px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin: 0 0 8px;
+  display: block;
+}
+
+/* Inline brand logo inside a tech keyword chip. Sized to the text so it
+   never dominates; falls back to nothing when the term has no logo. */
+.pc-logo {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.13em;
+  margin-right: 0.35em;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.pc-tech span { display: inline-flex; align-items: center; }
+
+
+/* ============================================================
+   De-ruled layout + Tools section
+   ------------------------------------------------------------
+   The original design leaned on full-width hairlines between
+   every row, which read as a printed CV rather than a website.
+   Rhythm now comes from whitespace and surface, not from lines.
+   Rules survive only where they carry meaning: the top bar, and
+   the dashed "other projects" divider that separates matches
+   from non-matches under an active filter.
+   ============================================================ */
+
+.work-item,
+.work-item:first-child,
+.project-compact,
+.project-compact:first-child,
+.timeline-row,
+.timeline-row:first-child,
+.recog-list li,
+.recog-list li:first-child {
+  border-top: 0;
+  border-bottom: 0;
+}
+
+/* Give the rows their separation back through spacing instead. */
+.work-item     { padding: 26px 0; }
+.timeline-row  { padding: 18px 0; }
+.recog-list li { padding: 14px 0; }
+
+/* A soft surface reads as a group without drawing a line. */
+.timeline-row,
+.recog-list li {
+  padding-left: 14px;
+  padding-right: 14px;
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+.timeline-row:hover,
+.recog-list li:hover { background: var(--bg-soft); }
+
+/* Section headings: an accent tick, not a full-width rule. */
+.section-head {
+  position: relative;
+  padding-left: 14px;
+  margin-bottom: 26px;
+}
+.section-head::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.22em;
+  bottom: 0.22em;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+/* ---- Tools ------------------------------------------------
+   Each tool is its own card with a large logo above its name,
+   rather than a run of text pills. Clusters group them under a
+   quiet header. Reads as a capability grid, not a resume list. */
+.skills-grid { display: block; }
+
+#skills-list { display: flex; flex-direction: column; gap: 30px; }
+
+.skills-cluster h4 {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.skills-cluster .tags {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 10px;
+}
+
+.skills-cluster .tags span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  text-align: center;
+  min-height: 92px;
+  padding: 16px 10px 14px;
+  border-radius: 12px;
+  background: var(--bg-soft);
+  border: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.3;
+  color: var(--ink-soft);
+  transition: transform 0.18s ease, border-color 0.18s ease,
+              box-shadow 0.18s ease, color 0.18s ease;
+}
+.skills-cluster .tags span:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  color: var(--ink);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+
+/* Big logo; text-only entries get a monogram disc instead so the
+   grid keeps an even rhythm rather than showing ragged gaps. */
+.skills-cluster .tags .pc-logo {
+  width: 30px;
+  height: 30px;
+  margin: 0;
+  flex-shrink: 0;
+}
+/* No logo: the name takes the whole card, set larger and centred, rather
+   than sitting under a placeholder disc that carries no information. */
+.skills-cluster .tags span.is-textonly {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  padding: 14px 12px;
+  hyphens: auto;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .skills-cluster .tags {
+    grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+    gap: 8px;
+  }
+  .skills-cluster .tags span { min-height: 82px; font-size: 10.5px; }
+  .skills-cluster .tags .pc-logo,
+  .skills-cluster .tags span:not(.has-logo)::before { width: 26px; height: 26px; }
+}
+
+/* Per-entry logo or emoji on an education / internship row. Sized to the
+   text so a university mark sits inline rather than dominating the row. */
+.row-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35em;
+  height: 1.35em;
+  margin-right: 0.5em;
+  vertical-align: -0.25em;
+  flex-shrink: 0;
+}
+.row-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 3px;
+}
+
+/* Drop shadow on brand marks, so flat single-colour logos read as objects
+   rather than stencils. Strength is a variable the editor writes, since the
+   right amount depends on the palette: heavier on a dark page where a soft
+   shadow vanishes, lighter on cream where it muddies. 0 disables it. */
+:root { --logo-shadow: 0.28; }
+
+.pc-logo:not(.pc-logo-mono) {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, var(--logo-shadow)));
+}
+.row-mark img {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, calc(var(--logo-shadow) * 0.8)));
+}
+
+/* Monogram tile used when a catalogue entry has no vetted path data.
+   Sized identically to a real mark so rows and cards keep one rhythm. */
+.pc-logo-mono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  font-family: var(--mono);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  filter: none;
+}
+
+
+
+/* Every mark in a tools card occupies the same box, whatever its shape. */
+.skills-cluster .tags .pc-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+/* Solid-block logos (JavaScript) keep their exact brand colour, so they need
+   an outline to stay distinct against a similarly-toned surface. */
+.pc-logo-tile {
+  border-radius: 4px;
+  outline: 1px solid rgba(0, 0, 0, 0.22);
+  outline-offset: -1px;
+}
+
+/* Backing plate: keeps a brand colour intact when it can't stand on the
+   page background (JavaScript yellow on cream, black marks on dark). */
+.pc-logo-plate {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  padding: 2px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, var(--logo-shadow)));
+}
+.pc-logo-plate svg { width: 100%; height: 100%; display: block; }
+.skills-cluster .tags .pc-logo-plate { border-radius: 8px; padding: 4px; }
+
+/* ============================================================
+   Entry image tiles
+   ------------------------------------------------------------
+   A crest or photo rendered at glyph size is a smudge, so images
+   get a real tile beside the entry. No border and no background:
+   a logo on a plain surface reads as part of the page, whereas a
+   framed box reads as a UI widget.
+
+   A tile occupies NO space until its image has decoded. If the
+   file is missing the tile is removed outright, so the layout
+   closes up instead of showing an empty frame.
+   ============================================================ */
+.entry-tile {
+  width: 0;
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: width 0.28s ease, opacity 0.28s ease, transform 0.2s ease;
+}
+.entry-tile.is-ready {
+  width: var(--tile-w, 84px);
+  opacity: 1;
+}
+.entry-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, calc(var(--logo-shadow) * 0.55)));
+}
+.timeline-row:hover .entry-tile.is-ready,
+.work-item:hover .entry-tile.is-ready { transform: translateY(-2px); }
+
+/* Education: the tile sits at the RIGHT end of the row, where the eye
+   lands after the text rather than before it. Every row in a section that
+   has any image reserves the same column, so rows without one keep their
+   text aligned with rows that have one. */
+#education-list.has-any-tile .timeline-row {
+  grid-template-columns: 120px 1fr 1fr var(--tile-col, 84px);
+  align-items: center;
+}
+#education-list.has-any-tile .timeline-row .entry-tile { justify-self: end; }
+
+/* Work and featured projects: the tile heads the right-hand meta column,
+   which is otherwise mostly empty. The column keeps its width across the
+   whole list so entries line up whether or not they have an image. */
+.work-item .meta-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+.has-any-tile .work-item .meta-right { min-width: var(--tile-col, 84px); }
+
+@media (max-width: 860px) {
+  #education-list.has-any-tile .timeline-row { grid-template-columns: 1fr; }
+  .has-any-tile .work-item .meta-right { min-width: 0; }
+  .entry-tile.is-ready { width: min(var(--tile-w, 84px), 64px); }
+  .work-item .meta-right { align-items: flex-start; }
+}
+
+/* ---- Contact: brand marks, presented like the tools cards -------- */
+.contact-grid .item a {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+.contact-grid .item a .pc-logo,
+.contact-grid .item a .pc-logo-plate {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.contact-grid .item a span { overflow-wrap: anywhere; }
+
+/* ---- Wider content on large screens ------------------------------
+   The column was tuned for reading prose, but most sections here are
+   structured rows and cards, which just left long runs of empty space
+   on a laptop or desktop. */
+@media (min-width: 1100px) {
+  :root { --site-max-w: 1000px; }
+  .block { max-width: var(--site-max-w); }
+}
+@media (min-width: 1500px) {
+  :root { --site-max-w: 1120px; }
+}
+
+/* ---- AI tools cards ------------------------------------------------ */
+.ai-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+}
+.ai-card {
+  background: var(--bg-soft);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 16px 18px;
+  transition: transform 0.18s ease, border-color 0.18s ease;
+}
+.ai-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+.ai-card-head { display: flex; align-items: center; gap: 9px; margin-bottom: 7px; }
+.ai-card-head .pc-logo,
+.ai-card-head .pc-logo-plate { width: 24px; height: 24px; }
+.ai-card-name { font-size: 15px; font-weight: 600; }
+.ai-card-detail {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+/* ---- Portrait in the title block ----------------------------------- */
+.hero-portrait {
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+  border-radius: 14px;
+  aspect-ratio: 1 / 1;
+  float: right;
+  margin: 0 0 16px 24px;
+  transition: width 0.3s ease, opacity 0.3s ease;
+}
+.hero-portrait.is-ready { width: var(--tile-w, 148px); opacity: 1; }
+.hero-portrait img { width: 100%; height: 100%; object-fit: cover; display: block; }
+@media (max-width: 640px) {
+  .hero-portrait { float: none; margin: 0 0 18px; }
+  .hero-portrait.is-ready { width: min(var(--tile-w, 148px), 110px); }
+}
+
+/* Visual break between families of domain filters, so related ones read
+   as a group without needing a heading for each. */
+.pf-fam-gap {
+  height: 1px;
+  margin: 7px 4px;
+  background: var(--rule);
+  opacity: 0.7;
+}

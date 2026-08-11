@@ -1,0 +1,741 @@
+--- a/script.js
++++ b/script.js
+@@ -1610,6 +1610,18 @@
+     document.documentElement.style.setProperty('--topbar-h', h + 'px');
+   }
+ 
++  /* Filter terms the editor marked hidden (filters.hidden in site-config,
++     keyed "type:value") are dropped before rendering — from the rail, the
++     chips, and the narrow-screen dropdowns alike. Cards and their tags are
++     untouched; only the filter button disappears. */
++  function pfApplyHiddenFilters(groups) {
++    const hidden = (SITE_CONFIG.filters || {}).hidden || {};
++    groups.forEach(g => {
++      g.values = g.values.filter(v => !hidden[g.type + ':' + v]);
++    });
++    return groups.filter(g => g.values.length);
++  }
++
+   function pfFilterGroups() {
+     const groups = [];
+     const liveN = PF.projects.filter(pfIsLive).length;
+@@ -1667,7 +1679,7 @@
+       groups.push({ label: 'Tech', type: 'tech', values: tech,
+                     collapseAfter: techLimit, bandOf: bandOf });
+     }
+-    return groups;
++    return pfApplyHiddenFilters(groups);
+   }
+ 
+   /* Narrow screens: one dropdown per filter group, so a dozen filters
+@@ -1818,7 +1830,7 @@
+                     collapseAfter: techLimit, bandOf: bandOf });
+     }
+ 
+-    groups.forEach(g => {
++    pfApplyHiddenFilters(groups).forEach(g => {
+       const lab = document.createElement('div');
+       lab.className = 'pf-group-label';
+       lab.textContent = g.label;
+@@ -2398,13 +2410,13 @@
+   /* Print what actually wired up. When a fix "doesn't work", the first
+      question is whether the browser is running the current file at all —
+      this answers it without guesswork. */
+-  const BUILD = 'v11';
++  const BUILD = 'v12';
+   function selfCheck(data) {
+     const media = SITE_CONFIG.media || {};
+     const rows = [
+       ['build', BUILD],
+       ['skill cards clickable', document.querySelectorAll('.skills-cluster .tags span[data-entry]').length],
+-      ['intro regions tagged', document.querySelectorAll('[data-entry="Title"], [data-entry="Tagline"], [data-entry="About"], [data-entry="Meta lines"]').length + '/4'],
++      ['intro regions tagged', document.querySelectorAll('[data-entry="Title"], [data-entry="Tagline"], [data-entry="About"], [data-entry="Meta lines"], [data-entry="Availability"]').length + '/5'],
+       ['filters config loaded', !!(SITE_CONFIG.filters || {}).techGroups],
+       ['hero element found', !!(document.getElementById('hero') ||
+           document.querySelector('.hero') ||
+@@ -2624,6 +2636,18 @@
+         box.setAttribute('data-entry', 'Meta lines');
+       }
+     }
++    if (Array.isArray(text.corner) && text.corner.length) {
++      const box = document.querySelector('[data-entry="Availability"]') ||
++                  document.querySelector('#hero .corner, .hero .corner, .corner');
++      if (box) {
++        const lines = text.corner.map(escapeHTML);
++        /* First line stays small, the rest render bold — same shape as the
++           hand-written markup. */
++        box.innerHTML = lines.length > 1
++          ? lines[0] + '<br><b>' + lines.slice(1).join('<br>') + '</b>'
++          : lines[0];
++      }
++    }
+     if (Array.isArray(text.about) && text.about.length) {
+       const box = document.querySelector('[data-entry="About"]') ||
+                   document.getElementById('about-copy');
+@@ -2673,6 +2697,10 @@
+                   document.querySelector('#about .about-grid, .about-grid') ||
+                   document.querySelector('#about');
+     tag(about, 'About');
++
++    /* The availability note in the hero corner ("Open to …"). */
++    tag(document.querySelector('#hero .corner, .hero .corner, .corner'),
++        'Availability');
+   }
+ 
+   function applySectionTitles(cfg) {
+--- a/editor.js
++++ b/editor.js
+@@ -1564,9 +1564,48 @@
+      reflects the set being edited. Overrides are stored per theme, so day
+      and night are managed independently. */
+   function setTheme(t) {
+-    document.documentElement.setAttribute('data-theme', t);
+-    try { localStorage.setItem('rs-theme', t); } catch (e) {}
+-    setTimeout(function () { paintColors(); paintThemeState(); }, 60);
++    /* Drive the page's own toggle: it switches the theme-light/theme-dark
++       CLASS the stylesheets key off, keeps data-theme in step, and clears
++       the other theme's inline variable overrides (applySiteConfig).
++       Setting data-theme alone left the page painted in the old palette
++       while edits silently went into the other set — day and night looked
++       like one shared palette. */
++    var btn = document.getElementById(t === 'dark' ? 'btn-night' : 'btn-day');
++    if (btn) {
++      btn.click();
++    } else {
++      var root = document.documentElement;
++      root.classList.remove('theme-light', 'theme-dark');
++      root.classList.add('theme-' + t);
++      root.setAttribute('data-theme', t);
++      try { localStorage.setItem('rs-theme', t); } catch (e) {}
++    }
++    setTimeout(syncEditorToTheme, 60);
++  }
++
++  /* After the page theme changes — via the editor's day/night buttons OR
++     the site's own toggle — re-apply unsaved colour edits for the now
++     current theme (they exist only in state.config) and repaint the panel
++     so the swatches show the set actually being edited. */
++  function syncEditorToTheme() {
++    var t = theme();
++    var colors = ((state.config || {}).colors || {});
++    /* Unsaved edits from the other theme leave inline variables the page's
++       own switch can't know about (it only clears keys in the SAVED
++       config). Clear every key of the other set, then apply this set —
++       keys present in both come straight back with this theme's value. */
++    var stale = colors[t === 'dark' ? 'light' : 'dark'] || {};
++    Object.keys(stale).forEach(function (k) {
++      if (k.charAt(0) === '_') return;
++      document.documentElement.style.removeProperty('--' + k);
++    });
++    var themed = colors[t] || {};
++    Object.keys(themed).forEach(function (k) {
++      if (k.charAt(0) === '_') return;
++      document.documentElement.style.setProperty('--' + k, themed[k]);
++    });
++    paintColors();
++    paintThemeState();
+   }
+ 
+   function paintThemeState() {
+@@ -1799,6 +1838,34 @@
+         });
+       }
+     }
++    if (Array.isArray(t.meta) && t.meta.length) {
++      var mbox = document.querySelector('[data-entry="Meta lines"]') ||
++                 document.getElementById('hero-meta');
++      if (mbox) {
++        mbox.innerHTML = '';
++        t.meta.forEach(function (s) {
++          var sp = document.createElement('span');
++          sp.textContent = s;
++          mbox.appendChild(sp);
++        });
++      }
++    }
++    if (Array.isArray(t.corner) && t.corner.length) {
++      var cbox = document.querySelector('[data-entry="Availability"]') ||
++                 document.querySelector('#hero .corner, .hero .corner, .corner');
++      if (cbox) {
++        cbox.textContent = t.corner[0];
++        if (t.corner.length > 1) {
++          cbox.appendChild(document.createElement('br'));
++          var bb = document.createElement('b');
++          t.corner.slice(1).forEach(function (s, i) {
++            if (i) bb.appendChild(document.createElement('br'));
++            bb.appendChild(document.createTextNode(s));
++          });
++          cbox.appendChild(bb);
++        }
++      }
++    }
+   }
+ 
+   /* A full-window LaTeX editor. resume.tex generates the PDF, so the
+@@ -1916,8 +1983,13 @@
+ 
+   /* ---------- mutations ---------- */
+   function ensure() {
+-    if (!state.config) state.config = { colors: { light: {}, dark: {}, recent: [] },
+-                                        sizes: {}, sections: {}, media: {} };
++    if (!state.config) {
++      state.config = { colors: { light: {}, dark: {}, recent: [] },
++                       sizes: {}, sections: {}, media: {} };
++      /* Baseline the skeleton too: if the config fetch never completed,
++         only keys the user actually edits should reach the disk file. */
++      state.baseline = JSON.parse(JSON.stringify(state.config));
++    }
+     if (!state.config.colors) state.config.colors = { light: {}, dark: {}, recent: [], domains: {} };
+     if (!state.config.colors.domains) state.config.colors.domains = {};
+     if (!state.config.colors[theme()]) state.config.colors[theme()] = {};
+@@ -2052,13 +2124,51 @@
+   }
+ 
+   /* ---------- persistence ---------- */
++  /* Apply onto `disk` only the keys that changed between `base` (the
++     snapshot taken when this tab loaded the config) and `edited` (the
++     current in-memory state). Everything this tab did NOT touch keeps its
++     on-disk value. Without this, Save wrote the whole stale snapshot and
++     silently erased any change made outside the tab — another tab, a hand
++     edit, a script — since the page was loaded. Arrays are replaced
++     atomically; a key deleted in this tab is deleted on disk. */
++  function mergeEdits(disk, base, edited) {
++    var keys = {};
++    Object.keys(base || {}).forEach(function (k) { keys[k] = 1; });
++    Object.keys(edited || {}).forEach(function (k) { keys[k] = 1; });
++    Object.keys(keys).forEach(function (k) {
++      var b = (base || {})[k], e = (edited || {})[k];
++      if (JSON.stringify(b) === JSON.stringify(e)) return;   // untouched here
++      if (!(k in (edited || {}))) { delete disk[k]; return; }
++      var isObj = function (x) {
++        return x && typeof x === 'object' && !Array.isArray(x);
++      };
++      if (isObj(e) && isObj(disk[k])) {
++        mergeEdits(disk[k], isObj(b) ? b : {}, e);
++      } else {
++        disk[k] = e;
++      }
++    });
++    return disk;
++  }
++
+   function saveConfig() {
+     var cfg = ensure();
+-    fetch('/__save-config', {
+-      method: 'POST',
+-      headers: { 'Content-Type': 'application/json' },
+-      body: JSON.stringify(cfg)
+-    }).then(function (r) { return r.json(); })
++    /* Re-read the file first so edits land on what's there NOW, not on
++       what was there when this tab loaded. */
++    fetch('site-config.json', { cache: 'no-store' })
++      .then(function (r) { return r.ok ? r.json() : null; })
++      .catch(function () { return null; })
++      .then(function (disk) {
++        var body = (disk && state.baseline)
++          ? mergeEdits(disk, state.baseline, cfg)
++          : cfg;
++        return fetch('/__save-config', {
++          method: 'POST',
++          headers: { 'Content-Type': 'application/json' },
++          body: JSON.stringify(body)
++        });
++      })
++      .then(function (r) { return r.json(); })
+       .then(function (res) {
+         state.dirty = false;
+         statusEl.className = 'ed-note';
+@@ -2089,6 +2199,9 @@
+       .then(function (j) {
+         if (!j) return;
+         state.config = j;
++        /* Snapshot for diff-on-save: keys that don't differ from this
++           baseline are left alone on disk (see mergeEdits). */
++        state.baseline = JSON.parse(JSON.stringify(j));
+         state.recent = (j.colors && j.colors.recent) || [];
+         paintRecent();
+ 
+@@ -2173,11 +2286,18 @@
+   function targetNameFromEvent(node) {
+     for (var el = node; el && el !== document.body; el = el.parentNode) {
+       if (!el.getAttribute) continue;
++      /* Filter buttons carry their group and value as data attributes;
++         the "+ N more" expander has no data-val and falls through. */
++      if (el.classList && el.classList.contains('pf-btn') &&
++          el.dataset && el.dataset.val) {
++        return { name: el.dataset.val, kind: 'filter', ftype: el.dataset.type };
++      }
+       var t = el.getAttribute('data-title');            // project cards
+       if (t) return { name: t, kind: 'project' };
+       var m = el.getAttribute('data-entry');            // rows, cards, intro regions
+       if (m) {
+-        if (m === 'Title' || m === 'Tagline' || m === 'About' || m === 'Meta lines') {
++        if (m === 'Title' || m === 'Tagline' || m === 'About' ||
++            m === 'Meta lines' || m === 'Availability') {
+           return { name: m, kind: 'intro' };
+         }
+         /* A tools-card span also carries data-entry; treat it as its own
+@@ -2318,6 +2438,23 @@
+       } else if (name === 'Tagline') {
+         html = '<p class="lede" style="margin:0">' +
+                esc(t.lede || intro.tagline || '') + '</p>';
++      } else if (name === 'Meta lines') {
++        var mlines = Array.isArray(t.meta) && t.meta.length ? t.meta
++          : Array.prototype.map.call(
++              (document.getElementById('hero-meta') || {children: []}).children,
++              function (s) { return s.textContent; });
++        html = '<div class="meta">' +
++               mlines.map(function (s) { return '<span>' + esc(s) + '</span>'; }).join('') +
++               '</div>';
++      } else if (name === 'Availability') {
++        var clines = Array.isArray(t.corner) && t.corner.length ? t.corner
++          : String((document.querySelector('#hero .corner, .hero .corner, .corner') ||
++                    {innerText: ''}).innerText || '')
++              .split(/\n/).map(function (s) { return s.trim(); }).filter(Boolean);
++        html = '<div class="corner" style="position:static">' + esc(clines[0] || '') +
++               (clines.length > 1
++                 ? '<br><b>' + clines.slice(1).map(esc).join('<br>') + '</b>' : '') +
++               '</div>';
+       } else {
+         var paras = Array.isArray(t.about) && t.about.length ? t.about : (intro.about || []);
+         html = '<div class="about-grid"><div></div>' +
+@@ -2599,7 +2736,7 @@
+       var ta = el('textarea');
+       ta.rows = name === 'About' ? 8
+               : name === 'Title' ? 1
+-              : name === 'Meta lines' ? 3 : 4;
++              : (name === 'Meta lines' || name === 'Availability') ? 3 : 4;
+       ta.style.cssText = 'width:100%;font-family:inherit;font-size:11.5px;padding:7px;' +
+         'border:1px solid var(--rule,#ccc);border-radius:6px;background:transparent;' +
+         'color:inherit;resize:vertical;';
+@@ -2610,9 +2747,17 @@
+                     : Array.prototype.map.call(
+                         (document.getElementById('hero-meta') || {children: []}).children,
+                         function (s) { return s.textContent; }).join('\n'))
++               : name === 'Availability'
++                 ? (Array.isArray(t.corner) && t.corner.length ? t.corner.join('\n')
++                    : String((document.querySelector('#hero .corner, .hero .corner, .corner') ||
++                              {innerText: ''}).innerText || '')
++                        .split(/\n/).map(function (s) { return s.trim(); })
++                        .filter(Boolean).join('\n'))
+                : (Array.isArray(t.about) ? t.about.join('\n\n') : '');
+       ta.placeholder = name === 'About' ? 'Blank line between paragraphs'
+-                     : name === 'Meta lines' ? 'One line each' : '';
++                     : name === 'Meta lines' ? 'One line each'
++                     : name === 'Availability'
++                       ? 'One line each; lines after the first render bold' : '';
+       ta.addEventListener('click', function (e) { e.stopPropagation(); });
+       ta.addEventListener('input', function () {
+         if (name === 'Title')   t.heroName = ta.value.trim();
+@@ -2621,6 +2766,8 @@
+                                   .map(function (s) { return s.trim(); }).filter(Boolean);
+         if (name === 'Meta lines') t.meta = ta.value.split(/\n/)
+                                   .map(function (s) { return s.trim(); }).filter(Boolean);
++        if (name === 'Availability') t.corner = ta.value.split(/\n/)
++                                  .map(function (s) { return s.trim(); }).filter(Boolean);
+         markDirty();
+         applyTextLive();
+         /* mirror the global fields so the two never disagree */
+@@ -2634,9 +2781,12 @@
+       var introNote = el('div', 'ed-note',
+         name === 'Title'
+           ? 'Blank uses the name from resume.tex.'
+-          : 'Blank falls back to the ' +
+-            (name === 'Tagline' ? 'tagline:' : 'about:') +
+-            ' block at the top of resume.tex.');
++          : (name === 'Meta lines' || name === 'Availability')
++            ? 'These lines are written in index.html; anything typed here ' +
++              'overrides them from site-config.json.'
++            : 'Blank falls back to the ' +
++              (name === 'Tagline' ? 'tagline:' : 'about:') +
++              ' block at the top of resume.tex.');
+       box.appendChild(introNote);
+     }
+ 
+@@ -2750,30 +2900,47 @@
+       project:    { file: 'resume.tex', where: '\\subsection*{' + name + '}' },
+       section:    { file: 'index.html',  where: 'the <h2> for this section' }
+     };
+-    var origin = SRC[kind] || SRC.project;
++    /* Meta lines and the availability corner are hand-written in
++       index.html \u2014 resume.tex has no counterpart for them. */
++    var heroHtml = kind === 'intro' &&
++                   (name === 'Meta lines' || name === 'Availability');
++    var origin = heroHtml
++      ? { file: 'index.html',
++          where: name === 'Meta lines'
++            ? 'the hero <div class="meta">'
++            : 'the hero <div class="corner">' }
++      : (SRC[kind] || SRC.project);
+     var srcNote = el('div', 'ed-note',
+-      'Source: ' + origin.file + ' — ' + origin.where);
++      'Source: ' + origin.file + ' \u2014 ' + origin.where);
+     box.appendChild(srcNote);
+ 
+     var srcRow = el('div', 'ed-row');
+-    var openTex = el('button', 'ed-pick', 'edit in resume.tex');
+-    openTex.style.width = 'auto'; openTex.style.padding = '3px 9px';
+-    openTex.title = 'Open resume.tex scrolled to this entry';
+-    openTex.addEventListener('click', function (e) {
+-      e.stopPropagation();
+-      /* Search for the structural marker where one exists, since the bare
+-         name may appear in several places. */
+-      var probe = kind === 'project' ? '\\subsection*{' + name
+-                : kind === 'intro'   ? (name === 'About' ? 'about:' : 'tagline:')
+-                : name;
+-      openTexEditor(probe);
+-    });
+-    srcRow.appendChild(openTex);
++    if (!heroHtml) {
++      var openTex = el('button', 'ed-pick', 'edit in resume.tex');
++      openTex.style.width = 'auto'; openTex.style.padding = '3px 9px';
++      openTex.title = 'Open resume.tex scrolled to this entry';
++      openTex.addEventListener('click', function (e) {
++        e.stopPropagation();
++        /* Search for the structural marker where one exists, since the bare
++           name may appear in several places. */
++        var probe = kind === 'project' ? '\\subsection*{' + name
++                  : kind === 'intro'   ? (name === 'About' ? 'about:' : 'tagline:')
++                  : name;
++        openTexEditor(probe);
++      });
++      srcRow.appendChild(openTex);
++    }
+     var openHtml = el('button', 'ed-pick', 'edit index.html');
+     openHtml.style.width = 'auto'; openHtml.style.padding = '3px 9px';
+     openHtml.title = 'Open index.html scrolled to this text';
+     openHtml.addEventListener('click', function (e) {
+-      e.stopPropagation(); openHtmlEditor(name);
++      e.stopPropagation();
++      /* Search for a structural marker for the hand-written hero blocks \u2014
++         their display names don't appear in the markup. */
++      var probe = name === 'Meta lines' ? 'hero-meta'
++                : name === 'Availability' ? 'class="corner"'
++                : name;
++      openHtmlEditor(probe);
+     });
+     srcRow.appendChild(openHtml);
+     box.appendChild(srcRow);
+@@ -2866,6 +3033,114 @@
+     if (box.scrollIntoView) box.scrollIntoView({ block: 'nearest' });
+   }
+ 
++  function filtersStore() {
++    var cfg = ensure();
++    if (!cfg.filters) cfg.filters = {};
++    if (!cfg.filters.hidden) cfg.filters.hidden = {};
++    return cfg.filters;
++  }
++
++  /* Right-clicking a filter button offers to drop it from the rail.
++     Hidden terms live in filters.hidden (site-config), keyed "type:value".
++     The panel also lists everything currently hidden so a term can be
++     brought back — its button is gone, so it can't be right-clicked. */
++  function openFilterPanel(type, val) {
++    var box = document.getElementById('ed-item');
++    if (!box || !val) return;
++    box.innerHTML = '';
++    box.dataset.name = type + ':' + val;
++
++    var hd = el('div', 'ed-item-hd');
++    hd.appendChild(el('span', 'ed-item-kind', (type || 'tech') + ' filter'));
++    hd.appendChild(el('span', null, 'Edit this item'));
++    var close = el('button', 'ed-item-close', '×');
++    close.title = 'Close';
++    close.addEventListener('click', function (e) {
++      e.stopPropagation(); box.classList.remove('open');
++    });
++    hd.appendChild(close);
++    box.appendChild(hd);
++    box.appendChild(el('div', 'ed-item-name', val));
++
++    var f = filtersStore();
++    var key = type + ':' + val;
++
++    /* Hide/show the live buttons immediately; the rail rebuilds without
++       hidden terms on the next load anyway. */
++    function liveApply(ty, v, off) {
++      document.querySelectorAll('.pf-btn').forEach(function (b) {
++        if (b.dataset.type === ty && b.dataset.val === v) {
++          b.style.display = off ? 'none' : '';
++        }
++      });
++      document.querySelectorAll('.pf-dd').forEach(function (dd) {
++        if (dd.dataset.group !== ty) return;
++        dd.querySelectorAll('.pf-opt').forEach(function (o) {
++          if (o.dataset.val === v) o.style.display = off ? 'none' : '';
++        });
++      });
++    }
++
++    var row = el('div', 'ed-row');
++    row.appendChild(el('label', null, 'Show filter'));
++    var btn = el('button', 'ed-pick', '');
++    btn.style.width = 'auto'; btn.style.padding = '3px 12px';
++    function paint() {
++      var off = f.hidden[key] === true;
++      btn.textContent = off ? 'hidden' : 'shown';
++      btn.style.background = off ? 'transparent' : 'var(--accent)';
++      btn.style.color = off ? 'inherit' : '#fff';
++    }
++    btn.addEventListener('click', function (e) {
++      e.stopPropagation();
++      if (f.hidden[key]) delete f.hidden[key]; else f.hidden[key] = true;
++      paint(); liveApply(type, val, f.hidden[key] === true);
++      renderHiddenChips(); markDirty();
++    });
++    paint();
++    row.appendChild(btn);
++    box.appendChild(row);
++
++    box.appendChild(el('div', 'ed-note',
++      'Hiding drops this button from the filter rail and the narrow-screen ' +
++      'dropdown. Project cards and their tags are untouched.'));
++
++    var chipsHd = el('div', 'ed-note', '');
++    box.appendChild(chipsHd);
++    var chipsRow = el('div', 'ed-row');
++    chipsRow.style.display = 'block';
++    box.appendChild(chipsRow);
++    function renderHiddenChips() {
++      chipsRow.innerHTML = '';
++      var keys = Object.keys(f.hidden).filter(function (k) { return f.hidden[k]; });
++      chipsHd.textContent = keys.length
++        ? 'Hidden filters — click one to bring it back:'
++        : 'No filters are hidden.';
++      keys.forEach(function (k) {
++        var c = el('button', 'ed-pick', k.replace(':', ': '));
++        c.style.width = 'auto'; c.style.padding = '2px 8px';
++        c.style.margin = '2px 4px 2px 0';
++        c.addEventListener('click', function (e) {
++          e.stopPropagation();
++          delete f.hidden[k];
++          var i = k.indexOf(':');
++          liveApply(k.slice(0, i), k.slice(i + 1), false);
++          if (k === key) paint();
++          renderHiddenChips(); markDirty();
++        });
++        chipsRow.appendChild(c);
++      });
++    }
++    renderHiddenChips();
++
++    var hint = el('div', 'ed-note',
++      'Changes preview live. Press Save at the bottom to write them.');
++    box.appendChild(hint);
++
++    box.classList.add('open');
++    if (box.scrollIntoView) box.scrollIntoView({ block: 'nearest' });
++  }
++
+   /* ---------- show / hide ---------- */
+   function show(x, y) {
+     panel.classList.add('open');
+@@ -2909,11 +3184,21 @@
+     /* Right-click ON an item scopes the panel to that item: the media
+        target is pre-selected and the panel scrolls straight to it, so you
+        aren't hunting through a dropdown of two dozen entries. */
++    /* The site's own sun/moon toggle changes the theme underneath the
++       editor; follow it so the panel always edits the visible set. */
++    ['btn-day', 'btn-night'].forEach(function (id) {
++      var b = document.getElementById(id);
++      if (b) b.addEventListener('click', function () {
++        setTimeout(syncEditorToTheme, 60);
++      });
++    });
+     document.addEventListener('contextmenu', function (e) {
+       e.preventDefault();
+       var hit = targetNameFromEvent(e.target);
+       show(e.clientX, e.clientY);
+-      if (hit) {
++      if (hit && hit.kind === 'filter') {
++        openFilterPanel(hit.ftype, hit.name);
++      } else if (hit) {
+         focusMediaTarget(hit.name);
+         openItemPanel(hit.name, hit.kind);
+         renderPreviewWindow(hit.name, hit.kind);
+--- a/site-config.json
++++ b/site-config.json
+@@ -95,14 +95,14 @@
+     "tileSize": 84,
+     "sectionTiles": {},
+     "showContactLogos": true,
+-    "portrait": "",
++    "portrait": "bluePortrait.png",
+     "showPortrait": true,
+     "portraitSize": 148,
+     "portraitAlt": "Portrait",
+     "noEmoji": false,
+     "hiddenEntries": {},
+     "cardLogos": {},
+-    "techFilterLimit": 14,
++    "techFilterLimit": 24,
+     "tileBg": {},
+     "monoEmoji": false,
+     "autoShadow": true,
+@@ -483,6 +483,7 @@
+       "order": [
+         "frameworks",
+         "languages",
++        "databases",
+         "other"
+       ],
+       "frameworks": [
+@@ -491,29 +492,19 @@
+         "Node.js",
+         "Express",
+         "Flutter",
+-        "Vite",
+         "Tailwind CSS",
+         "Chart.js",
+-        "PyBullet",
+-        "Pyspark",
+-        "Docker",
+-        "SLURM",
+-        "MPI",
+-        "LLVM",
+-        "GNU Flex/Lex",
+-        "CodeMirror 6",
+-        "WebSocket",
+-        "gRPC",
+-        "Protocol Buffers",
+-        "Scapy",
+         "NumPy",
+         "Pandas",
+-        "Moya framework",
++        "Pyspark",
++        "PyBullet",
+         "Ollama",
++        "Scapy",
++        "CodeMirror 6",
+         "Reagraph",
+-        "Curses (TUI)",
+         "PyMuPDF",
+-        "iptables"
++        "Moya framework",
++        "Curses (TUI)"
+       ],
+       "languages": [
+         "Python",
+@@ -524,15 +515,36 @@
+         "Javascript",
+         "Java",
+         "Dart",
+-        "SQL",
+-        "Postgresql",
+-        "MongoDB",
++        "BASH",
+         "HTML5",
+-        "CSS",
+-        "Linux API",
+-        "BASH"
++        "CSS"
++      ],
++      "other": [
++        "Docker",
++        "Vite",
++        "SLURM",
++        "MPI",
++        "LLVM",
++        "GNU Flex/Lex",
++        "WebSocket",
++        "gRPC",
++        "Protocol Buffers",
++        "iptables",
++        "Linux API"
+       ],
+-      "other": []
++      "databases": [
++        "Postgresql",
++        "MongoDB",
++        "SQL",
++        "IndexedDB",
++        "Redis",
++        "SQLite",
++        "MySQL"
++      ]
++    },
++    "hidden": {
++      "tech:iptables": true,
++      "tech:Moya framework": true
+     }
+   }
+-}
+\ No newline at end of file
++}
+--- a/HANDOFF.md
++++ b/HANDOFF.md
+@@ -4,6 +4,73 @@
+ built in a chat that could not read the local files, which is the root of
+ most of what follows.
+ 
++> **Status (2026-08-10, diagnosed against the working tree):** all three
++> issues resolved or explained. The central suspicion was wrong — the local
++> `index.html` *does* carry all four ids (`hero`, `hero-meta`, `hero-lede`,
++> `about-copy`), and `script.js` is v11 with the ordering and `filters`-copy
++> fixes intact. Findings, verified in a headless browser against the live DOM:
++>
++> 1. **Portrait** — root cause was config, not code: `media.portrait` was
++>    `""`. The image had been saved to `media.images.Title` (via right-click →
++>    image on the title), which nothing renders for the hero —
++>    `applySectionConfig` only maps the five content sections. Fixed by
++>    setting `media.portrait: "bluePortrait.png"`; the portrait now renders
++>    beside the name (`is-ready`, 148px). The stale `images.Title` key is
++>    inert and left in place.
++> 2. **Meta lines** — tagging worked, but the panel lied: the intro
++>    preview's final `else` rendered the About paragraphs for any intro
++>    region that wasn't Title/Tagline, and the source note claimed the
++>    `about:` block in resume.tex. Fixed in v12: Meta lines and the new
++>    Availability region (the "Open to …" corner, previously untagged and
++>    uneditable) get faithful previews, an "index.html" source note (with
++>    the resume.tex button suppressed — they have no counterpart there),
++>    live preview while typing, and overrides stored as `text.meta` /
++>    `text.corner`. Intro regions are now 5/5 in the self-check.
++> 3. **Tech filter grouping** — the mechanism works (`filters.techGroups`
++>    loads, band dividers render). The remaining problem was content balance:
++>    nearly every term sat in `frameworks`, and with `techFilterLimit: 14`
++>    the visible buttons all landed in one band. Resolved by rebalancing the
++>    lists and raising `techFilterLimit` to 24. Band order is now
++>    `frameworks, languages, databases, other`: `languages` trimmed to
++>    actual languages, a new `databases` band holds Postgresql, MongoDB,
++>    SQL, IndexedDB, Redis, SQLite, and build/infra tools (Docker, Vite,
++>    SLURM, MPI, LLVM, GNU Flex/Lex, WebSocket, gRPC, Protocol Buffers,
++>    iptables, Linux API) sit in `other`. The rail shows all four bands
++>    with a divider at each boundary; the ~40 unlisted concept terms sit
++>    behind "+ more". (`bandOf` reads `order` dynamically, so adding a band
++>    needed no code change.) MySQL is pre-listed in `databases`.
++>
++> **Day/night colour edits bleeding together** (same class of bug as the
++> `theme()` note below, one layer up): the editor's `setTheme()` switched
++> `data-theme` but never the `theme-light`/`theme-dark` class the
++> stylesheets key off — so the page stayed in the old palette while edits
++> went into the other set, and inline variables from the previous set were
++> never cleared. Fixed in v12: `setTheme()` now drives the page's own
++> sun/moon toggle (class + attribute + saved-override swap together), a
++> shared `syncEditorToTheme()` clears the other theme's unsaved inline
++> variables and re-applies this theme's unsaved edits, and the site toggle
++> buttons notify the editor so the panel always edits the visible set.
++>
++> **Editor Save clobbered out-of-band config edits** (found 2026-08-11):
++> `saveConfig()` POSTed the tab's entire in-memory snapshot, so a tab
++> opened before any outside change to `site-config.json` (another tab, a
++> hand edit, a script) silently reverted that change on Save — this erased
++> the tech-band rebalance, the portrait, and `techFilterLimit` while
++> keeping only the tab's own `filters.hidden` edit. Fixed: the editor now
++> snapshots a baseline at load (`state.baseline`), re-reads the file at
++> save time, and `mergeEdits()` applies only the keys that differ from the
++> baseline — everything the tab didn't touch keeps its on-disk value.
++> Arrays replace atomically; deletions propagate. The lost config was
++> reconstructed and restored. Tabs opened before this fix still run the
++> old blind-overwrite save: refresh them before saving.
++>
++> Also new in v12: right-clicking any filter button opens a panel with a
++> shown/hidden toggle. Hidden terms are stored in `filters.hidden`
++> (site-config, keyed `"type:value"`) and dropped from the rail and the
++> narrow-screen dropdowns by `pfApplyHiddenFilters()`; the panel lists all
++> hidden filters as chips so they can be restored (their buttons are gone,
++> so they can't be right-clicked back).
++
+ ---
+ 
+ ## The central suspicion

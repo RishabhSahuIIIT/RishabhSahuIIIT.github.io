@@ -1,0 +1,88 @@
+{
+  "_comment": [
+    "Visual settings for the portfolio. Content lives in resume.tex;",
+    "per-project display flags live in projects.js; this file holds only",
+    "how things LOOK. The dev-server editor writes this file, and keeps a",
+    "timestamped copy under .site-config-backups/ so changes can be reverted.",
+    "Any key may be omitted — the site falls back to the stylesheet value."
+  ],
+  "version": 1,
+  "colors": {
+    "_comment": [
+      "light/dark: CSS variable overrides per theme, e.g. {\"accent\": \"#8a5a44\"}.",
+      "domains: an explicit colour per project domain. Drives that domain's",
+      "  filter button, its chips, the card edge AND the connector lines drawn",
+      "  to matching projects. Unpinned domains get a hue-rotated accent.",
+      "recent: colour history shown in the editor."
+    ],
+    "light": {},
+    "dark": {},
+    "recent": [],
+    "domains": {}
+  },
+  "sizes": {
+    "_comment": "Multipliers applied on top of the stylesheet. 1 = unchanged.",
+    "textScale": 1,
+    "density": 1,
+    "maxWidth": null
+  },
+  "sections": {
+    "_comment": "Per-section overrides. Keys match \\section*{...} names in resume.tex.",
+    "Education": {
+      "textScale": null,
+      "density": null,
+      "showIcon": true
+    },
+    "Internships": {
+      "textScale": null,
+      "density": null,
+      "showIcon": true
+    },
+    "Projects": {
+      "textScale": null,
+      "density": null,
+      "showIcon": true
+    },
+    "Skills": {
+      "textScale": null,
+      "density": null,
+      "showIcon": true
+    },
+    "Accomplishments": {
+      "textScale": null,
+      "density": null,
+      "showIcon": true
+    }
+  },
+  "media": {
+    "_comment": [
+      "imageDir: where image files live, relative to the site root.",
+      "icons/images/alts: per-section and per-project OVERRIDES set from the",
+      "  editor, keyed by name. These win over the icon:/image:/alt: lines in",
+      "  resume.tex, so the editor never has to rewrite your LaTeX. Use the",
+      "  editor's 'copy for resume.tex' button to promote a choice into the",
+      "  source file, then delete it here."
+    ],
+    "imageDir": "assets/",
+    "showIcons": true,
+    "iconStyle": "emoji",
+    "icons": {
+      "Education": "🎓",
+      "Internships": "💼",
+      "Projects": "🧩",
+      "Network Intrusion Detection and Prevention System": "🛡",
+      "Agentic AI Research Assistant": "🤖",
+      "Citestat – Academic Citation Analytics Dashboard": "📊",
+      "Real-Time Collaborative Text Editor using CRDT": "✍",
+      "Skills": "🛠",
+      "Accomplishments": "🏆"
+    },
+    "images": {},
+    "alts": {
+      "Network Intrusion Detection and Prevention System": "Packet capture dashboard",
+      "Agentic AI Research Assistant": "Multi-agent research pipeline",
+      "Citestat – Academic Citation Analytics Dashboard": "Citation analytics dashboard",
+      "Real-Time Collaborative Text Editor using CRDT": "Collaborative editing demo"
+    }
+  }
+}

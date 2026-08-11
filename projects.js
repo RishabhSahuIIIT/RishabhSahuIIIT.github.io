@@ -26,6 +26,7 @@
    ============================================================ */
 
 window.PORTFOLIO_CONFIG = {
+
   /* ============================================================
      SECTION-LEVEL TOGGLES
      ============================================================ */
@@ -43,7 +44,10 @@ window.PORTFOLIO_CONFIG = {
     // Categories listed here appear in this order; any others fall
     // in after them as they're encountered in the resume. Strings
     // must match the category tag in resume.tex EXACTLY.
-    projectCategoryOrder: ["Backend Development", "Machine Learning"],
+    projectCategoryOrder: [
+      "Backend Development",
+      "Machine Learning"
+    ],
 
     // Should the per-project "Details" dropdowns in the All-projects
     // section be expanded by default? false = closed (cleaner page).
@@ -51,13 +55,7 @@ window.PORTFOLIO_CONFIG = {
 
     // Show paragraph descriptions parsed from `% description:` LaTeX
     // comments in resume.tex. Flip to false to hide them site-wide.
-    showProjectDescriptions: true,
-
-    // Keep the Featured section a concise highlight reel: show each
-    // project's description paragraph but NOT its detail bullets (the
-    // full bullets still live in the All-projects "Details" dropdown).
-    // Flip to true to show bullets on the featured cards too.
-    showFeaturedBullets: false,
+    showProjectDescriptions: true
   },
 
   /* ============================================================
@@ -85,23 +83,36 @@ window.PORTFOLIO_CONFIG = {
      `featuredOnly: true`).
      ============================================================ */
   projects: {
-    // ---- Selected work (featured) ----
-    // Keys must match the parsed \subsection* title EXACTLY. Note the
-    // en-dash (–) in the Citestat key: resume "--" is rendered as an
-    // en-dash by the parser, so a literal "--" here would NOT match.
-    "Real-Time Collaborative Text Editor using CRDT":    { featured: true },
-    "Agentic AI Research Assistant":                     { featured: true },
-    "Network Intrusion Detection and Prevention System": { featured: true },
-    "Citestat – Academic Citation Analytics Dashboard":  { featured: true },
-    "Racket-to-LLVM Compiler Frontend":                  { featured: true },
+    /* ----------------------------------------------------------
+       Featured projects, icons, images and alt text now live in
+       resume.tex comment blocks, so content and its attributes
+       stay in one file:
+
+           \begin{comment}
+           featured: true
+           icon: 🛡
+           alt: Packet capture dashboard
+           topics: Security > Network Security
+           description:
+           ...
+           \end{comment}
+
+       Anything set here still WINS over resume.tex — use it for
+       web-only overrides. Titles must match the parsed title
+       exactly (note: LaTeX `--` parses to an en-dash `–`).
+       ---------------------------------------------------------- */
 
     // Examples — uncomment and adjust as needed:
+
     // Promote to "Selected work" (mirrors in All projects too):
     // "JSON API server": { featured: true },
+
     // Promote AND hide from All projects:
     // "JSON API server": { featured: true, featuredOnly: true },
+
     // Hide a project's description paragraph site-wide:
     // "Wine Classifier based on Decision Tree": { hideDescription: true },
+
     // Override with a richer web description:
     // "JSON API server": {
     //   featured: true,
@@ -116,6 +127,7 @@ window.PORTFOLIO_CONFIG = {
     //     links: [{ label: "GitLab", url: "https://gitlab.com/projectsa2/jsonapiserver" }]
     //   }
     // },
+
     // Add a project not in the resume (web-only):
     // "Portfolio Site": {
     //   featured: true,
@@ -147,7 +159,7 @@ window.PORTFOLIO_CONFIG = {
   accomplishments: {
     // "GATE":     { altText: "GATE CS/IT 2024 — 95.4 percentile (top 5%)" },
     // "N.T.S.E.": { show: false }
-  },
+  }
 };
 
 /* Backwards-compatible alias (used by older versions of script.js) */
