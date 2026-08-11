@@ -156,6 +156,50 @@ Domain colours derive from the active palette's accent with hue rotation, so
 they follow the day/night toggle and any palette switch.
 
 
+## Hiding filters and nav categories
+
+Two lists, deliberately separate:
+
+| Key | Controls |
+|---|---|
+| `filters.hidden` | Filter buttons in the All Projects rail and mobile chips |
+| `filters.hiddenNav` | Domains in the top-bar **Projects** dropdown |
+
+They're independent because they do different jobs. The dropdown is a short
+table of contents and usually wants trimming hard; the rail is a working
+tool, where you may still want to filter by a domain you've kept out of the
+menu. Set `filters.navFollowsFilters: true` if you'd rather the dropdown
+inherit the rail's hidden list too.
+
+**From the editor:** right-click any filter button. A domain gives you two
+switches — **In filter rail** and **In nav dropdown**. Hidden filters are
+listed as restore chips in the same panel, since a hidden button can't be
+right-clicked back.
+
+**From `site-config.json`**, keyed `"<type>:<value>"`:
+
+```json
+"filters": {
+  "hidden": {
+    "tech:iptables": true
+  },
+  "hiddenNav": {
+    "domain:Data Structures": true,
+    "domain:Optimization": true
+  },
+  "navFollowsFilters": false
+}
+```
+
+Types are `domain`, `tech` and `status`. Only `domain` appears in the nav.
+
+Worth being clear about the limits: hiding removes the *button* or the menu
+entry, nothing else. Every project stays visible and keeps its chips — a
+project tagged "Optimization" still shows that chip on its card. To remove a
+domain from the site entirely, edit the `topics:` lines in
+`assets/resume.tex`, which is the source all three views derive from.
+
+
 ## Configuring — `projects.js`
 
 By default everything in `resume.tex` appears. Edit `projects.js` only to
@@ -500,6 +544,33 @@ Set the default recipe to a XeLaTeX one in settings:
 ```
 
 Or compile directly: `xelatex resume.tex` (twice, for the page references).
+
+### Missing fonts
+
+The resume asks for **Linux Libertine O** (text) and **Libertinus Math**
+(maths). If either is absent you'll see a run of:
+
+```
+Package fontspec Error: The font "Libertinus Math" cannot be found.
+```
+
+These are **non-fatal** — check the end of the log and you'll usually find
+`Output written on resume.pdf (4 pages)`. The document contains no maths, so
+the missing maths font changes nothing visible. But the noise buries real
+errors, so the preamble now guards both with `\IfFontExistsTF` and falls back
+to TeX Gyre Termes / Latin Modern Math, which ship with every TeX Live.
+
+To get the intended faces:
+
+```bash
+# Debian / Ubuntu
+sudo apt install fonts-linuxlibertine fonts-libertinus
+
+# any TeX Live
+tlmgr install libertinus-fonts libertine
+```
+
+Verify with `fc-list | grep -i libertin`.
 
 
 ## Live style preview

@@ -2370,7 +2370,14 @@
       }
       const childLinks = item.children.map(c =>
         '<a href="' + c.href + '" class="nav-sub-link" role="menuitem"' +
-          (c.filterDomain ? ' data-filter-domain="' + escapeHTML(c.filterDomain) + '"' : '') +
+          (c.filterDomain
+            ? ' data-filter-domain="' + escapeHTML(c.filterDomain) + '"' +
+              /* Right-clicking a dropdown entry should edit THAT entry.
+                 Without a data-entry hook the editor walked up to the
+                 enclosing section instead, so there was no way to reach
+                 these from where they actually appear. */
+              ' data-entry="Nav: ' + escapeHTML(c.filterDomain) + '"'
+            : '') +
         '>' + escapeHTML(c.label) + '</a>'
       ).join('');
       return '<div class="nav-group">' +
@@ -2861,9 +2868,21 @@
         /* All Projects is filter-driven, so its nav sub-links mirror the
            Domain filters rather than old per-category anchors. Derive them
            from the parsed topic domains, not the legacy single `category`. */
+        /* The nav dropdown keeps its OWN hidden list (filters.hiddenNav),
+           separate from the filter rail's (filters.hidden). The two serve
+           different purposes: the dropdown is a short table of contents and
+           usually wants trimming hard, while the rail is a working tool
+           where you may still want to filter by a domain you've kept out of
+           the menu. Set `filters.navFollowsFilters: true` to make the
+           dropdown inherit the rail's hidden list as well. */
+        const F = SITE_CONFIG.filters || {};
+        const hiddenNav = F.hiddenNav || {};
+        const hiddenRail = F.hidden || {};
+        const follows = F.navFollowsFilters === true;
         const restCats = uniqueStrings(
           [].concat.apply([], restProjs.map(p => p.domains || (p.category ? [p.category] : [])))
-        );
+        ).filter(c => !hiddenNav['domain:' + c] &&
+                      !(follows && hiddenRail['domain:' + c]));
 
         const internshipsVisible = (sec.showInternships !== false) && internships.length > 0;
         const featuredVisible    = (sec.showProjects    !== false) && featuredProjs.length > 0;

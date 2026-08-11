@@ -880,6 +880,15 @@
     panel._monoEmoji = monoEmoji;
     panel._autoSh = autoSh;
 
+    /* ---- Nav dropdown --------------------------------------------
+       Every domain the top-bar Projects menu can show, with a switch each.
+       Right-clicking an entry in the menu reaches the same thing, but the
+       menu closes when you click away, so a list here is the reliable
+       route. */
+    panel.appendChild(el('div', 'ed-h', 'Projects dropdown'));
+    var navBox = el('div'); navBox.id = 'ed-navlist';
+    panel.appendChild(navBox);
+
     /* ---- Hidden items --------------------------------------------
        Anything switched off anywhere in the editor collects here, so a
        hidden item can always be found and restored — otherwise turning
@@ -1706,6 +1715,58 @@
   /* One toggle per entry, so anything can be hidden from the site without
      deleting it from resume.tex. */
   /* Every hidden thing, whatever hid it, with a one-click restore. */
+  /* One row per domain: click to toggle its presence in the top-bar menu. */
+  function paintNavList() {
+    var box = document.getElementById('ed-navlist');
+    if (!box) return;
+    box.innerHTML = '';
+    var d = window.__resumeData;
+    if (!d || !d.projects) {
+      box.appendChild(el('div', 'ed-note', 'waiting for resume\u2026'));
+      return;
+    }
+    var f = filtersStore();
+    if (!f.hiddenNav) f.hiddenNav = {};
+
+    var seen = {}, domains = [];
+    d.projects.forEach(function (p) {
+      (p.domains || []).forEach(function (dom) {
+        if (!seen[dom]) { seen[dom] = 1; domains.push(dom); }
+      });
+    });
+    domains.sort();
+
+    box.appendChild(el('div', 'ed-note',
+      'Entries come from the topics: lines in resume.tex. Hiding one ' +
+      'affects the menu only \u2014 the filter rail has its own switch.'));
+
+    domains.forEach(function (dom) {
+      var key = 'domain:' + dom;
+      var b = el('button');
+      b.style.cssText = 'width:100%;margin-bottom:3px;font-size:10.5px;text-align:left;' +
+        'padding:4px 8px;border:1px solid var(--rule);border-radius:6px;' +
+        'background:transparent;color:inherit;cursor:pointer;';
+      function paint() {
+        var off = f.hiddenNav[key] === true;
+        b.textContent = (off ? '\u2717  ' : '\u2713  ') + dom;
+        b.style.opacity = off ? '0.45' : '1';
+      }
+      b.addEventListener('click', function (e) {
+        e.stopPropagation();
+        f.hiddenNav[key] = !f.hiddenNav[key];
+        if (!f.hiddenNav[key]) delete f.hiddenNav[key];
+        markDirty(); paint();
+        document.querySelectorAll('.nav-sub-link').forEach(function (a) {
+          if (a.getAttribute('data-filter-domain') === dom) {
+            a.style.display = f.hiddenNav[key] ? 'none' : '';
+          }
+        });
+      });
+      paint();
+      box.appendChild(b);
+    });
+  }
+
   function paintHiddenList() {
     var box = document.getElementById('ed-hidden');
     if (!box) return;
@@ -2237,6 +2298,7 @@
         paintMiscToggles();
         paintEntryToggles();
         paintHiddenList();
+        paintNavList();
         var st = j.text && j.text.sectionTitles;
         if (st) panel.querySelectorAll('[data-title-key]').forEach(function (i) {
           if (st[i.dataset.titleKey]) i.value = st[i.dataset.titleKey];
@@ -2296,6 +2358,11 @@
       if (t) return { name: t, kind: 'project' };
       var m = el.getAttribute('data-entry');            // rows, cards, intro regions
       if (m) {
+        /* Top-bar dropdown entries are tagged "Nav: <domain>" so they can be
+           edited where they appear, rather than only via the filter rail. */
+        if (m.indexOf('Nav: ') === 0) {
+          return { name: m.slice(5), kind: 'nav' };
+        }
         if (m === 'Title' || m === 'Tagline' || m === 'About' ||
             m === 'Meta lines' || m === 'Availability') {
           return { name: m, kind: 'intro' };
@@ -2507,6 +2574,77 @@
      its emoji, image, alt text, mark size, and — for projects — its
      featured flag and domain colour. Everything that applies to that one
      item, and nothing that doesn't. */
+  /* A dropdown entry edits one thing: whether it appears in the menu.
+     Its text comes from the topics: lines in resume.tex, so there's
+     nothing else here to change without editing that. */
+  function openNavPanel(domain) {
+    var box = document.getElementById('ed-item');
+    if (!box) return;
+    box.innerHTML = '';
+    box.dataset.name = domain;
+
+    var hd = el('div', 'ed-item-hd');
+    hd.appendChild(el('span', 'ed-item-kind', 'nav entry'));
+    hd.appendChild(el('span', null, 'Projects dropdown'));
+    var close = el('button', 'ed-item-close', '\u00d7');
+    close.addEventListener('click', function (e) {
+      e.stopPropagation(); box.classList.remove('open');
+    });
+    hd.appendChild(close);
+    box.appendChild(hd);
+    box.appendChild(el('div', 'ed-item-name', domain));
+
+    var f = filtersStore();
+    if (!f.hiddenNav) f.hiddenNav = {};
+    var key = 'domain:' + domain;
+
+    var row = el('div', 'ed-row');
+    row.appendChild(el('label', null, 'In dropdown'));
+    var btn = el('button', 'ed-pick', '');
+    btn.style.width = 'auto'; btn.style.padding = '3px 12px';
+    function paint() {
+      var off = f.hiddenNav[key] === true;
+      btn.textContent = off ? 'hidden' : 'shown';
+      btn.style.background = off ? 'transparent' : 'var(--accent)';
+      btn.style.color = off ? 'inherit' : '#fff';
+    }
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      f.hiddenNav[key] = !f.hiddenNav[key];
+      if (!f.hiddenNav[key]) delete f.hiddenNav[key];
+      markDirty(); paint(); paintNavList();
+      document.querySelectorAll('.nav-sub-link').forEach(function (a) {
+        if (a.getAttribute('data-filter-domain') === domain) {
+          a.style.display = f.hiddenNav[key] ? 'none' : '';
+        }
+      });
+    });
+    paint();
+    row.appendChild(btn);
+    box.appendChild(row);
+
+    box.appendChild(el('div', 'ed-note',
+      'Source: assets/resume.tex \u2014 the topics: line of every project in ' +
+      'this domain. The dropdown, the filter rail and the chips on each card ' +
+      'all derive from it, so renaming a domain means editing those lines.'));
+
+    var srcRow = el('div', 'ed-row');
+    var openTex = el('button', 'ed-pick', 'find in resume.tex');
+    openTex.style.width = 'auto'; openTex.style.padding = '3px 9px';
+    openTex.addEventListener('click', function (e) {
+      e.stopPropagation(); openTexEditor(domain);
+    });
+    srcRow.appendChild(openTex);
+    box.appendChild(srcRow);
+
+    box.appendChild(el('div', 'ed-note',
+      'Hiding affects the menu only \u2014 projects and their chips stay. ' +
+      'The filter rail has its own separate switch.'));
+
+    box.classList.add('open');
+    if (box.scrollIntoView) box.scrollIntoView({ block: 'nearest' });
+  }
+
   function openItemPanel(name, kind) {
     var box = document.getElementById('ed-item');
     if (!box || !name) return;
@@ -2905,42 +3043,31 @@
     var heroHtml = kind === 'intro' &&
                    (name === 'Meta lines' || name === 'Availability');
     var origin = heroHtml
-      ? { file: 'index.html',
-          where: name === 'Meta lines'
-            ? 'the hero <div class="meta">'
-            : 'the hero <div class="corner">' }
+      ? { file: 'index.html', where: 'the hero block' }
       : (SRC[kind] || SRC.project);
     var srcNote = el('div', 'ed-note',
       'Source: ' + origin.file + ' \u2014 ' + origin.where);
     box.appendChild(srcNote);
 
     var srcRow = el('div', 'ed-row');
-    if (!heroHtml) {
-      var openTex = el('button', 'ed-pick', 'edit in resume.tex');
-      openTex.style.width = 'auto'; openTex.style.padding = '3px 9px';
-      openTex.title = 'Open resume.tex scrolled to this entry';
-      openTex.addEventListener('click', function (e) {
-        e.stopPropagation();
-        /* Search for the structural marker where one exists, since the bare
-           name may appear in several places. */
-        var probe = kind === 'project' ? '\\subsection*{' + name
-                  : kind === 'intro'   ? (name === 'About' ? 'about:' : 'tagline:')
-                  : name;
-        openTexEditor(probe);
-      });
-      srcRow.appendChild(openTex);
-    }
+    var openTex = el('button', 'ed-pick', 'edit in resume.tex');
+    openTex.style.width = 'auto'; openTex.style.padding = '3px 9px';
+    openTex.title = 'Open resume.tex scrolled to this entry';
+    openTex.addEventListener('click', function (e) {
+      e.stopPropagation();
+      /* Search for the structural marker where one exists, since the bare
+         name may appear in several places. */
+      var probe = kind === 'project' ? '\\subsection*{' + name
+                : kind === 'intro'   ? (name === 'About' ? 'about:' : 'tagline:')
+                : name;
+      openTexEditor(probe);
+    });
+    srcRow.appendChild(openTex);
     var openHtml = el('button', 'ed-pick', 'edit index.html');
     openHtml.style.width = 'auto'; openHtml.style.padding = '3px 9px';
     openHtml.title = 'Open index.html scrolled to this text';
     openHtml.addEventListener('click', function (e) {
-      e.stopPropagation();
-      /* Search for a structural marker for the hand-written hero blocks \u2014
-         their display names don't appear in the markup. */
-      var probe = name === 'Meta lines' ? 'hero-meta'
-                : name === 'Availability' ? 'class="corner"'
-                : name;
-      openHtmlEditor(probe);
+      e.stopPropagation(); openHtmlEditor(name);
     });
     srcRow.appendChild(openHtml);
     box.appendChild(srcRow);
@@ -3081,8 +3208,43 @@
       });
     }
 
+    /* Two independent switches. The rail is a working tool — you may want
+       to filter by a domain you've deliberately kept out of the top-bar
+       menu — so hiding from one doesn't hide from the other. */
+    if (type === 'domain') {
+      if (!f.hiddenNav) f.hiddenNav = {};
+      var navRow = el('div', 'ed-row');
+      navRow.appendChild(el('label', null, 'In nav dropdown'));
+      var navBtn = el('button', 'ed-pick', '');
+      navBtn.style.width = 'auto'; navBtn.style.padding = '3px 12px';
+      navBtn.title = 'Show or hide this domain in the top-bar Projects menu';
+      function paintNav() {
+        var off = f.hiddenNav[key] === true;
+        navBtn.textContent = off ? 'hidden' : 'shown';
+        navBtn.style.background = off ? 'transparent' : 'var(--accent)';
+        navBtn.style.color = off ? 'inherit' : '#fff';
+      }
+      navBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        f.hiddenNav[key] = !f.hiddenNav[key];
+        if (!f.hiddenNav[key]) delete f.hiddenNav[key];
+        markDirty(); paintNav();
+        /* Live-hide the matching sub-link so the change is visible now. */
+        document.querySelectorAll('.nav-sub-link').forEach(function (a) {
+          if (a.getAttribute('data-filter-domain') === val) {
+            a.style.display = f.hiddenNav[key] ? 'none' : '';
+          }
+        });
+        note('"' + val + '" ' + (f.hiddenNav[key] ? 'hidden from' : 'shown in') +
+             ' the nav dropdown. Save + reload.');
+      });
+      paintNav();
+      navRow.appendChild(navBtn);
+      box.appendChild(navRow);
+    }
+
     var row = el('div', 'ed-row');
-    row.appendChild(el('label', null, 'Show filter'));
+    row.appendChild(el('label', null, 'In filter rail'));
     var btn = el('button', 'ed-pick', '');
     btn.style.width = 'auto'; btn.style.padding = '3px 12px';
     function paint() {
@@ -3161,6 +3323,7 @@
     paintDomains();
     paintThemeState();
     paintLogoToggles();
+    paintNavList();
     loadStyles();
     loadConfig();
     fillMediaTargets();
@@ -3175,6 +3338,7 @@
       paintDomains();
       paintEntryToggles();
       paintHiddenList();
+      paintNavList();
     });
     (function waitForData(tries) {
       if (window.__resumeData) { fillMediaTargets(); paintDomains(); return; }
@@ -3198,6 +3362,8 @@
       show(e.clientX, e.clientY);
       if (hit && hit.kind === 'filter') {
         openFilterPanel(hit.ftype, hit.name);
+      } else if (hit && hit.kind === 'nav') {
+        openNavPanel(hit.name);
       } else if (hit) {
         focusMediaTarget(hit.name);
         openItemPanel(hit.name, hit.kind);

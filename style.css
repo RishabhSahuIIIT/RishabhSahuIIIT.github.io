@@ -1856,16 +1856,24 @@ body { font-size: calc(1rem * var(--text-scale)); }
   outline-offset: -1px;
 }
 
-/* Backing plate: keeps a brand colour intact when it can't stand on the
-   page background (JavaScript yellow on cream, black marks on dark). */
+/* Backing plate — only for achromatic marks (Rust, Flask, Express…) that
+   have no hue to lighten toward. Kept soft rather than a hard white square:
+   slightly inset, rounded, and dimmed a touch so a row of them doesn't
+   glare against a dark page. Marks that DO carry a hue are lightened
+   instead (see logoSVG), which is why there are far fewer of these. */
 .pc-logo-plate {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 5px;
-  padding: 2px;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, var(--logo-shadow)));
+  border-radius: 6px;
+  padding: 3px;
+  opacity: 0.92;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08),
+              0 1px 3px rgba(0, 0, 0, calc(var(--logo-shadow) * 0.7));
+  transition: opacity 0.18s ease, transform 0.18s ease;
 }
+.skills-cluster .tags span:hover .pc-logo-plate,
+.pc-card:hover .pc-logo-plate { opacity: 1; }
 .pc-logo-plate svg { width: 100%; height: 100%; display: block; }
 .skills-cluster .tags .pc-logo-plate { border-radius: 8px; padding: 4px; }
 

@@ -72,7 +72,7 @@
     "showIcons": true,
     "iconStyle": "emoji",
     "icons": {
-      "Education": "🎓",
+      "Education": "",
       "Internships": "",
       "Projects": "",
       "Network Intrusion Detection and Prevention System": "",
@@ -482,12 +482,26 @@
     "lede": "",
     "about": [],
     "sectionTitles": {},
-    "meta": []
+    "meta": [],
+    "corner": [
+      "Interests : Software development"
+    ]
   },
   "filters": {
     "_comment": [
-      "Order of the Tech filter list. Terms are matched case-insensitively;",
-      "anything not listed falls into the last band, sorted by frequency."
+      "hidden            - filters removed from the All Projects rail and mobile chips.",
+      "hiddenNav         - domains removed from the top-bar Projects dropdown.",
+      "                    Independent of `hidden`: the dropdown is a short table of",
+      "                    contents and usually wants trimming hard, while the rail is a",
+      "                    working tool where you may still want a domain you've kept",
+      "                    out of the menu.",
+      "navFollowsFilters - when true, the dropdown also drops anything in `hidden`.",
+      "techGroups        - order of the Tech filter list. Terms match case-insensitively;",
+      "                    anything unlisted falls into the last band, sorted by frequency.",
+      "Keys are \"<type>:<value>\" — type is domain, tech or status. Only domain",
+      "appears in the nav dropdown.",
+      "Hiding removes the button or menu entry only. Projects stay visible and keep",
+      "their chips; to drop a domain entirely, edit the topics: lines in resume.tex."
     ],
     "techGroups": {
       "order": [
@@ -567,6 +581,13 @@
       "tech:Cross-Entropy Method": true,
       "tech:Crossref API": true,
       "tech:Llama 3.1/3.2": true
-    }
+    },
+    "hiddenNav": {
+      "domain:Programming Languages": true,
+      "domain:Optimization": true,
+      "domain:Data Structures": true,
+      "domain:Algorithms": true
+    },
+    "navFollowsFilters": false
   }
 }
