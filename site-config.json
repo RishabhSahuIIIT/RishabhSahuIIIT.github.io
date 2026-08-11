@@ -73,17 +73,20 @@
     "iconStyle": "emoji",
     "icons": {
       "Education": "🎓",
-      "Internships": "💼",
+      "Internships": "",
       "Projects": "",
-      "Network Intrusion Detection and Prevention System": "🛡",
-      "Agentic AI Research Assistant": "🤖",
-      "Citestat – Academic Citation Analytics Dashboard": "📊",
-      "Real-Time Collaborative Text Editor using CRDT": "✍",
+      "Network Intrusion Detection and Prevention System": "",
+      "Agentic AI Research Assistant": "",
+      "Citestat – Academic Citation Analytics Dashboard": "",
+      "Real-Time Collaborative Text Editor using CRDT": "",
       "Skills": "🛠",
-      "Accomplishments": "🏆"
+      "Accomplishments": "🏆",
+      "Title": ""
     },
     "images": {
-      "Title": "bluePortrait.png"
+      "Title": "",
+      "International Institute of Information Technology Hyderabad": "IIITH_logo.jpg",
+      "The LNM Institute of Information Technology Jaipur": "LnmiitLogo.jpg"
     },
     "alts": {},
     "showTechLogos": true,
@@ -96,17 +99,24 @@
     "sectionTiles": {},
     "showContactLogos": true,
     "portrait": "bluePortrait.png",
-    "showPortrait": true,
+    "showPortrait": false,
     "portraitSize": 148,
     "portraitAlt": "Portrait",
-    "noEmoji": false,
+    "noEmoji": true,
     "hiddenEntries": {},
     "cardLogos": {},
     "techFilterLimit": 24,
     "tileBg": {},
-    "monoEmoji": false,
+    "monoEmoji": true,
     "autoShadow": true,
-    "hiddenCards": {}
+    "hiddenCards": {
+      "Vite": true,
+      "Tailwind CSS": true,
+      "Chart.js": true,
+      "iptables": true,
+      "Moya framework": true,
+      "PyMuPDF": true
+    }
   },
   "logos": [
     {
@@ -544,7 +554,19 @@
     },
     "hidden": {
       "tech:iptables": true,
-      "tech:Moya framework": true
+      "tech:Moya framework": true,
+      "tech:Curses (TUI)": true,
+      "tech:Chart.js": true,
+      "tech:CodeMirror 6": true,
+      "tech:PyMuPDF": true,
+      "tech:Reagraph": true,
+      "tech:Scapy": true,
+      "tech:Tailwind CSS": true,
+      "tech:Vite": true,
+      "tech:Code Generation": true,
+      "tech:Cross-Entropy Method": true,
+      "tech:Crossref API": true,
+      "tech:Llama 3.1/3.2": true
     }
   }
 }
