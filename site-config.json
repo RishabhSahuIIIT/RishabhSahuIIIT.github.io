@@ -26,9 +26,7 @@
     "themes": {
       "default": {
         "light": {},
-        "dark": {
-          "bg-soft": "#2e1a29"
-        },
+        "dark": {},
         "hash": "d9a6e3f1"
       }
     }
