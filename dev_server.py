@@ -756,6 +756,31 @@ PALETTES = {
         'light': {'bg': '#f5e8d0', 'ink': '#1f1208', 'accent': '#d96a1a', 'rule': '#dcc8a4', 'muted': '#8a7858'},
         'dark':  {'bg': '#0c1538', 'ink': '#dce0ee', 'accent': '#e6c069', 'rule': '#283154', 'muted': '#828aa6'},
     },
+    'ink-vermilion': {
+        'name': 'Ink & vermilion',
+        'light': {'bg': '#f4f1ea', 'ink': '#1a1814', 'accent': '#b8400c', 'rule': '#d3ccbd', 'muted': '#756d5f'},
+        'dark':  {'bg': '#121315', 'ink': '#e8e6e1', 'accent': '#f48c55', 'rule': '#2e3036', 'muted': '#8f929a'},
+    },
+    'nordic-frost': {
+        'name': 'Nordic frost',
+        'light': {'bg': '#eef1f4', 'ink': '#16212c', 'accent': '#2a6493', 'rule': '#cbd3dc', 'muted': '#626d79'},
+        'dark':  {'bg': '#0d141c', 'ink': '#dde5ec', 'accent': '#7fb6e3', 'rule': '#24313e', 'muted': '#828e9a'},
+    },
+    'olive-sand': {
+        'name': 'Olive & sand',
+        'light': {'bg': '#f1ede0', 'ink': '#22241a', 'accent': '#56651d', 'rule': '#d2ccb4', 'muted': '#6f6d5a'},
+        'dark':  {'bg': '#13150e', 'ink': '#e3e4d6', 'accent': '#b9c66c', 'rule': '#2c2f22', 'muted': '#8c8e7a'},
+    },
+    'rose-plum': {
+        'name': 'Rose & plum',
+        'light': {'bg': '#f7eff0', 'ink': '#2a1620', 'accent': '#9c2d53', 'rule': '#dfcbd1', 'muted': '#785f6a'},
+        'dark':  {'bg': '#170f14', 'ink': '#f1e3e9', 'accent': '#ec8fb3', 'rule': '#36242e', 'muted': '#9a828e'},
+    },
+    'graphite-cobalt': {
+        'name': 'Graphite & cobalt',
+        'light': {'bg': '#f2f2ef', 'ink': '#151515', 'accent': '#2c4bc7', 'rule': '#d3d3cd', 'muted': '#676763'},
+        'dark':  {'bg': '#101113', 'ink': '#e7e7e7', 'accent': '#93a6ff', 'rule': '#2b2d32', 'muted': '#8d8f95'},
+    },
 }
 
 RECIPES = [
@@ -767,6 +792,16 @@ RECIPES = [
      'dl': '-7 (default mute)', 'dd': '+11 (more lifted)'},
     {'id': 'day-night',    'palette': 'day-night',    'light': -24, 'dark': 11,
      'dl': '-24 (warm dusk)',   'dd': '+11 (more lifted)'},
+    {'id': 'ink-vermilion',   'palette': 'ink-vermilion',   'light': -4, 'dark': 9,
+     'dl': '-4 (paper)',  'dd': '+9 (charcoal lift)'},
+    {'id': 'nordic-frost',    'palette': 'nordic-frost',    'light': -4, 'dark': 9,
+     'dl': '-4 (frost)',  'dd': '+9 (slate lift)'},
+    {'id': 'olive-sand',      'palette': 'olive-sand',      'light': -4, 'dark': 9,
+     'dl': '-4 (sand)',   'dd': '+9 (moss lift)'},
+    {'id': 'rose-plum',       'palette': 'rose-plum',       'light': -4, 'dark': 9,
+     'dl': '-4 (blush)',  'dd': '+9 (plum lift)'},
+    {'id': 'graphite-cobalt', 'palette': 'graphite-cobalt', 'light': -4, 'dark': 9,
+     'dl': '-4 (paper)',  'dd': '+9 (graphite lift)'},
 ]
 
 _LIGHT_GRAIN = ("""--grain-svg: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'"""
@@ -809,6 +844,61 @@ def _derive_dark(base, offset):
         'accentSoft': _shift_sat(base['accent'], 10, -5),
     }
 
+
+
+# ---- Contrast enforcement -------------------------------------------------
+# A recipe's offset moves the background; accent and muted text weren't moved
+# with it, so some light themes ended up with accent text near 1.7:1. After
+# deriving a theme, nudge each foreground's lightness (hue untouched) away
+# from the background until it passes, and lift cards until they separate.
+import colorsys as _cs
+
+def _lum(h):
+    h = h.lstrip('#'); r, g, b = [int(h[i:i+2], 16) / 255 for i in (0, 2, 4)]
+    f = lambda x: x / 12.92 if x <= 0.03928 else ((x + 0.055) / 1.055) ** 2.4
+    return .2126 * f(r) + .7152 * f(g) + .0722 * f(b)
+
+def _ct(a, b):
+    la, lb = _lum(a), _lum(b)
+    return (max(la, lb) + .05) / (min(la, lb) + .05)
+
+def _hls(h):
+    h = h.lstrip('#'); return _cs.rgb_to_hls(*[int(h[i:i+2], 16) / 255 for i in (0, 2, 4)])
+
+def _hex(hh, l, ss):
+    return '#%02x%02x%02x' % tuple(round(v * 255) for v in _cs.hls_to_rgb(hh, max(0, min(1, l)), ss))
+
+def _ensure(fg, bgs, target, darken):
+    """Move fg's lightness until it reaches `target` against every colour in bgs."""
+    hh, l, ss = _hls(fg)
+    for _ in range(120):
+        c = _hex(hh, l, ss)
+        if all(_ct(c, b) >= target for b in bgs):
+            return c
+        l += -0.006 if darken else 0.006
+    return _hex(hh, l, ss)
+
+def _separate(bg, soft, target, darken):
+    """Move the card colour away from the page until it visibly separates."""
+    hh, l, ss = _hls(soft)
+    for _ in range(80):
+        c = _hex(hh, l, ss)
+        if _ct(c, bg) >= target:
+            return c
+        l += -0.004 if darken else 0.004
+    return _hex(hh, l, ss)
+
+def _enforce(c, light):
+    c = dict(c)
+    c['bgSoft']  = _separate(c['bg'], c['bgSoft'], 1.08 if light else 1.15, darken=light)
+    both = [c['bg'], c['bgSoft']]
+    c['ink']        = _ensure(c['ink'], both, 12.0, darken=light)
+    c['inkSoft']    = _ensure(c['inkSoft'], both, 7.0, darken=light)
+    c['muted']      = _ensure(c['muted'], both, 4.6, darken=light)
+    c['accent']     = _ensure(c['accent'], both, 4.6, darken=light)
+    c['accentSoft'] = _ensure(c['accentSoft'], both, 3.2, darken=light)
+    c['rule']       = _separate(c['bg'], c['rule'], 1.35, darken=light)
+    return c
 
 def _vars_block(c):
     return (f"--bg:         {c['bg']};\n"
@@ -863,6 +953,38 @@ def _token_block(name, loff, doff, light, dark):
 }}"""
 
 
+
+# ---- Stylesheet identity -----------------------------------------------
+# Every stylesheet carries an id and a hash of its colour tokens, both as a
+# comment (for people) and as CSS variables (read by the page and editor).
+# Colour overrides in site-config.json are stored per stylesheet id, so an
+# edit made under one theme never leaks into another; the hash lets the
+# editor notice when a stylesheet's defaults changed after overrides were
+# saved against it.
+import hashlib as _hl
+
+def _theme_hash(token_text):
+    return _hl.sha1(token_text.encode('utf-8')).hexdigest()[:8]
+
+def _identity_block(theme_id, h):
+    return (f"/* theme-id: {theme_id}   hash: {h}\n"
+            f"   site-config.json keys colour overrides by this id. */\n"
+            f":root {{ --theme-id: \"{theme_id}\"; --theme-hash: \"{h}\"; }}\n\n")
+
+_ID_RE = None
+def _stamp_base(base_path):
+    """Write/refresh the identity block at the top of style.css itself."""
+    import re
+    s = open(base_path, encoding='utf-8').read()
+    t0 = s.find('/* ---------- 1. Tokens ----------')
+    r0 = s.find('/* ---------- 2. Reset & base ----------')
+    if t0 == -1 or r0 == -1:
+        return
+    h = _theme_hash(s[t0:r0])
+    s = re.sub(r'\A/\* theme-id: [^\n]*\n[^\n]*\*/\n:root \{ --theme-id:[^\n]*\n\n', '', s)
+    s = _identity_block('default', h) + s
+    open(base_path, 'w', encoding='utf-8').write(s)
+
 def generate_palettes(verbose=True):
     """Rebuild every style-<id>.css from style.css. Returns a list of names."""
     base_path = os.path.join(ROOT, 'style.css')
@@ -870,6 +992,7 @@ def generate_palettes(verbose=True):
         if verbose:
             print("  ! style.css not found")
         return []
+    _stamp_base(base_path)
     base = open(base_path, encoding='utf-8').read()
 
     t_start = base.find('/* ---------- 1. Tokens ----------')
@@ -883,21 +1006,22 @@ def generate_palettes(verbose=True):
     written = []
     for rec in RECIPES:
         pal = PALETTES[rec['palette']]
-        light = _derive_light(pal['light'], rec['light'])
-        dark = _derive_dark(pal['dark'], rec['dark'])
+        light = _enforce(_derive_light(pal['light'], rec['light']), light=True)
+        dark = _enforce(_derive_dark(pal['dark'], rec['dark']), light=False)
         banner = (f"""/* ============================================================
    Rishabh Sahu — Portfolio styles
    --------------------------------------------------------------
    Palette: {pal['name']}
      Light mode offset: {rec['dl']}
      Dark  mode offset: {rec['dd']}
-   This is one of four palette variants. To swap palettes,
+   One of several palette variants. To swap palettes,
    rename one of style-*.css to style.css.
    ============================================================ */
 
 /* ---------- 1. Tokens ---------- */
 """)
-        out = banner + _token_block(pal['name'], rec['light'], rec['dark'], light, dark) + '\n\n\n' + rest
+        tokens = _token_block(pal['name'], rec['light'], rec['dark'], light, dark)
+        out = _identity_block(rec['id'], _theme_hash(tokens)) + banner + tokens + '\n\n\n' + rest
         name = f"style-{rec['id']}.css"
         with open(os.path.join(ROOT, name), 'w', encoding='utf-8') as f:
             f.write(out)

@@ -118,7 +118,7 @@
 \begin{comment}
 tagline: MTech Computer Science at IIIT Hyderabad, after a BTech at LNMIIT Jaipur. I have worked on projects in various domains like compilers, schedulers, network stacks and have a good perspective about the tools that sit on top of them.
 about:
-I focus on understanding the fundamentals :how systems, networks, and data structures actually work rather than tying my learning to a specific framework or language.
+I focus on understanding the fundamentals — how systems, networks, and data structures actually work — rather than tying my learning to a specific framework or language.
 
 That keeps me technology-agnostic. I pick the tools that fit a problem instead of fitting every problem to a familiar tool, which is why the project list below spans compilers, distributed systems, security and robotics.
 
@@ -355,9 +355,9 @@ A multi-agent pipeline that parses, summarises, and surveys academic PDFs, using
 \noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Artificial Intelligence, Python, Moya framework, Ollama, Llama 3.1/3.2, PyMuPDF, Multi-agent systems\hfill \href{https://github.com/RishabhSahuIIIT/AgenticAIResearchAssistant_Moya}{\faIcon{link}\textbf{Project repository}}}
 
 \begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
-	\item {\itemsize Built a multi-agent pipeline on the Moya framework to parse, summarise, synthesise, and survey academic PDF papers, with map-reduce chunking for papers exceeding the LLM context window}
-	\item {\itemsize Orchestrated dual Ollama instances on separate ports -- a lightweight Llama 3.2 for routing and Llama 3.1 for task execution -- to decouple decision-making from work and prevent LLM blocking}
-	\item {\itemsize Implemented full observability by logging every agent decision, LLM prompt, and output to timestamped JSONL trace files per run}
+	\item {\itemsize Built a multi-agent pipeline on Moya that parses, summarises and surveys academic PDFs, using map-reduce chunking beyond the context window}
+	\item {\itemsize Ran dual Ollama instances -- a lightweight Llama 3.2 for routing and Llama 3.1 for task execution -- to decouple decision-making from work and prevent LLM blocking}
+	\item {\itemsize Logged every agent decision, LLM prompt, and output to timestamped JSONL trace files per run}
 	\item {\itemsize Generated structured mini-surveys ($\leq$800 words) with inline citations synthesised across multiple research papers}
 \end{itemize}
 
@@ -375,7 +375,7 @@ A client-side citation analytics dashboard querying Crossref and OpenCitations, 
 \noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} React, TypeScript, Vite, Tailwind CSS, Chart.js, Reagraph, Crossref API, OpenCitations API\hfill \href{https://citestat.vercel.app}{\faIcon{globe}\textbf{Live demo}} \quad \href{https://github.com/RishabhSahuIIIT/citestat}{\faIcon{link}\textbf{Project repository}}}
 
 \begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
-	\item {\itemsize As part of a 3-person team, built a client-side citation analytics dashboard that queries Crossref and OpenCitations REST APIs for paper and author metadata}
+	\item {\itemsize In a 3-person team, built a client-side citation analytics dashboard that queries Crossref and OpenCitations REST APIs for paper and author metadata}
 	\item {\itemsize Visualised yearly citation trends as histograms using Chart.js and citation network graphs using Reagraph (backed by D3.js)}
 	\item {\itemsize Computed bibliometric impact metrics (h-index, m-quotient) fully in the browser with no backend dependency}
 \end{itemize}
@@ -394,10 +394,10 @@ An operation-based RGA CRDT for collaborative document editing, ensuring converg
 \noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} TypeScript, React, CodeMirror 6, WebSocket, CRDT, RGA, LWW Register, IndexedDB\hfill \href{https://github.com/RishabhSahuIIIT/CRDT_collaborative_text_editor}{\faIcon{link}\textbf{Project repository}}}
 
 \begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
-	\item {\itemsize As part of a 3-person team, implemented an operation-based RGA CRDT for document text, ensuring convergence across concurrent edits via vector clocks and causal delivery}
-	\item {\itemsize Implemented a state-based LWW Register CRDT for metadata (title, cursors), with timestamp + siteId total order for deterministic conflict resolution}
-	\item {\itemsize Built a WebSocket relay server and React/CodeMirror 6 browser editor with IndexedDB-backed offline editing and automatic reconnect sync}
-	\item {\itemsize Enforced per-message access control using HMAC-signed role tokens, applied at the relay so role changes take effect immediately without reconnection}
+	\item {\itemsize In a 3-person team, implemented an operation-based RGA CRDT for document text, ensuring convergence across concurrent edits via vector clocks and causal delivery}
+	\item {\itemsize Added a state-based LWW Register CRDT for metadata (title, cursors), with timestamp + siteId total order for deterministic conflict resolution}
+	\item {\itemsize Built a WebSocket relay and React/CodeMirror 6 editor with IndexedDB-backed offline editing and automatic reconnect sync}
+	\item {\itemsize Enforced per-message access control with HMAC-signed role tokens, applied at the relay so role changes take effect immediately without reconnection}
 \end{itemize}
 
 \centerline{\rule{0.8\textwidth}{0.05pt}}
@@ -541,6 +541,106 @@ Five tabular RL methods implemented from scratch on a stochastic gridworld, comp
 	\item \href{https://www.hackerrank.com/certificates/388867dc0d5f}{\faIcon{link}Java basic certification} (HACKERRANK)
 \end{itemize}
 
+% -----------------------------------
+% Coursework. `\item \textbf{Name:} description` matches the shape the
+% website parser already reads for Skills, so no new parsing is needed.
+% The bracketed source at the end of each line is what the site uses to
+% group them into college vs online.
+\section*{Courses}
+% Selected coursework appears in the PDF; the FULL list lives in the
+% comment block below, which LaTeX ignores and script.js reads. All 63
+% courses would add ~1.4 pages and sit VALUE EDUCATION next to COMPILERS,
+% which dilutes the page rather than adding to it.
+%
+% ---- EDIT COURSES HERE ----------------------------------------------
+% Format:  \item \textbf{Name:} description [Source | Category | flags]
+%
+%   Name        shown on the card and in the collapsed line
+%   description one sentence; name the tech and the concrete skill, since
+%               the site derives its short gloss from the first clause
+%   Source      IIIT Hyderabad / LNMIIT Jaipur / Educative.io — groups nothing
+%               by itself, but shows on the card
+%   Category    which row it lands in; must match a name in
+%               courses.domainOrder in site-config.json
+%   flags       | featured  -> also appears in the Selected block above
+%               | minor     -> drops to the uncoloured "b" row at the bottom
+%               (a course should not be both)
+%
+% Escape & as \& on these \item lines. The comment block below needs no
+% escaping, since LaTeX never parses it.
+% ---------------------------------------------------------------------
+\begin{itemize}[leftmargin=*, itemsep=1pt, parsep=0pt]
+	\item \textbf{Compilers:} Lexing, parsing, semantic analysis, LLVM IR generation;  dataflow analysis, Graph coloring based register allocation and optimisation passes written in C++ [IIIT Hyderabad | Compilers | featured]
+	\item \textbf{Distributed Systems:} Distributed time, Consistency; RPC services over gRPC and Protocol Buffers, Map reduce, Global snapshoting, Mutual Exclusion, Agreement protocols, Deadlocks [IIIT Hyderabad | Distributed \& Parallel | featured]
+	\item \textbf{Advanced Operating Systems:} Os structure and layers, scheduling and virtual memory; systems-level concurrency against the Linux API in C, Introduction to HPCs, POSIX threads, signals and system calls in C [IIIT Hyderabad | Systems \& Networking  | minor]
+	\item \textbf{System and Network Security:} Cryptography, Diffie Hellman key exchange, Digital signatures, Hash and MAC, Digital Certificate, KerberosThreat models and intrusion detection; packet capture with Scapy, firewall automation via iptables [IIIT Hyderabad | Security | featured]
+	\item \textbf{Statistical Methods in AI:} Mathematical basics of AI,Regression, Regularization, Principal component analysis, Singular Value Decomposition, Naive Bayes calssifier, Dimensionality reduction, Decision trees, Support vector machines, Neural networks, CNN, Transformer and Self Attention basics [IIIT Hyderabad | AI \& Machine Learning | featured]
+	\item \textbf{Robotics --- Planning and Navigation:} Kinematic planning, RRT, Holonomic and Non Holonomic constraints, Configuration spaces, Frenet frame, MPC,  sampling-based planners, trajectory optimisation, obstacle avoidance; simulations in PyBullet and Matplotlib [IIIT Hyderabad | Robotics | featured]
+	\item \textbf{Data Structures and Algorithms:} Asymptotic analysis, graph and tree algorithms and dynamic programming, implemented data structures in C [LNMIIT Jaipur | Algorithms \& Theory | featured]
+	\item \textbf{Compiler Design:} Topdown and Bottom up parsing, intermediate representations  [LNMIIT Jaipur | Compilers | featured]
+	\item \textbf{Computer Networks:} OSI and TCP/IP models, Switching, Framing, Error detection and correction, routing and congestion control; Protocols: TCP, UDP, HTTP, Email, raw socket programming and packet inspection with wireshark [LNMIIT Jaipur | Systems \& Networking | featured]
+	\item \textbf{Operating Systems:} Process synchronization, CPU scheduling, memory management and file management,  [LNMIIT Jaipur | Systems \& Networking | featured]
+\end{itemize}
+
+% ---- AND HERE -------------------------------------------------------
+% Every course that should NOT appear in the PDF. Same fields, one per
+% line, no \item and no escaping:
+%     Name: description [Source | Category | flags]
+% Moving a course between the two lists is how you decide whether it
+% appears in the printed resume.
+% ---------------------------------------------------------------------
+\begin{comment}
+courses:
+Topics in Reinforcement Learning: Markov decision processes, Markov chains, Bellman optimality equation, Q function, value and policy methods;Q learning, agents and rewards, basics of deep RL,  Hamiltonian Jacobi Bellman equation,  [IIIT Hyderabad | AI & Machine Learning]
+Modern Complexity Theory: Complexity classes, Turing machines, reductions, hardness results, randomised computation, Quantum complexity classes  [IIIT Hyderabad | Algorithms & Theory]
+Data Structures & Algorithms for Problem Solving: Algorithmic problem solving over advanced data structures, Graph traversals and related proofs, Pattern matching, Topological sorting, amortized analysis, Heaps, approximation [IIIT Hyderabad | Algorithms & Theory]
+Data Systems: Storage engines, page representations, indexing, BTrees, query execution, query optimization [IIIT Hyderabad | Data & Databases]
+Software Systems Development: Non relational and relational database query languages, Javascript events, MERN stack, REST api,  [IIIT Hyderabad | Software Engineering]
+Topics in Software Engineering: Software lifecycle, MLOps and DevsecOps basics,   [IIIT Hyderabad | Software Engineering]
+Digital Image Processing: Filtering, transforms and segmentation; pipelines built with NumPy and OpenCV [IIIT Hyderabad | AI & Machine Learning]
+Probability and Statistics (MCS 1): Random variables, Expectation and Variance, Distributions, Conditional Distributions, Joint Distribution estimation [IIIT Hyderabad | Mathematics]
+Linear Algebra (MCS 2): Vector spaces, matrix decompositions and eigenvalue problems [IIIT Hyderabad | Mathematics]
+PG Independent Study: Theoretical analysis of Dynamic programming and Greedy algorithms from a research paper [IIIT Hyderabad | Software Engineering]
+Business Finance: Financial statements, Financial ratios, Forcasting, Time value of money, Risk and return, Cost of capital, valuations  [IIIT Hyderabad | Professional]
+Computer Security: CIA triad, Cryptographic primitives, authentication protocols, access control, and common attack classes with hands-on exploitation [LNMIIT Jaipur | Security]
+Design and Analysis of Algorithms: Greedy and divide-and-conquer strategies, Dynamic programming, NP-completeness [LNMIIT Jaipur | Algorithms & Theory]
+Advanced Data Structures and Algorithms: Balanced trees, Hashing, advanced graph algorithms, Tries,  Maximum flow and flow network, Sorting networks, Computational geometry  [LNMIIT Jaipur | Algorithms & Theory]
+Theory of Computation: Automata, formal languages, decidability and computational complexity [LNMIIT Jaipur | Algorithms & Theory]
+Computer Organization and Architecture: Instruction sets, pipelining, memory hierarchy and caching [LNMIIT Jaipur | Systems \& Networking]
+Artificial Intelligence: Search, knowledge representation, planning and reasoning under uncertainty [LNMIIT Jaipur | AI & Machine Learning]
+Deep Learning: Neural networks, Optimization algorithms, CNNs and DL for Computer vision, Parameters and Hyperparameters   [LNMIIT Jaipur | AI & Machine Learning]
+Natural Language Processing: Regular expressions, N Gram Language modelling, POS tagging, vector semantics and embeddings, information extraction; n-gram models in Python [LNMIIT Jaipur | AI & Machine Learning]
+Data Mining: Data preparation, Classification, Market basket analysis, Pattern discovery, clustering, association rules, Outlier analysis [LNMIIT Jaipur | Data & Databases]
+Introduction to Data Science: Statistical analysis and Hypothesis testing, Data preprocessing, Classification algorithms, Text analytics [LNMIIT Jaipur | Data & Databases]
+Big Data Computing: Distributed processing and large-scale analytics with PySpark [LNMIIT Jaipur | Distributed & Parallel | minor]
+Information and Database Management Systems: Relational modelling, normalisation, query processing and transactions [LNMIIT Jaipur | Data & Databases]
+Information Security & Privacy: Security principles, Access control, privacy models, Containerization, Privacy, Water marking and steganography [LNMIIT Jaipur | Security]
+Blockchain Foundation & Smart Contracts: Consensus mechanisms, Bitcoin basics [LNMIIT Jaipur | Distributed & Parallel | minor]
+Quantum Computing and Quantum Information: Qubits, quantum gates, bell states, no cloning theorem, quantum circuits Shor's algorithm [LNMIIT Jaipur | Mathematics]
+Knowledge Representation and Reasoning: Logical formalisms (propositional logic and F Predicate calculus), frame based, semantic nets,  [LNMIIT Jaipur | AI & Machine Learning]
+Digital Image Processing (UG): Image enhancement, filtering and feature extraction [LNMIIT Jaipur | AI & Machine Learning]
+Advanced Programming I: Java and Object oriented programming, Exception handling,  [LNMIIT Jaipur | Software Engineering]
+Computer Programming: Programming fundamentals, control flow and problem decomposition [LNMIIT Jaipur | Software Engineering]
+Software Engineering: Requirements, development lifecycles, testing strategies, cost estimation, UML Diagrams. [LNMIIT Jaipur | Software Engineering]
+Integrated Software Development Lab: Team-based development of a complete software project [LNMIIT Jaipur | Software Engineering]
+Digital Systems: Boolean logic, combinational and sequential circuit design [LNMIIT Jaipur | Systems \& Networking]
+Basic Electronics: Signals devices, amplifiers, logic gates and analogue circuit fundamentals [LNMIIT Jaipur | Foundations]
+Discrete Mathematical Structures: Logic, set theory, combinatorics, graph theory and proof techniques [LNMIIT Jaipur | Mathematics]
+Probability and Statistics: Distributions, Probabilistic inequalities, Weak and strong law of large numbers, Central limit theorem,  estimation and hypothesis testing [LNMIIT Jaipur | Mathematics]
+Optimization Techniques and Applications: Linear and non-linear programming, convexity and search methods [LNMIIT Jaipur | Mathematics]
+Mathematics I / II / III: Calculus, differential equations, linear algebra sequences,complex numbers and complex integrals [LNMIIT Jaipur | Mathematics]
+Classical Physics: Mechanics, electromagnetism and waves [LNMIIT Jaipur | Foundations]
+Nuclear Physics: Nuclear structure, radioactivity and particle interactions [LNMIIT Jaipur | Foundations]
+Economics for Engineers: Micro economics, Demand and supply analysis, Production analysis, Cost and investment analysis, market structures and Macroeconomics [LNMIIT Jaipur | Professional]
+Organizational Behaviour: Human psychology at work, team dynamics and motivation [LNMIIT Jaipur | Professional]
+Psychology, Technology and Society: Human cognition, Social cognition and group dynamics, Stress adjustment and Coping, Technology impact [LNMIIT Jaipur | Professional]
+Environment and Human Behavior: Influence of environment and risk perception, Social norms and dilemmas, [LNMIIT Jaipur | Professional]
+Environmental Ecology & Biology: Ecosystems, biodiversity and environmental impact [LNMIIT Jaipur | Foundations]
+Technical Communication in English: Technical writing, documentation, presentation, phonetics [LNMIIT Jaipur | Professional]
+Value Education and Ethics: Codes of ethics, Rights and duties, Work ethics [LNMIIT Jaipur | Professional]
+Working with Containers: Docker, Docker Compose and Swarm for building, networking and orchestrating images [Educative.io | Software Engineering]
+Flask --- Develop Web Applications in Python: Routing, templating, forms and deployment of Python web services with Flask and Jinja [Educative.io | Software Engineering]
+\end{comment}
 % -----------------------------------
 \section*{Skills}
 % Using a simple itemize with zero margin allows text to flow naturally

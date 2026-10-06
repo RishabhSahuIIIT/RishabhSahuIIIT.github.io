@@ -1,25 +1,25 @@
 /* ============================================================
    Rishabh Sahu — Portfolio styles
    --------------------------------------------------------------
-   Palette: Aegean clay
-     Light mode offset: -7 (default mute)
-     Dark  mode offset: +11 (more lifted)
+   Palette: Olive & sand
+     Light mode offset: -4 (sand)
+     Dark  mode offset: +9 (moss lift)
    One of several palette variants. To swap palettes,
    rename one of style-*.css to style.css.
    ============================================================ */
 
 /* ---------- 1. Tokens ---------- */
 :root {
-  /* ---- Palette: Aegean clay ---- */
-  /* Light mode (default) — bg/bg-soft/rule shifted -7% lightness */
-  --bg:         #dfdbcd;
-    --bg-soft:    #d7d3c1;
-    --ink:        #0b1622;
-    --ink-soft:   #214066;
-    --muted:      #5c5a51;
-    --rule:       #beb8a3;
-    --accent:     #7f4c2a;
-    --accent-soft:#9b6542;
+  /* ---- Palette: Olive & sand ---- */
+  /* Light mode (default) — bg/bg-soft/rule shifted -4% lightness */
+  --bg:         #ebe5d2;
+    --bg-soft:    #e3dcc3;
+    --ink:        #1d1f16;
+    --ink-soft:   #424633;
+    --muted:      #61604f;
+    --rule:       #cac3a7;
+    --accent:     #56651d;
+    --accent-soft:#6e7d2f;
 
   --grain-svg: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.05  0 0 0 0 0.04  0 0 0 0 0.02  0 0 0 0.08 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
     --grain-blend: multiply;
@@ -38,17 +38,17 @@
 
 /* Dark mode — applies when OS prefers dark UNLESS the user has
    manually picked light via the in-page toggle (which adds .theme-light).
-   bg/bg-soft/rule shifted +11% lightness. */
+   bg/bg-soft/rule shifted +9% lightness. */
 @media (prefers-color-scheme: dark) {
   :root:not(.theme-light) {
-    --bg:         #182b48;
-    --bg-soft:    #1e3559;
-    --ink:        #fdfdfe;
-    --ink-soft:   #b7c5d6;
-    --muted:      #999fa9;
-    --rule:       #3d4f6d;
-    --accent:     #e8a36b;
-    --accent-soft:#ecbf9a;
+    --bg:         #2c3120;
+    --bg-soft:    #373d29;
+    --ink:        #ffffff;
+    --ink-soft:   #cccfb5;
+    --muted:      #a6a798;
+    --rule:       #454a35;
+    --accent:     #b9c66c;
+    --accent-soft:#c8d095;
     --grain-svg: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.95  0 0 0 0 0.92  0 0 0 0 0.85  0 0 0 0.05 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
     --grain-blend: screen;
     --grain-opacity: 0.5;
@@ -59,14 +59,14 @@
 /* User-forced dark mode (toggle button in the top bar). Always wins,
    regardless of the OS preference. */
 :root.theme-dark {
-  --bg:         #182b48;
-    --bg-soft:    #1e3559;
-    --ink:        #fdfdfe;
-    --ink-soft:   #b7c5d6;
-    --muted:      #999fa9;
-    --rule:       #3d4f6d;
-    --accent:     #e8a36b;
-    --accent-soft:#ecbf9a;
+  --bg:         #2c3120;
+    --bg-soft:    #373d29;
+    --ink:        #ffffff;
+    --ink-soft:   #cccfb5;
+    --muted:      #a6a798;
+    --rule:       #454a35;
+    --accent:     #b9c66c;
+    --accent-soft:#c8d095;
   --grain-svg: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.95  0 0 0 0 0.92  0 0 0 0 0.85  0 0 0 0.05 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
     --grain-blend: screen;
     --grain-opacity: 0.5;

@@ -584,6 +584,100 @@
      top of resume.tex — invisible in the PDF, but it keeps every piece of
      written content in the one source file rather than split between the
      LaTeX and index.html. */
+  /* Courses reuse the Skills item shape (`\item \textbf{Name:} text`), so
+     parseSkills does the heavy lifting. The only extra is the trailing
+     "[Source]" tag, which is pulled out so the site can group by where a
+     course was taken rather than printing it inline. */
+  /* Courses come from two places: the \item list, which is what the PDF
+     shows, and a `courses:` comment block holding everything else. Keeping
+     the full list out of the LaTeX body is what stops 60 courses adding
+     pages to the resume while still letting the site show them all. */
+  /* A few words for the collapsed line, taken from the description's first
+     clause. Keeping one description in resume.tex and deriving the short form
+     avoids writing every course twice and letting the two drift apart. */
+  /* LaTeX writes an ampersand as \&; the bracket tail isn't run through
+     stripFormatting, so "Systems \& Networking" and "Systems & Networking"
+     were arriving as two different domains. */
+  function cleanTag(s) {
+    return String(s || '').replace(/\\&/g, '&').replace(/\s+/g, ' ').trim();
+  }
+
+  function briefOf(desc) {
+    if (!desc) return '';
+    const first = String(desc).split(/[;:]|\.\s/)[0].trim();
+    const words = first.split(/\s+/);
+    return (words.length > 7 ? words.slice(0, 7).join(' ') + '\u2026' : first)
+      .replace(/,$/, '');
+  }
+
+  function parseCourses(section, rawText) {
+    const fromComment = [];
+    if (rawText) {
+      const re = /\\begin\{comment\}([\s\S]*?)\\end\{comment\}/g;
+      let bm;
+      while ((bm = re.exec(rawText)) !== null) {
+        const cm = /(?:^|\n)[ \t]*courses[ \t]*:[ \t]*\n([\s\S]*)$/i.exec(bm[1]);
+        if (!cm) continue;
+        cm[1].split(/\n/).forEach(line => {
+          const t = line.trim();
+          if (!t) return;
+          /* "Name: description [Source]" — same shape as the \item form. */
+          const m = /^([^:]+):\s*([\s\S]*?)\s*(?:\[([^\]]+)\])?\s*$/.exec(t);
+          if (!m) return;
+          const parts = (m[3] || '').split('|').map(cleanTag);
+          const flags = parts.slice(1);
+          fromComment.push({
+            /* Same em-dash conversion the \\item path does — without it the
+               comment-block courses showed a literal "---" on the page. */
+            name:        m[1].trim().replace(/\s*---\s*/g, ' \u2014 '),
+            description: (m[2] || '').trim(),
+            source:      parts[0] || '',
+            /* Anything in the tail that isn't the "featured" keyword is the
+               domain — one optional field without inventing more syntax. */
+            domain:      flags.filter(f => !/^(featured|minor)$/i.test(f))[0] || 'Other',
+            featured:    flags.some(f => f.toLowerCase() === 'featured'),
+            minor:       flags.some(f => f.toLowerCase() === 'minor'),
+            brief:       briefOf((m[2] || '').trim())
+          });
+        });
+        break;
+      }
+    }
+
+    const fromItems = parseSkills(section).map(entry => {
+      const raw = (entry.items || []).join(', ');
+      const m = /^([\s\S]*?)\s*\[([^\]]+)\]\s*$/.exec(raw);
+      /* The bracketed tail is "Source" or "Source | flag, flag". Splitting
+         on the pipe keeps the source usable for grouping while letting a
+         course opt into the selected list without a second section in the
+         LaTeX. */
+      const parts = (m ? m[2] : '').split('|').map(cleanTag);
+      const tail  = parts.slice(1);
+      const flags = tail.join(',').toLowerCase();
+      return {
+        /* LaTeX writes an em-dash as `---`; stripFormatting leaves it
+           alone, so convert it here for display. */
+        name:        String(entry.category).replace(/\s*---\s*/g, ' \u2014 '),
+        description: (m ? m[1] : raw).trim(),
+        source:      parts[0] || '',
+        domain:      tail.filter(f => !/^(featured|minor)$/i.test(f))[0] || 'Other',
+        featured:    /\bfeatured\b/.test(flags),
+        /* `minor` marks lighter-weight coursework: it sorts to the bottom of
+           the section in its own row rather than being hidden or labelled. */
+        minor:       /\bminor\b/.test(flags),
+        brief:       briefOf((m ? m[1] : raw).trim())
+      };
+    }).filter(c => c.name);
+
+    /* Visible items win on a name clash — the PDF is the deliberate
+       selection, the comment block is the long tail. */
+    const seen = {};
+    fromItems.forEach(c => { seen[c.name.toLowerCase()] = true; });
+    return fromItems.concat(
+      fromComment.filter(c => !seen[c.name.toLowerCase()])
+    );
+  }
+
   function parseIntro(rawText) {
     const out = { tagline: null, about: [] };
     const docAt = rawText.indexOf('\\begin{document}');
@@ -680,6 +774,7 @@
       accomplishments:parseSimpleList(sections['Accomplishments'] || ''),
       interests:      parseSimpleList(sections['Interests and Extracurricular Activities'] || ''),
       aiTools:        parseSkills(sections['AI Tools'] || ''),
+      courses:        parseCourses(sections['Courses'] || '', latex),
       intro:          parseIntro(latex),
       /* Attributes declared in comment blocks before each \section*, keyed
          by section name — icon, image, alt, and anything else authored. */
@@ -961,8 +1056,7 @@
     if (section) section.style.display = '';
     const media = SITE_CONFIG.media || {};
     el.innerHTML = items.map(it => {
-      const lg = logoFor(it.name);
-      const mark = lg ? logoSVG(lg, media.techLogoColor !== false) : '';
+      const mark = techMark(it.name, true);
       return '<div class="ai-card" data-entry="' + escapeHTML(it.name) + '">' +
         '<div class="ai-card-head">' + mark +
           '<span class="ai-card-name">' + escapeHTML(it.name) + '</span></div>' +
@@ -1094,45 +1188,409 @@
     el.innerHTML = internships.map((intern, idx) => {
       const links = normalizeLinks(intern);
       const num = String(idx + 1).padStart(2, '0');
-      return '<article class="work-item" data-entry="' + escapeHTML(intern.title || '') + '">' +
+      const P = placeDiagram(intern.title);
+      return '<article class="work-item' + P.cls + mCls() + '" data-entry="' + escapeHTML(intern.title || '') + '">' +
         '<span class="idx">' + num + ' / Intern</span>' +
         '<div>' +
+          P.top +
           '<h3>' + entryMark(intern.title || '') + escapeHTML(intern.title || 'Internship') + '</h3>' +
+          P.wide +
           (intern.dates ? '<div class="role">' + escapeHTML(intern.dates) + '</div>' : '') +
           renderBullets(intern.bullets) +
           renderStack(intern.stack, 'stack') +
+          P.below +
+          (P.inline ? '<div class="feat-meta-inline">' + entryTile(intern.title || '') +
+                      renderLinks(links) + '</div>' : '') +
         '</div>' +
-        '<div class="meta-right">' + entryTile(intern.title || '') +
-          renderLinks(links) + '</div>' +
+        (P.side ? P.side : P.inline ? ''
+                : '<div class="meta-right">' + entryTile(intern.title || '') +
+                    renderLinks(links) + '</div>') +
+        mToggle() +
       '</article>';
     }).join('');
   }
+
+  /* Even spread around the wheel: 360/n apart, starting from the site
+     accent's hue so the set still belongs to the palette. buildDomainPalette
+     steps by a fixed angle, which is right for 17 domains but bunches four
+     into one quarter of the wheel. */
+  function spreadHues(names) {
+    const out = {};
+    if (!names.length) return out;
+    let base = 20;
+    try {
+      const acc = getComputedStyle(document.documentElement)
+        .getPropertyValue('--accent').trim();
+      if (/^#[0-9a-f]{6}$/i.test(acc)) {
+        const r = parseInt(acc.slice(1, 3), 16) / 255,
+              g = parseInt(acc.slice(3, 5), 16) / 255,
+              b = parseInt(acc.slice(5, 7), 16) / 255;
+        const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+        if (d) {
+          let h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+          base = (h * 60 + 360) % 360;
+        }
+      }
+    } catch (e) { /* keep the default */ }
+    names.forEach((n, i) => {
+      const h = (base + i * 360 / names.length) % 360;
+      out[n] = 'hsl(' + h.toFixed(0) + ', 58%, 56%)';
+    });
+    return out;
+  }
+
+  /* ----------------------------------------------------------
+     Project diagrams
+     ----------------------------------------------------------
+     One inline SVG per showcased project, explaining what it does: terminal
+     tools show their commands wired to the stage each one drives; web and
+     mobile tools show taps, clicks and numbered steps. Each flow ends on its
+     real output. Inline SVG rather than image files: no extra requests, sharp
+     at any size, about 5.5 KB gzipped for all five.
+
+     Keys are matched against the project title case-insensitively, so a
+     title can change without breaking the link. Hide them all with
+     media.showDiagrams = false, or one with media.hiddenDiagrams[title].
+     ---------------------------------------------------------- */
+  const PROJECT_DIAGRAMS = {
+      "intrusion": "<svg viewBox=\"0 0 640 280\" xmlns=\"http://www.w3.org/2000/svg\" role=\"img\"><defs><marker id=\"a-nids\" viewBox=\"0 0 10 10\" refX=\"8.5\" refY=\"5\" markerWidth=\"7\" markerHeight=\"7\" orient=\"auto-start-reverse\"><path d=\"M0 0 L10 5 L0 10 z\" fill=\"#da8062\"/></marker></defs><rect x=\"14\" y=\"10\" width=\"612\" height=\"76\" rx=\"9\" fill=\"#0a0b16\" stroke=\"#2e3151\"/><rect x=\"14\" y=\"10\" width=\"612\" height=\"20\" rx=\"9\" fill=\"#15162a\"/><rect x=\"14\" y=\"21\" width=\"612\" height=\"9\" fill=\"#15162a\"/><circle cx=\"26\" cy=\"20\" r=\"3.2\" fill=\"#393c5b\"/><circle cx=\"37\" cy=\"20\" r=\"3.2\" fill=\"#393c5b\"/><circle cx=\"48\" cy=\"20\" r=\"3.2\" fill=\"#393c5b\"/><text x=\"26\" y=\"50\" class=\"dg-cmd\">$ sudo nids --iface eth0</text><text x=\"26\" y=\"71\" class=\"dg-warn\">[!] port scan 10.0.0.42 -&gt; blocked (iptables DROP)</text><rect x=\"14\" y=\"146\" width=\"104\" height=\"96\" rx=\"9\" fill=\"#0b0c17\" stroke=\"#3a3d5c\"/><rect x=\"24\" y=\"160\" width=\"22\" height=\"11\" rx=\"2.5\" fill=\"#2f3252\"/><rect x=\"52\" y=\"170\" width=\"22\" height=\"11\" rx=\"2.5\" fill=\"#da8062\"/><rect x=\"28\" y=\"186\" width=\"22\" height=\"11\" rx=\"2.5\" fill=\"#2f3252\"/><rect x=\"70\" y=\"156\" width=\"22\" height=\"11\" rx=\"2.5\" fill=\"#da8062\"/><rect x=\"84\" y=\"194\" width=\"22\" height=\"11\" rx=\"2.5\" fill=\"#2f3252\"/><rect x=\"46\" y=\"206\" width=\"22\" height=\"11\" rx=\"2.5\" fill=\"#da8062\"/><rect x=\"76\" y=\"218\" width=\"22\" height=\"11\" rx=\"2.5\" fill=\"#2f3252\"/><rect x=\"176\" y=\"138\" width=\"118\" height=\"108\" rx=\"7\" fill=\"#141528\" stroke=\"#3a3d5c\" stroke-width=\"1\"/><text x=\"184\" y=\"153\" class=\"dg-pk\">SYN  :22  10.0.0.42</text><text x=\"184\" y=\"165\" class=\"dg-pk\">SYN  :23  10.0.0.42</text><text x=\"184\" y=\"177\" class=\"dg-pk\">SYN  :80  10.0.0.42</text><text x=\"184\" y=\"189\" class=\"dg-pk\">SYN  :443 10.0.0.42</text><text x=\"184\" y=\"201\" class=\"dg-pkd\">ACK  :443 10.0.0.7</text><text x=\"184\" y=\"213\" class=\"dg-pk\">SYN  :8080 10.0.0.42</text><rect x=\"352\" y=\"146\" width=\"116\" height=\"92\" rx=\"7\" fill=\"#141528\" stroke=\"#da8062\" stroke-width=\"1.6\"/><rect x=\"352\" y=\"146\" width=\"116\" height=\"18\" rx=\"7\" fill=\"#da8062\"/><rect x=\"352\" y=\"157\" width=\"116\" height=\"7\" fill=\"#da8062\"/><text x=\"360\" y=\"158.5\" class=\"dg-bd\">⚠ PORT SCAN</text><text x=\"360\" y=\"177\" class=\"dg-al\">src  10.0.0.42</text><text x=\"360\" y=\"189\" class=\"dg-al\">37 ports / 2 s</text><text x=\"360\" y=\"201\" class=\"dg-al\">OS: Linux 5.x</text><rect x=\"518\" y=\"136\" width=\"108\" height=\"112\" rx=\"7\" fill=\"#141528\" stroke=\"#da8062\" stroke-width=\"1.6\"/><rect x=\"518\" y=\"136\" width=\"108\" height=\"18\" rx=\"7\" fill=\"#da8062\"/><rect x=\"518\" y=\"147\" width=\"108\" height=\"7\" fill=\"#da8062\"/><text x=\"526\" y=\"148.5\" class=\"dg-bd\">OUTPUT</text><text x=\"526\" y=\"167\" class=\"dg-rule\">DROP 10.0.0.42</text><text x=\"526\" y=\"179\" class=\"dg-al\">iptables · INPUT</text><text x=\"526\" y=\"191\" class=\"dg-al\">Win Firewall</text><text x=\"526\" y=\"203\" class=\"dg-okc\">✓ host protected</text><text x=\"66\" y=\"266\" class=\"dg-cap\" text-anchor=\"middle\">live traffic · eth0</text><text x=\"235\" y=\"266\" class=\"dg-cap\" text-anchor=\"middle\">captured packets</text><text x=\"410\" y=\"266\" class=\"dg-cap\" text-anchor=\"middle\">alert</text><text x=\"572\" y=\"266\" class=\"dg-cap\" text-anchor=\"middle\">attacker blocked</text><path d=\"M118 194 L172 194\" fill=\"none\" stroke=\"#da8062\" stroke-width=\"1.5\"  marker-end=\"url(#a-nids)\"/><path d=\"M294 194 L348 194\" fill=\"none\" stroke=\"#da8062\" stroke-width=\"1.5\"  marker-end=\"url(#a-nids)\"/><path d=\"M468 194 L514 194\" fill=\"none\" stroke=\"#da8062\" stroke-width=\"1.5\"  marker-end=\"url(#a-nids)\"/><rect x=\"98\" y=\"98\" width=\"96\" height=\"34\" rx=\"17\" fill=\"#1b1c31\" stroke=\"#da8062\" stroke-width=\"1.3\"/><g transform=\"translate(105 103)\" fill=\"none\" stroke=\"#da8062\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"17.5\" r=\"1.7\" fill=\"#da8062\" stroke=\"none\"/><path d=\"M7.6 13.3a6.2 6.2 0 0 1 8.8 0\"/><path d=\"M4.6 10.2a10.4 10.4 0 0 1 14.8 0\"/></g><text x=\"133\" y=\"113\" class=\"dg-ct\">Capture</text><text x=\"133\" y=\"125\" class=\"dg-cs\">Scapy</text><line x1=\"146\" y1=\"132\" x2=\"146\" y2=\"191\" stroke=\"#da8062\" stroke-width=\"1.2\" stroke-dasharray=\"2 3\" opacity=\".8\"/><circle cx=\"146\" cy=\"194\" r=\"3\" fill=\"#da8062\"/><rect x=\"276\" y=\"98\" width=\"92\" height=\"34\" rx=\"17\" fill=\"#1b1c31\" stroke=\"#da8062\" stroke-width=\"1.3\"/><g transform=\"translate(283 103)\" fill=\"none\" stroke=\"#da8062\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"10.5\" cy=\"10.5\" r=\"6.2\"/><path d=\"M15.1 15.1 20.6 20.6\"/><path d=\"M8 10.5h5M10.5 8v5\"/></g><text x=\"311\" y=\"113\" class=\"dg-ct\">Detect</text><text x=\"311\" y=\"125\" class=\"dg-cs\">sliding win</text><line x1=\"322\" y1=\"132\" x2=\"322\" y2=\"191\" stroke=\"#da8062\" stroke-width=\"1.2\" stroke-dasharray=\"2 3\" opacity=\".8\"/><circle cx=\"322\" cy=\"194\" r=\"3\" fill=\"#da8062\"/><rect x=\"444\" y=\"98\" width=\"92\" height=\"34\" rx=\"17\" fill=\"#1b1c31\" stroke=\"#da8062\" stroke-width=\"1.3\"/><g transform=\"translate(451 103)\" fill=\"none\" stroke=\"#da8062\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 2.6 19.4 5.5V11c0 5-3.3 8.4-7.4 10.4C7.9 19.4 4.6 16 4.6 11V5.5Z\"/><path d=\"M8.6 8.6l6.8 6.8\"/></g><text x=\"479\" y=\"113\" class=\"dg-ct\">Block</text><text x=\"479\" y=\"125\" class=\"dg-cs\">auto</text><line x1=\"490\" y1=\"132\" x2=\"490\" y2=\"191\" stroke=\"#da8062\" stroke-width=\"1.2\" stroke-dasharray=\"2 3\" opacity=\".8\"/><circle cx=\"490\" cy=\"194\" r=\"3\" fill=\"#da8062\"/><path d=\"M60 86 L60 142\" fill=\"none\" stroke=\"#da8062\" stroke-width=\"1.5\" stroke-dasharray=\"4 4\" marker-end=\"url(#a-nids)\"/><path d=\"M572 136 C 572 118, 592 104, 592 90\" fill=\"none\" stroke=\"#da8062\" stroke-width=\"1.5\" stroke-dasharray=\"4 4\" marker-end=\"url(#a-nids)\"/></svg>",
+      "agentic": "<svg viewBox=\"0 0 640 292\" xmlns=\"http://www.w3.org/2000/svg\" role=\"img\"><defs><marker id=\"a-ai\" viewBox=\"0 0 10 10\" refX=\"8.5\" refY=\"5\" markerWidth=\"7\" markerHeight=\"7\" orient=\"auto-start-reverse\"><path d=\"M0 0 L10 5 L0 10 z\" fill=\"#75c25b\"/></marker></defs><rect x=\"14\" y=\"10\" width=\"612\" height=\"76\" rx=\"9\" fill=\"#0a0b16\" stroke=\"#2e3151\"/><rect x=\"14\" y=\"10\" width=\"612\" height=\"20\" rx=\"9\" fill=\"#15162a\"/><rect x=\"14\" y=\"21\" width=\"612\" height=\"9\" fill=\"#15162a\"/><circle cx=\"26\" cy=\"20\" r=\"3.2\" fill=\"#393c5b\"/><circle cx=\"37\" cy=\"20\" r=\"3.2\" fill=\"#393c5b\"/><circle cx=\"48\" cy=\"20\" r=\"3.2\" fill=\"#393c5b\"/><text x=\"26\" y=\"50\" class=\"dg-cmd\">$ research papers/*.pdf       # 3 PDFs</text><text x=\"26\" y=\"71\" class=\"dg-ok\">[ok] survey.md · 742 words · 11 citations across 3 papers</text><path d=\"M14 128 H86 L96 138 V220 H14 Z\" fill=\"#141528\" stroke=\"#3a3d5c\" stroke-width=\"1\"/><path d=\"M86 128 V138 H96\" fill=\"none\" stroke=\"#3a3d5c\"/><text x=\"22\" y=\"144\" class=\"dg-pt\">paper-1.pdf</text><path d=\"M24 147 H96 L106 157 V239 H24 Z\" fill=\"#141528\" stroke=\"#3a3d5c\" stroke-width=\"1\"/><path d=\"M96 147 V157 H106\" fill=\"none\" stroke=\"#3a3d5c\"/><text x=\"32\" y=\"163\" class=\"dg-pt\">paper-2.pdf</text><path d=\"M34 166 H106 L116 176 V258 H34 Z\" fill=\"#141528\" stroke=\"#3a3d5c\" stroke-width=\"1\"/><path d=\"M106 166 V176 H116\" fill=\"none\" stroke=\"#3a3d5c\"/><text x=\"42\" y=\"182\" class=\"dg-pt\">paper-3.pdf</text><rect x=\"42\" y=\"192\" width=\"61\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"42\" y=\"201\" width=\"61\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"42\" y=\"210\" width=\"41\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"42\" y=\"219\" width=\"61\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"42\" y=\"228\" width=\"61\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"42\" y=\"237\" width=\"41\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"40\" y=\"243\" width=\"28\" height=\"12\" rx=\"3\" fill=\"#c3c7e0\"/><text x=\"44\" y=\"252\" class=\"dg-bd\">PDF</text><path d=\"M184 158 H244 L254 168 V250 H184 Z\" fill=\"#141528\" stroke=\"#3a3d5c\" stroke-width=\"1\"/><path d=\"M244 158 V168 H254\" fill=\"none\" stroke=\"#3a3d5c\"/><rect x=\"192\" y=\"174\" width=\"50\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"192\" y=\"183\" width=\"50\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"192\" y=\"192\" width=\"33\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><path d=\"M177 151 H237 L247 161 V243 H177 Z\" fill=\"#141528\" stroke=\"#3a3d5c\" stroke-width=\"1\"/><path d=\"M237 151 V161 H247\" fill=\"none\" stroke=\"#3a3d5c\"/><rect x=\"185\" y=\"167\" width=\"50\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"185\" y=\"176\" width=\"50\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"185\" y=\"185\" width=\"33\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><path d=\"M170 144 H230 L240 154 V236 H170 Z\" fill=\"#141528\" stroke=\"#75c25b\" stroke-width=\"1.6\"/><path d=\"M230 144 V154 H240\" fill=\"none\" stroke=\"#75c25b\"/><rect x=\"178\" y=\"160\" width=\"50\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"178\" y=\"169\" width=\"50\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"178\" y=\"178\" width=\"33\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"334\" y=\"138\" width=\"96\" height=\"52\" rx=\"7\" fill=\"#141528\" stroke=\"#3a3d5c\" stroke-width=\"1\"/><text x=\"342\" y=\"153\" class=\"dg-nt2\">· key claim</text><text x=\"342\" y=\"165\" class=\"dg-nt2\">· method</text><text x=\"342\" y=\"177\" class=\"dg-nt2\">· result</text><rect x=\"334\" y=\"198\" width=\"96\" height=\"52\" rx=\"7\" fill=\"#141528\" stroke=\"#3a3d5c\" stroke-width=\"1\"/><text x=\"342\" y=\"213\" class=\"dg-okc\">✓ supported</text><text x=\"342\" y=\"225\" class=\"dg-bad\">✗ overstated</text><text x=\"342\" y=\"237\" class=\"dg-okc\">✓ cited</text><path d=\"M512 130 H616 L626 140 V260 H512 Z\" fill=\"#141528\" stroke=\"#75c25b\" stroke-width=\"1.6\"/><path d=\"M616 130 V140 H626\" fill=\"none\" stroke=\"#75c25b\"/><text x=\"520\" y=\"146\" class=\"dg-pt\">Survey</text><rect x=\"520\" y=\"156\" width=\"90\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><text x=\"613\" y=\"160\" class=\"dg-cm\" fill=\"#75c25b\">[1]</text><rect x=\"520\" y=\"165\" width=\"90\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"520\" y=\"174\" width=\"61\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><text x=\"584\" y=\"178\" class=\"dg-cm\" fill=\"#75c25b\">[2]</text><rect x=\"520\" y=\"183\" width=\"90\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"520\" y=\"192\" width=\"90\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"520\" y=\"201\" width=\"61\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><text x=\"584\" y=\"205\" class=\"dg-cm\" fill=\"#75c25b\">[3]</text><rect x=\"520\" y=\"210\" width=\"90\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"520\" y=\"219\" width=\"90\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"520\" y=\"228\" width=\"61\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"518\" y=\"245\" width=\"47\" height=\"12\" rx=\"3\" fill=\"#75c25b\"/><text x=\"522\" y=\"254\" class=\"dg-bd\">OUTPUT</text><text x=\"62\" y=\"278\" class=\"dg-cap\" text-anchor=\"middle\">3 input papers</text><text x=\"214\" y=\"278\" class=\"dg-cap\" text-anchor=\"middle\">chunks</text><text x=\"382\" y=\"278\" class=\"dg-cap\" text-anchor=\"middle\">summaries + critiques</text><text x=\"569\" y=\"278\" class=\"dg-cap\" text-anchor=\"middle\">cited survey</text><path d=\"M116 196 L166 196\" fill=\"none\" stroke=\"#75c25b\" stroke-width=\"1.5\"  marker-end=\"url(#a-ai)\"/><path d=\"M254 196 L330 196\" fill=\"none\" stroke=\"#75c25b\" stroke-width=\"1.5\"  marker-end=\"url(#a-ai)\"/><path d=\"M430 196 L508 196\" fill=\"none\" stroke=\"#75c25b\" stroke-width=\"1.5\"  marker-end=\"url(#a-ai)\"/><rect x=\"88\" y=\"98\" width=\"104\" height=\"34\" rx=\"17\" fill=\"#1b1c31\" stroke=\"#75c25b\" stroke-width=\"1.3\"/><g transform=\"translate(95 103)\" fill=\"none\" stroke=\"#75c25b\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"5\" cy=\"12\" r=\"2\"/><circle cx=\"19\" cy=\"6\" r=\"2\"/><circle cx=\"19\" cy=\"18\" r=\"2\"/><path d=\"M7 12h4l6-5.4M11 12l6 5.4\"/></g><text x=\"123\" y=\"113\" class=\"dg-ct\">Router</text><text x=\"123\" y=\"125\" class=\"dg-cs\">Llama 3.2</text><line x1=\"141\" y1=\"132\" x2=\"141\" y2=\"193\" stroke=\"#75c25b\" stroke-width=\"1.2\" stroke-dasharray=\"2 3\" opacity=\".8\"/><circle cx=\"141\" cy=\"196\" r=\"3\" fill=\"#75c25b\"/><rect x=\"232\" y=\"98\" width=\"118\" height=\"34\" rx=\"17\" fill=\"#1b1c31\" stroke=\"#75c25b\" stroke-width=\"1.3\"/><g transform=\"translate(239 103)\" fill=\"none\" stroke=\"#75c25b\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 6h16M4 10h12.5M4 14h9M4 18h5.5\"/></g><text x=\"267\" y=\"113\" class=\"dg-ct\">Summarise</text><text x=\"267\" y=\"125\" class=\"dg-cs\">+ critique</text><line x1=\"291\" y1=\"132\" x2=\"291\" y2=\"193\" stroke=\"#75c25b\" stroke-width=\"1.2\" stroke-dasharray=\"2 3\" opacity=\".8\"/><circle cx=\"291\" cy=\"196\" r=\"3\" fill=\"#75c25b\"/><rect x=\"406\" y=\"98\" width=\"112\" height=\"34\" rx=\"17\" fill=\"#1b1c31\" stroke=\"#75c25b\" stroke-width=\"1.3\"/><g transform=\"translate(413 103)\" fill=\"none\" stroke=\"#75c25b\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 5c6 0 6 7 10 7M4 19c6 0 6-7 10-7h6\"/><path d=\"M17 9l3 3-3 3\"/></g><text x=\"441\" y=\"113\" class=\"dg-ct\">Synthesise</text><text x=\"441\" y=\"125\" class=\"dg-cs\">Llama 3.1</text><line x1=\"462\" y1=\"132\" x2=\"462\" y2=\"193\" stroke=\"#75c25b\" stroke-width=\"1.2\" stroke-dasharray=\"2 3\" opacity=\".8\"/><circle cx=\"462\" cy=\"196\" r=\"3\" fill=\"#75c25b\"/><path d=\"M54 86 L54 124\" fill=\"none\" stroke=\"#75c25b\" stroke-width=\"1.5\" stroke-dasharray=\"4 4\" marker-end=\"url(#a-ai)\"/><path d=\"M569 130 C 569 112, 592 102, 592 90\" fill=\"none\" stroke=\"#75c25b\" stroke-width=\"1.5\" stroke-dasharray=\"4 4\" marker-end=\"url(#a-ai)\"/></svg>",
+      "citestat": "<svg viewBox=\"0 0 600 260\" xmlns=\"http://www.w3.org/2000/svg\" role=\"img\"><defs><marker id=\"a-cite\" viewBox=\"0 0 10 10\" refX=\"8.5\" refY=\"5\" markerWidth=\"7\" markerHeight=\"7\" orient=\"auto-start-reverse\"><path d=\"M0 0 L10 5 L0 10 z\" fill=\"#5ab9d8\"/></marker></defs><rect x=\"14\" y=\"14\" width=\"330\" height=\"226\" rx=\"9\" fill=\"#141528\" stroke=\"#2f3252\"/><rect x=\"14\" y=\"14\" width=\"330\" height=\"22\" rx=\"9\" fill=\"#16172a\"/><rect x=\"14\" y=\"26\" width=\"330\" height=\"10\" fill=\"#16172a\"/><circle cx=\"26\" cy=\"25\" r=\"3.2\" fill=\"#3a3d5c\"/><circle cx=\"37\" cy=\"25\" r=\"3.2\" fill=\"#3a3d5c\"/><circle cx=\"48\" cy=\"25\" r=\"3.2\" fill=\"#3a3d5c\"/><rect x=\"60\" y=\"20\" width=\"272\" height=\"11\" rx=\"5.5\" fill=\"#24263f\"/><text x=\"68\" y=\"29\" class=\"dg-url\">citestat · search</text><rect x=\"32\" y=\"50\" width=\"220\" height=\"26\" rx=\"6\" fill=\"#0b0c17\" stroke=\"#5ab9d8\" stroke-width=\"1.4\"/><text x=\"42\" y=\"67\" class=\"dg-ph\">Author name or DOI</text><rect x=\"262\" y=\"50\" width=\"64\" height=\"26\" rx=\"6\" fill=\"#5ab9d8\"/><text x=\"294\" y=\"67\" class=\"dg-btn\" text-anchor=\"middle\">Search</text><rect x=\"36\" y=\"174\" width=\"15\" height=\"22\" rx=\"2.5\" fill=\"#5ab9d8\" opacity=\"0.35\"/><rect x=\"60\" y=\"158\" width=\"15\" height=\"38\" rx=\"2.5\" fill=\"#5ab9d8\" opacity=\"0.44\"/><rect x=\"84\" y=\"166\" width=\"15\" height=\"30\" rx=\"2.5\" fill=\"#5ab9d8\" opacity=\"0.53\"/><rect x=\"108\" y=\"144\" width=\"15\" height=\"52\" rx=\"2.5\" fill=\"#5ab9d8\" opacity=\"0.62\"/><rect x=\"132\" y=\"150\" width=\"15\" height=\"46\" rx=\"2.5\" fill=\"#5ab9d8\" opacity=\"0.71\"/><rect x=\"156\" y=\"132\" width=\"15\" height=\"64\" rx=\"2.5\" fill=\"#5ab9d8\" opacity=\"0.80\"/><rect x=\"180\" y=\"138\" width=\"15\" height=\"58\" rx=\"2.5\" fill=\"#5ab9d8\" opacity=\"0.89\"/><line x1=\"32\" y1=\"197\" x2=\"210\" y2=\"197\" stroke=\"#3a3d5c\"/><rect x=\"230\" y=\"120\" width=\"96\" height=\"76\" rx=\"8\" fill=\"#1b1c31\" stroke=\"#3a3d5c\"/><text x=\"244\" y=\"141\" class=\"dg-ns\">h-index</text><text x=\"244\" y=\"172\" class=\"dg-metric\" fill=\"#5ab9d8\">14</text><text x=\"244\" y=\"188\" class=\"dg-ns\">m-quotient 1.2</text><circle cx=\"322\" cy=\"72\" r=\"9\" fill=\"none\" stroke=\"#5ab9d8\" stroke-width=\"1.4\" opacity=\".75\"/><circle cx=\"322\" cy=\"72\" r=\"15\" fill=\"none\" stroke=\"#5ab9d8\" stroke-width=\"1\" opacity=\".35\"/><path d=\"M322 72 l0 15 l4 -4 l3 7 l3 -1.4 l-3 -7 l6 0 z\" fill=\"#f2f0ff\" stroke=\"#0b0c17\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/><circle cx=\"300\" cy=\"98\" r=\"8.5\" fill=\"#5ab9d8\"/><text x=\"300\" y=\"101.6\" class=\"dg-sn\" text-anchor=\"middle\">1</text><rect x=\"420\" y=\"40\" width=\"164\" height=\"46\" rx=\"9\" fill=\"#1b1c31\" stroke=\"#5ab9d8\" stroke-width=\"1.6\"/><text x=\"432\" y=\"59\" class=\"dg-nt\">Crossref API</text><text x=\"432\" y=\"75\" class=\"dg-ns\">citation records</text><path d=\"M346 63 L416 63\" fill=\"none\" stroke=\"#5ab9d8\" stroke-width=\"1.5\" stroke-dasharray=\"4 4\" marker-end=\"url(#a-cite)\"/><circle cx=\"381\" cy=\"50\" r=\"8.5\" fill=\"#5ab9d8\"/><text x=\"381\" y=\"53.6\" class=\"dg-sn\" text-anchor=\"middle\">2</text><path d=\"M500 86 C 500 150, 420 158, 330 158\" fill=\"none\" stroke=\"#5ab9d8\" stroke-width=\"1.5\" stroke-dasharray=\"4 4\" marker-end=\"url(#a-cite)\"/><circle cx=\"470\" cy=\"150\" r=\"8.5\" fill=\"#5ab9d8\"/><text x=\"470\" y=\"153.6\" class=\"dg-sn\" text-anchor=\"middle\">3</text><text x=\"356\" y=\"214\" class=\"dg-lab\" text-anchor=\"start\">metrics computed in the browser —</text><text x=\"356\" y=\"230\" class=\"dg-lab\" text-anchor=\"start\">no backend server</text></svg>",
+      "crdt": "<svg viewBox=\"0 0 640 490\" xmlns=\"http://www.w3.org/2000/svg\" role=\"img\"><defs><marker id=\"a-crdt\" viewBox=\"0 0 10 10\" refX=\"8.5\" refY=\"5\" markerWidth=\"7\" markerHeight=\"7\" orient=\"auto-start-reverse\"><path d=\"M0 0 L10 5 L0 10 z\" fill=\"#c888dd\"/></marker><marker id=\"a-crdtb\" viewBox=\"0 0 10 10\" refX=\"8.5\" refY=\"5\" markerWidth=\"7\" markerHeight=\"7\" orient=\"auto-start-reverse\"><path d=\"M0 0 L10 5 L0 10 z\" fill=\"#e6c069\"/></marker></defs><g transform=\"translate(36 17)\" fill=\"none\" stroke=\"#c888dd\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"8\" r=\"3.6\"/><path d=\"M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5\"/></g><text x=\"66\" y=\"34\" class=\"dg-devA\" fill=\"#c888dd\">DEVICE 1 · LAPTOP</text><rect x=\"36\" y=\"48\" width=\"250\" height=\"88\" rx=\"9\" fill=\"#141528\" stroke=\"#c888dd\" stroke-width=\"2\"/><rect x=\"44\" y=\"56\" width=\"234\" height=\"72\" rx=\"4\" fill=\"#0e0f1d\"/><path d=\"M22 140 H300 L290 152 H32 Z\" fill=\"#1b1c31\" stroke=\"#c888dd\" stroke-width=\"2\"/><rect x=\"141\" y=\"143\" width=\"40\" height=\"3\" rx=\"1.5\" fill=\"#c888dd\" opacity=\".6\"/><text x=\"60\" y=\"98\" class=\"dg-typed\">Hello <tspan fill=\"#c888dd\" font-weight=\"700\">big </tspan>world</text><g transform=\"translate(248 60)\" fill=\"none\" stroke=\"#9ad09a\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"17.5\" r=\"1.7\" fill=\"#9ad09a\" stroke=\"none\"/><path d=\"M7.6 13.3a6.2 6.2 0 0 1 8.8 0\"/><path d=\"M4.6 10.2a10.4 10.4 0 0 1 14.8 0\"/></g><g transform=\"translate(476 17)\" fill=\"none\" stroke=\"#e6c069\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"8\" r=\"3.6\"/><path d=\"M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5\"/></g><text x=\"506\" y=\"34\" class=\"dg-devA\" fill=\"#e6c069\">DEVICE 2 · PHONE</text><rect x=\"476\" y=\"48\" width=\"126\" height=\"150\" rx=\"22\" fill=\"#141528\" stroke=\"#e6c069\" stroke-width=\"2\"/><rect x=\"484\" y=\"56\" width=\"110\" height=\"134\" rx=\"16\" fill=\"#0e0f1d\"/><rect x=\"520\" y=\"61\" width=\"38\" height=\"7\" rx=\"3.5\" fill=\"#1b1c31\"/><rect x=\"519\" y=\"182\" width=\"40\" height=\"3\" rx=\"1.5\" fill=\"#e6c069\" opacity=\".6\"/><text x=\"494\" y=\"114\" class=\"dg-typed\">Hello</text><text x=\"494\" y=\"136\" class=\"dg-typed\">world<tspan fill=\"#e6c069\" font-weight=\"700\">!</tspan></text><g transform=\"translate(568 72)\" fill=\"none\" stroke=\"#e08b8b\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"17.5\" r=\"1.7\" fill=\"#e08b8b\" stroke=\"none\"/><path d=\"M7.6 13.3a6.2 6.2 0 0 1 8.8 0\"/><path d=\"M4.6 10.2a10.4 10.4 0 0 1 14.8 0\"/><path d=\"M4 4l16 16\"/></g><rect x=\"488\" y=\"156\" width=\"102\" height=\"18\" rx=\"9\" fill=\"#2a2210\" stroke=\"#e6c069\"/><text x=\"539\" y=\"168.5\" class=\"dg-off\" text-anchor=\"middle\">offline · 1 queued</text><circle cx=\"372\" cy=\"102\" r=\"8.5\" fill=\"#c888dd\"/><text x=\"372\" y=\"105.6\" class=\"dg-sn\" text-anchor=\"middle\">1</text><text x=\"372\" y=\"128\" class=\"dg-lab\" text-anchor=\"middle\">both edit at once</text><text x=\"372\" y=\"141\" class=\"dg-lab\" text-anchor=\"middle\">— phone is offline —</text><rect x=\"244\" y=\"218\" width=\"152\" height=\"50\" rx=\"9\" fill=\"#1b1c31\" stroke=\"#c888dd\" stroke-width=\"1.6\"/><g transform=\"translate(254 231.0)\" fill=\"none\" stroke=\"#c888dd\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 5c6 0 6 7 10 7M4 19c6 0 6-7 10-7h6\"/><path d=\"M17 9l3 3-3 3\"/></g><text x=\"284\" y=\"237\" class=\"dg-nt\">Relay</text><text x=\"284\" y=\"253\" class=\"dg-ns\">WebSocket · RGA</text><path d=\"M160 158 C 160 200, 200 243, 240 243\" fill=\"none\" stroke=\"#c888dd\" stroke-width=\"1.5\"  marker-end=\"url(#a-crdt)\"/><path d=\"M539 200 C 539 228, 444 243, 400 243\" fill=\"none\" stroke=\"#e6c069\" stroke-width=\"1.5\" stroke-dasharray=\"4 4\" marker-end=\"url(#a-crdtb)\"/><text x=\"150\" y=\"206\" class=\"dg-lab\" text-anchor=\"end\">insert &quot;big &quot;</text><text x=\"486\" y=\"214\" class=\"dg-lab\" text-anchor=\"end\">sent on reconnect</text><path d=\"M276 268 C 230 280, 168 282, 160 296\" fill=\"none\" stroke=\"#e6c069\" stroke-width=\"1.5\" stroke-dasharray=\"4 4\" marker-end=\"url(#a-crdtb)\"/><path d=\"M364 268 C 410 282, 520 288, 539 300\" fill=\"none\" stroke=\"#c888dd\" stroke-width=\"1.5\" stroke-dasharray=\"4 4\" marker-end=\"url(#a-crdt)\"/><circle cx=\"320\" cy=\"292\" r=\"8.5\" fill=\"#c888dd\"/><text x=\"320\" y=\"295.6\" class=\"dg-sn\" text-anchor=\"middle\">2</text><rect x=\"36\" y=\"302\" width=\"250\" height=\"88\" rx=\"9\" fill=\"#141528\" stroke=\"#c888dd\" stroke-width=\"2\"/><rect x=\"44\" y=\"310\" width=\"234\" height=\"72\" rx=\"4\" fill=\"#0e0f1d\"/><path d=\"M22 394 H300 L290 406 H32 Z\" fill=\"#1b1c31\" stroke=\"#c888dd\" stroke-width=\"2\"/><rect x=\"141\" y=\"397\" width=\"40\" height=\"3\" rx=\"1.5\" fill=\"#c888dd\" opacity=\".6\"/><text x=\"60\" y=\"352\" class=\"dg-typed\">Hello <tspan fill=\"#c888dd\" font-weight=\"700\">big </tspan>world<tspan fill=\"#e6c069\" font-weight=\"700\">!</tspan></text><g transform=\"translate(248 314)\" fill=\"none\" stroke=\"#9ad09a\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"17.5\" r=\"1.7\" fill=\"#9ad09a\" stroke=\"none\"/><path d=\"M7.6 13.3a6.2 6.2 0 0 1 8.8 0\"/><path d=\"M4.6 10.2a10.4 10.4 0 0 1 14.8 0\"/></g><rect x=\"476\" y=\"302\" width=\"126\" height=\"150\" rx=\"22\" fill=\"#141528\" stroke=\"#e6c069\" stroke-width=\"2\"/><rect x=\"484\" y=\"310\" width=\"110\" height=\"134\" rx=\"16\" fill=\"#0e0f1d\"/><rect x=\"520\" y=\"315\" width=\"38\" height=\"7\" rx=\"3.5\" fill=\"#1b1c31\"/><rect x=\"519\" y=\"436\" width=\"40\" height=\"3\" rx=\"1.5\" fill=\"#e6c069\" opacity=\".6\"/><text x=\"494\" y=\"368\" class=\"dg-typed\">Hello <tspan fill=\"#c888dd\" font-weight=\"700\">big</tspan></text><text x=\"494\" y=\"390\" class=\"dg-typed\">world<tspan fill=\"#e6c069\" font-weight=\"700\">!</tspan></text><g transform=\"translate(568 326)\" fill=\"none\" stroke=\"#9ad09a\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"17.5\" r=\"1.7\" fill=\"#9ad09a\" stroke=\"none\"/><path d=\"M7.6 13.3a6.2 6.2 0 0 1 8.8 0\"/><path d=\"M4.6 10.2a10.4 10.4 0 0 1 14.8 0\"/></g><circle cx=\"372\" cy=\"352\" r=\"8.5\" fill=\"#c888dd\"/><text x=\"372\" y=\"355.6\" class=\"dg-sn\" text-anchor=\"middle\">3</text><text x=\"372\" y=\"378\" class=\"dg-lab\" text-anchor=\"middle\">same text on both</text><text x=\"320\" y=\"476\" class=\"dg-lab\" text-anchor=\"middle\">back online, both converge with neither edit lost — the relay only forwards; each device merges</text></svg>",
+      "cris": "<svg viewBox=\"0 0 640 350\" xmlns=\"http://www.w3.org/2000/svg\" role=\"img\"><defs><marker id=\"a-cris\" viewBox=\"0 0 10 10\" refX=\"8.5\" refY=\"5\" markerWidth=\"7\" markerHeight=\"7\" orient=\"auto-start-reverse\"><path d=\"M0 0 L10 5 L0 10 z\" fill=\"#e3829f\"/></marker></defs><g transform=\"translate(16 10)\" fill=\"none\" stroke=\"#e3829f\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"8\" r=\"3.6\"/><path d=\"M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5\"/></g><text x=\"46\" y=\"27\" class=\"dg-devA\" fill=\"#e3829f\">APPLICANT · APP</text><rect x=\"16\" y=\"40\" width=\"144\" height=\"276\" rx=\"22\" fill=\"#141528\" stroke=\"#e3829f\" stroke-width=\"2\"/><rect x=\"24\" y=\"48\" width=\"128\" height=\"260\" rx=\"16\" fill=\"#0e0f1d\"/><rect x=\"69\" y=\"53\" width=\"38\" height=\"6\" rx=\"3\" fill=\"#1b1c31\"/><rect x=\"30\" y=\"66\" width=\"116\" height=\"22\" rx=\"5\" fill=\"#e3829f\"/><text x=\"38\" y=\"81\" class=\"dg-ab\">Divyangjan Card</text><text x=\"32\" y=\"104\" class=\"dg-fl\">Name</text><rect x=\"32\" y=\"108\" width=\"112\" height=\"15\" rx=\"3\" fill=\"#0b0c17\" stroke=\"#3a3d5c\"/><text x=\"37\" y=\"118.5\" class=\"dg-fv\">R. Kumar</text><text x=\"32\" y=\"132\" class=\"dg-fl\">Disability type</text><rect x=\"32\" y=\"136\" width=\"112\" height=\"15\" rx=\"3\" fill=\"#0b0c17\" stroke=\"#3a3d5c\"/><text x=\"37\" y=\"146.5\" class=\"dg-fv\">Locomotor</text><text x=\"138\" y=\"146.5\" class=\"dg-fv\" text-anchor=\"end\">▾</text><text x=\"32\" y=\"160\" class=\"dg-fl\">Certificate</text><rect x=\"32\" y=\"164\" width=\"112\" height=\"15\" rx=\"3\" fill=\"#0b0c17\" stroke=\"#3a3d5c\"/><text x=\"37\" y=\"174.5\" class=\"dg-fv\">cert.pdf</text><text x=\"138\" y=\"174.5\" class=\"dg-fv\" text-anchor=\"end\">⇪</text><text x=\"32\" y=\"188\" class=\"dg-fl\">Division</text><rect x=\"32\" y=\"192\" width=\"112\" height=\"15\" rx=\"3\" fill=\"#0b0c17\" stroke=\"#3a3d5c\"/><text x=\"37\" y=\"202.5\" class=\"dg-fv\">Secunderabad</text><text x=\"138\" y=\"202.5\" class=\"dg-fv\" text-anchor=\"end\">▾</text><rect x=\"32\" y=\"214\" width=\"112\" height=\"22\" rx=\"6\" fill=\"#e3829f\"/><text x=\"88\" y=\"229\" class=\"dg-ab\" text-anchor=\"middle\">Submit</text><circle cx=\"120\" cy=\"225\" r=\"15\" fill=\"none\" stroke=\"#e3829f\" stroke-width=\"1\" opacity=\".35\"/><circle cx=\"120\" cy=\"225\" r=\"9\" fill=\"none\" stroke=\"#e3829f\" stroke-width=\"1.4\" opacity=\".75\"/><circle cx=\"120\" cy=\"225\" r=\"4.5\" fill=\"#f2f0ff\" stroke=\"#0b0c17\" stroke-width=\"1\"/><circle cx=\"46\" cy=\"255\" r=\"8.5\" fill=\"#e3829f\"/><text x=\"46\" y=\"258.6\" class=\"dg-sn\" text-anchor=\"middle\">1</text><rect x=\"32\" y=\"266\" width=\"112\" height=\"32\" rx=\"7\" fill=\"#12301c\" stroke=\"#5f9e6e\"/><text x=\"40\" y=\"280\" class=\"dg-okc\">✓ submitted</text><text x=\"40\" y=\"292\" class=\"dg-fv\">ID DV-2041 · pending</text><rect x=\"192\" y=\"90\" width=\"152\" height=\"76\" rx=\"7\" fill=\"#141528\" stroke=\"#e3829f\" stroke-width=\"1.6\"/><rect x=\"192\" y=\"90\" width=\"152\" height=\"18\" rx=\"7\" fill=\"#e3829f\"/><rect x=\"192\" y=\"101\" width=\"152\" height=\"7\" fill=\"#e3829f\"/><text x=\"200\" y=\"102.5\" class=\"dg-bd\">application.json</text><text x=\"200\" y=\"121\" class=\"dg-js\">name: &quot;R. Kumar&quot;</text><text x=\"200\" y=\"133\" class=\"dg-js\">type: &quot;locomotor&quot;</text><text x=\"200\" y=\"145\" class=\"dg-js\">cert: cert.pdf</text><text x=\"200\" y=\"157\" class=\"dg-js\">division: &quot;SC&quot;</text><path d=\"M146 225 C 170 225, 166 128, 188 128\" fill=\"none\" stroke=\"#e3829f\" stroke-width=\"1.5\"  marker-end=\"url(#a-cris)\"/><rect x=\"192\" y=\"204\" width=\"152\" height=\"44\" rx=\"9\" fill=\"#1b1c31\" stroke=\"#e3829f\" stroke-width=\"1.6\"/><g transform=\"translate(202 214.0)\" fill=\"none\" stroke=\"#e3829f\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M8 6 3.5 12 8 18M16 6l4.5 6L16 18M13.5 4.5l-3 15\"/></g><text x=\"232\" y=\"223\" class=\"dg-nt\">Node.js API</text><text x=\"232\" y=\"239\" class=\"dg-ns\">POST /applications</text><path d=\"M268 166 L268 200\" fill=\"none\" stroke=\"#e3829f\" stroke-width=\"1.5\"  marker-end=\"url(#a-cris)\"/><rect x=\"192\" y=\"276\" width=\"152\" height=\"44\" rx=\"9\" fill=\"#1b1c31\" stroke=\"#e3829f\" stroke-width=\"1.6\"/><g transform=\"translate(202 286.0)\" fill=\"none\" stroke=\"#e3829f\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><ellipse cx=\"12\" cy=\"5.5\" rx=\"7.5\" ry=\"2.8\"/><path d=\"M4.5 5.5v13c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8v-13\"/><path d=\"M4.5 12c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8\"/></g><text x=\"232\" y=\"295\" class=\"dg-nt\">MySQL</text><text x=\"232\" y=\"311\" class=\"dg-ns\">applications table</text><path d=\"M268 248 L268 272\" fill=\"none\" stroke=\"#e3829f\" stroke-width=\"1.5\"  marker-end=\"url(#a-cris)\"/><rect x=\"350\" y=\"215\" width=\"78\" height=\"20\" rx=\"10\" fill=\"#1b1c31\" stroke=\"#3a3d5c\"/><text x=\"389\" y=\"228.5\" class=\"dg-cs\" text-anchor=\"middle\">tested · Postman</text><line x1=\"344\" y1=\"225\" x2=\"350\" y2=\"225\" stroke=\"#3a3d5c\"/><circle cx=\"176\" cy=\"262\" r=\"8.5\" fill=\"#e3829f\"/><text x=\"176\" y=\"265.6\" class=\"dg-sn\" text-anchor=\"middle\">2</text><g transform=\"translate(432 10)\" fill=\"none\" stroke=\"#e3829f\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"8\" r=\"3.6\"/><path d=\"M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5\"/></g><text x=\"462\" y=\"27\" class=\"dg-devA\" fill=\"#e3829f\">OFFICIALS · WEB</text><rect x=\"432\" y=\"40\" width=\"196\" height=\"276\" rx=\"9\" fill=\"#141528\" stroke=\"#2f3252\"/><rect x=\"432\" y=\"40\" width=\"196\" height=\"22\" rx=\"9\" fill=\"#16172a\"/><rect x=\"432\" y=\"52\" width=\"196\" height=\"10\" fill=\"#16172a\"/><circle cx=\"444\" cy=\"51\" r=\"3.2\" fill=\"#3a3d5c\"/><circle cx=\"455\" cy=\"51\" r=\"3.2\" fill=\"#3a3d5c\"/><circle cx=\"466\" cy=\"51\" r=\"3.2\" fill=\"#3a3d5c\"/><rect x=\"478\" y=\"46\" width=\"138\" height=\"11\" rx=\"5.5\" fill=\"#24263f\"/><text x=\"486\" y=\"55\" class=\"dg-url\">cris · reports</text><text x=\"444\" y=\"80\" class=\"dg-nt\">Division-wise report</text><rect x=\"444\" y=\"90\" width=\"98\" height=\"18\" rx=\"4\" fill=\"#0b0c17\" stroke=\"#e3829f\"/><text x=\"450\" y=\"102.5\" class=\"dg-fv\">Division: all ▾</text><circle cx=\"528\" cy=\"104\" r=\"9\" fill=\"none\" stroke=\"#e3829f\" stroke-width=\"1.4\" opacity=\".75\"/><circle cx=\"528\" cy=\"104\" r=\"15\" fill=\"none\" stroke=\"#e3829f\" stroke-width=\"1\" opacity=\".35\"/><path d=\"M528 104 l0 15 l4 -4 l3 7 l3 -1.4 l-3 -7 l6 0 z\" fill=\"#f2f0ff\" stroke=\"#0b0c17\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/><circle cx=\"560\" cy=\"99\" r=\"8.5\" fill=\"#e3829f\"/><text x=\"560\" y=\"102.6\" class=\"dg-sn\" text-anchor=\"middle\">3</text><rect x=\"448\" y=\"169\" width=\"20\" height=\"99\" rx=\"3\" fill=\"#e3829f\" opacity=\"0.45\"/><text x=\"458\" y=\"165\" class=\"dg-cv\" text-anchor=\"middle\">38</text><text x=\"458\" y=\"281\" class=\"dg-cv\" text-anchor=\"middle\">SC</text><rect x=\"477\" y=\"193\" width=\"20\" height=\"75\" rx=\"3\" fill=\"#e3829f\" opacity=\"0.54\"/><text x=\"487\" y=\"189\" class=\"dg-cv\" text-anchor=\"middle\">29</text><text x=\"487\" y=\"281\" class=\"dg-cv\" text-anchor=\"middle\">HYB</text><rect x=\"506\" y=\"154\" width=\"20\" height=\"114\" rx=\"3\" fill=\"#e3829f\" opacity=\"0.63\"/><text x=\"516\" y=\"150\" class=\"dg-cv\" text-anchor=\"middle\">44</text><text x=\"516\" y=\"281\" class=\"dg-cv\" text-anchor=\"middle\">BZA</text><rect x=\"535\" y=\"221\" width=\"20\" height=\"47\" rx=\"3\" fill=\"#e3829f\" opacity=\"0.72\"/><text x=\"545\" y=\"217\" class=\"dg-cv\" text-anchor=\"middle\">18</text><text x=\"545\" y=\"281\" class=\"dg-cv\" text-anchor=\"middle\">GTL</text><rect x=\"564\" y=\"208\" width=\"20\" height=\"60\" rx=\"3\" fill=\"#e3829f\" opacity=\"0.81\"/><text x=\"574\" y=\"204\" class=\"dg-cv\" text-anchor=\"middle\">23</text><text x=\"574\" y=\"281\" class=\"dg-cv\" text-anchor=\"middle\">GNT</text><rect x=\"593\" y=\"237\" width=\"20\" height=\"31\" rx=\"3\" fill=\"#e3829f\" opacity=\"0.90\"/><text x=\"603\" y=\"233\" class=\"dg-cv\" text-anchor=\"middle\">12</text><text x=\"603\" y=\"281\" class=\"dg-cv\" text-anchor=\"middle\">NED</text><line x1=\"444\" y1=\"269\" x2=\"618\" y2=\"269\" stroke=\"#3a3d5c\"/><rect x=\"444\" y=\"292\" width=\"56\" height=\"13\" rx=\"3\" fill=\"#e3829f\"/><text x=\"449\" y=\"301.5\" class=\"dg-bd\">OUTPUT</text><path d=\"M344 298 L428 298\" fill=\"none\" stroke=\"#e3829f\" stroke-width=\"1.5\" stroke-dasharray=\"4 4\" marker-end=\"url(#a-cris)\"/><text x=\"320\" y=\"338\" class=\"dg-lab\" text-anchor=\"middle\">applicants apply on a Flutter app — officials review applications by railway division</text></svg>"
+  };
+
+  /* Phone-width versions of the same five diagrams. Not a shrunk copy: a
+     640-wide horizontal flow can't stay legible at phone width, so each is
+     recomposed to run top-to-bottom at 360 wide. Both versions are written
+     into the page and CSS shows one by screen width, so rotating a phone
+     or resizing a window switches instantly with no script involved. */
+  const PROJECT_DIAGRAMS_MOBILE = {
+      "intrusion": "<svg class=\"dg-narrow\" viewBox=\"0 0 360 558\" xmlns=\"http://www.w3.org/2000/svg\" role=\"img\"><defs><marker id=\"a-nidsm\" viewBox=\"0 0 10 10\" refX=\"8.5\" refY=\"5\" markerWidth=\"7\" markerHeight=\"7\" orient=\"auto-start-reverse\"><path d=\"M0 0 L10 5 L0 10 z\" fill=\"#da8062\"/></marker></defs><rect x=\"16\" y=\"12\" width=\"328\" height=\"70\" rx=\"9\" fill=\"#0a0b16\" stroke=\"#2e3151\"/><rect x=\"16\" y=\"12\" width=\"328\" height=\"18\" rx=\"9\" fill=\"#15162a\"/><rect x=\"16\" y=\"22\" width=\"328\" height=\"8\" fill=\"#15162a\"/><circle cx=\"28\" cy=\"21\" r=\"3\" fill=\"#393c5b\"/><circle cx=\"38\" cy=\"21\" r=\"3\" fill=\"#393c5b\"/><circle cx=\"48\" cy=\"21\" r=\"3\" fill=\"#393c5b\"/><text x=\"28\" y=\"50\" class=\"dg-mtc\">$ sudo nids --iface eth0</text><text x=\"28\" y=\"70\" class=\"dg-mtw\">[!] 10.0.0.42 → blocked</text><rect x=\"16\" y=\"96\" width=\"328\" height=\"50\" rx=\"9\" fill=\"#0b0c17\" stroke=\"#3a3d5c\"/><text x=\"28\" y=\"126\" class=\"dg-mcap\" text-anchor=\"start\">live traffic · eth0</text><rect x=\"178\" y=\"106\" width=\"20\" height=\"11\" rx=\"2.5\" fill=\"#2f3252\"/><rect x=\"206\" y=\"122\" width=\"20\" height=\"11\" rx=\"2.5\" fill=\"#da8062\"/><rect x=\"234\" y=\"108\" width=\"20\" height=\"11\" rx=\"2.5\" fill=\"#2f3252\"/><rect x=\"262\" y=\"124\" width=\"20\" height=\"11\" rx=\"2.5\" fill=\"#da8062\"/><rect x=\"290\" y=\"108\" width=\"20\" height=\"11\" rx=\"2.5\" fill=\"#2f3252\"/><rect x=\"316\" y=\"122\" width=\"20\" height=\"11\" rx=\"2.5\" fill=\"#da8062\"/><path d=\"M40 150 L40 190\" fill=\"none\" stroke=\"#da8062\" stroke-width=\"1.5\"  marker-end=\"url(#a-nidsm)\"/><rect x=\"58\" y=\"153.0\" width=\"210\" height=\"34\" rx=\"17\" fill=\"#1b1c31\" stroke=\"#da8062\" stroke-width=\"1.3\"/><g transform=\"translate(66 158.0)\" fill=\"none\" stroke=\"#da8062\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"17.5\" r=\"1.7\" fill=\"#da8062\" stroke=\"none\"/><path d=\"M7.6 13.3a6.2 6.2 0 0 1 8.8 0\"/><path d=\"M4.6 10.2a10.4 10.4 0 0 1 14.8 0\"/></g><text x=\"96\" y=\"168.0\" class=\"dg-mct\">Capture</text><text x=\"96\" y=\"181.0\" class=\"dg-mcs\">raw packets via Scapy</text><rect x=\"16\" y=\"194\" width=\"328\" height=\"92\" rx=\"9\" fill=\"#141528\" stroke=\"#3a3d5c\" stroke-width=\"1\"/><text x=\"28\" y=\"218\" class=\"dg-mbw\">SYN  :22  10.0.0.42</text><text x=\"28\" y=\"236\" class=\"dg-mbw\">SYN  :23  10.0.0.42</text><text x=\"28\" y=\"254\" class=\"dg-mbw\">SYN  :80  10.0.0.42</text><text x=\"28\" y=\"272\" class=\"dg-mbd\">ACK  :443 10.0.0.7</text><text x=\"332\" y=\"212\" class=\"dg-mcap\" text-anchor=\"end\">packets</text><path d=\"M40 290 L40 330\" fill=\"none\" stroke=\"#da8062\" stroke-width=\"1.5\"  marker-end=\"url(#a-nidsm)\"/><rect x=\"58\" y=\"293.0\" width=\"210\" height=\"34\" rx=\"17\" fill=\"#1b1c31\" stroke=\"#da8062\" stroke-width=\"1.3\"/><g transform=\"translate(66 298.0)\" fill=\"none\" stroke=\"#da8062\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"10.5\" cy=\"10.5\" r=\"6.2\"/><path d=\"M15.1 15.1 20.6 20.6\"/><path d=\"M8 10.5h5M10.5 8v5\"/></g><text x=\"96\" y=\"308.0\" class=\"dg-mct\">Detect</text><text x=\"96\" y=\"321.0\" class=\"dg-mcs\">sliding time window</text><rect x=\"16\" y=\"334\" width=\"328\" height=\"72\" rx=\"9\" fill=\"#141528\" stroke=\"#da8062\" stroke-width=\"1.6\"/><rect x=\"16\" y=\"334\" width=\"328\" height=\"23\" rx=\"9\" fill=\"#da8062\"/><rect x=\"16\" y=\"346\" width=\"328\" height=\"11\" fill=\"#da8062\"/><text x=\"28\" y=\"350\" class=\"dg-mhd\">⚠ PORT SCAN</text><text x=\"28\" y=\"374\" class=\"dg-mb\">src 10.0.0.42 · 37 ports / 2 s</text><text x=\"28\" y=\"392\" class=\"dg-mb\">OS fingerprint: Linux 5.x</text><path d=\"M40 410 L40 450\" fill=\"none\" stroke=\"#da8062\" stroke-width=\"1.5\"  marker-end=\"url(#a-nidsm)\"/><rect x=\"58\" y=\"413.0\" width=\"210\" height=\"34\" rx=\"17\" fill=\"#1b1c31\" stroke=\"#da8062\" stroke-width=\"1.3\"/><g transform=\"translate(66 418.0)\" fill=\"none\" stroke=\"#da8062\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 2.6 19.4 5.5V11c0 5-3.3 8.4-7.4 10.4C7.9 19.4 4.6 16 4.6 11V5.5Z\"/><path d=\"M8.6 8.6l6.8 6.8\"/></g><text x=\"96\" y=\"428.0\" class=\"dg-mct\">Block</text><text x=\"96\" y=\"441.0\" class=\"dg-mcs\">automatic response</text><rect x=\"16\" y=\"454\" width=\"328\" height=\"90\" rx=\"9\" fill=\"#141528\" stroke=\"#da8062\" stroke-width=\"1.6\"/><rect x=\"16\" y=\"454\" width=\"328\" height=\"23\" rx=\"9\" fill=\"#da8062\"/><rect x=\"16\" y=\"466\" width=\"328\" height=\"11\" fill=\"#da8062\"/><text x=\"28\" y=\"470\" class=\"dg-mhd\">OUTPUT</text><text x=\"28\" y=\"494\" class=\"dg-mt\">DROP 10.0.0.42</text><text x=\"28\" y=\"512\" class=\"dg-mb\">iptables · Windows Firewall</text><text x=\"28\" y=\"530\" class=\"dg-mok\">✓ host protected</text></svg>",
+      "agentic": "<svg class=\"dg-narrow\" viewBox=\"0 0 360 560\" xmlns=\"http://www.w3.org/2000/svg\" role=\"img\"><defs><marker id=\"a-aim\" viewBox=\"0 0 10 10\" refX=\"8.5\" refY=\"5\" markerWidth=\"7\" markerHeight=\"7\" orient=\"auto-start-reverse\"><path d=\"M0 0 L10 5 L0 10 z\" fill=\"#75c25b\"/></marker></defs><rect x=\"16\" y=\"12\" width=\"328\" height=\"70\" rx=\"9\" fill=\"#0a0b16\" stroke=\"#2e3151\"/><rect x=\"16\" y=\"12\" width=\"328\" height=\"18\" rx=\"9\" fill=\"#15162a\"/><rect x=\"16\" y=\"22\" width=\"328\" height=\"8\" fill=\"#15162a\"/><circle cx=\"28\" cy=\"21\" r=\"3\" fill=\"#393c5b\"/><circle cx=\"38\" cy=\"21\" r=\"3\" fill=\"#393c5b\"/><circle cx=\"48\" cy=\"21\" r=\"3\" fill=\"#393c5b\"/><text x=\"28\" y=\"50\" class=\"dg-mtc\">$ research papers/*.pdf</text><text x=\"28\" y=\"70\" class=\"dg-mtc\">[ok] survey.md · 11 citations</text><path d=\"M16 96 H102 L112 106 V158 H16 Z\" fill=\"#141528\" stroke=\"#3a3d5c\"/><text x=\"24\" y=\"114\" class=\"dg-mfv\">paper-1.pdf</text><rect x=\"24\" y=\"124\" width=\"78\" height=\"3.4\" rx=\"1.7\" fill=\"#2f3252\"/><rect x=\"24\" y=\"133\" width=\"78\" height=\"3.4\" rx=\"1.7\" fill=\"#2f3252\"/><rect x=\"24\" y=\"142\" width=\"50\" height=\"3.4\" rx=\"1.7\" fill=\"#2f3252\"/><path d=\"M122 96 H208 L218 106 V158 H122 Z\" fill=\"#141528\" stroke=\"#3a3d5c\"/><text x=\"130\" y=\"114\" class=\"dg-mfv\">paper-2.pdf</text><rect x=\"130\" y=\"124\" width=\"78\" height=\"3.4\" rx=\"1.7\" fill=\"#2f3252\"/><rect x=\"130\" y=\"133\" width=\"78\" height=\"3.4\" rx=\"1.7\" fill=\"#2f3252\"/><rect x=\"130\" y=\"142\" width=\"50\" height=\"3.4\" rx=\"1.7\" fill=\"#2f3252\"/><path d=\"M228 96 H314 L324 106 V158 H228 Z\" fill=\"#141528\" stroke=\"#3a3d5c\"/><text x=\"236\" y=\"114\" class=\"dg-mfv\">paper-3.pdf</text><rect x=\"236\" y=\"124\" width=\"78\" height=\"3.4\" rx=\"1.7\" fill=\"#2f3252\"/><rect x=\"236\" y=\"133\" width=\"78\" height=\"3.4\" rx=\"1.7\" fill=\"#2f3252\"/><rect x=\"236\" y=\"142\" width=\"50\" height=\"3.4\" rx=\"1.7\" fill=\"#2f3252\"/><path d=\"M40 162 L40 202\" fill=\"none\" stroke=\"#75c25b\" stroke-width=\"1.5\"  marker-end=\"url(#a-aim)\"/><rect x=\"58\" y=\"165.0\" width=\"210\" height=\"34\" rx=\"17\" fill=\"#1b1c31\" stroke=\"#75c25b\" stroke-width=\"1.3\"/><g transform=\"translate(66 170.0)\" fill=\"none\" stroke=\"#75c25b\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"5\" cy=\"12\" r=\"2\"/><circle cx=\"19\" cy=\"6\" r=\"2\"/><circle cx=\"19\" cy=\"18\" r=\"2\"/><path d=\"M7 12h4l6-5.4M11 12l6 5.4\"/></g><text x=\"96\" y=\"180.0\" class=\"dg-mct\">Router</text><text x=\"96\" y=\"193.0\" class=\"dg-mcs\">Llama 3.2 · splits &amp; routes</text><rect x=\"16\" y=\"206\" width=\"58\" height=\"40\" rx=\"5\" fill=\"#141528\" stroke=\"#75c25b\"/><rect x=\"24\" y=\"216\" width=\"42\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"24\" y=\"225\" width=\"42\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"24\" y=\"234\" width=\"26\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"82\" y=\"206\" width=\"58\" height=\"40\" rx=\"5\" fill=\"#141528\" stroke=\"#3a3d5c\"/><rect x=\"90\" y=\"216\" width=\"42\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"90\" y=\"225\" width=\"42\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"90\" y=\"234\" width=\"26\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"148\" y=\"206\" width=\"58\" height=\"40\" rx=\"5\" fill=\"#141528\" stroke=\"#3a3d5c\"/><rect x=\"156\" y=\"216\" width=\"42\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"156\" y=\"225\" width=\"42\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"156\" y=\"234\" width=\"26\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"214\" y=\"206\" width=\"58\" height=\"40\" rx=\"5\" fill=\"#141528\" stroke=\"#3a3d5c\"/><rect x=\"222\" y=\"216\" width=\"42\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"222\" y=\"225\" width=\"42\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"222\" y=\"234\" width=\"26\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"280\" y=\"206\" width=\"58\" height=\"40\" rx=\"5\" fill=\"#141528\" stroke=\"#3a3d5c\"/><rect x=\"288\" y=\"216\" width=\"42\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"288\" y=\"225\" width=\"42\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><rect x=\"288\" y=\"234\" width=\"26\" height=\"3.2\" rx=\"1.6\" fill=\"#2f3252\"/><text x=\"344\" y=\"262\" class=\"dg-mcap\" text-anchor=\"end\">chunks</text><path d=\"M40 272 L40 312\" fill=\"none\" stroke=\"#75c25b\" stroke-width=\"1.5\"  marker-end=\"url(#a-aim)\"/><rect x=\"58\" y=\"275.0\" width=\"210\" height=\"34\" rx=\"17\" fill=\"#1b1c31\" stroke=\"#75c25b\" stroke-width=\"1.3\"/><g transform=\"translate(66 280.0)\" fill=\"none\" stroke=\"#75c25b\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 6h16M4 10h12.5M4 14h9M4 18h5.5\"/></g><text x=\"96\" y=\"290.0\" class=\"dg-mct\">Summarise + critique</text><text x=\"96\" y=\"303.0\" class=\"dg-mcs\">map-reduce over chunks</text><rect x=\"16\" y=\"316\" width=\"158\" height=\"74\" rx=\"9\" fill=\"#141528\" stroke=\"#3a3d5c\" stroke-width=\"1\"/><text x=\"28\" y=\"340\" class=\"dg-mb\">· key claim</text><text x=\"28\" y=\"358\" class=\"dg-mb\">· method</text><text x=\"28\" y=\"376\" class=\"dg-mb\">· result</text><rect x=\"186\" y=\"316\" width=\"158\" height=\"74\" rx=\"9\" fill=\"#141528\" stroke=\"#3a3d5c\" stroke-width=\"1\"/><text x=\"198\" y=\"340\" class=\"dg-mok\">✓ supported</text><text x=\"198\" y=\"358\" class=\"dg-mbad\">✗ overstated</text><text x=\"198\" y=\"376\" class=\"dg-mok\">✓ cited</text><path d=\"M40 394 L40 434\" fill=\"none\" stroke=\"#75c25b\" stroke-width=\"1.5\"  marker-end=\"url(#a-aim)\"/><rect x=\"58\" y=\"397.0\" width=\"210\" height=\"34\" rx=\"17\" fill=\"#1b1c31\" stroke=\"#75c25b\" stroke-width=\"1.3\"/><g transform=\"translate(66 402.0)\" fill=\"none\" stroke=\"#75c25b\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 5c6 0 6 7 10 7M4 19c6 0 6-7 10-7h6\"/><path d=\"M17 9l3 3-3 3\"/></g><text x=\"96\" y=\"412.0\" class=\"dg-mct\">Synthesise</text><text x=\"96\" y=\"425.0\" class=\"dg-mcs\">Llama 3.1 · writes survey</text><rect x=\"16\" y=\"438\" width=\"328\" height=\"108\" rx=\"9\" fill=\"#141528\" stroke=\"#75c25b\" stroke-width=\"1.6\"/><rect x=\"16\" y=\"438\" width=\"328\" height=\"23\" rx=\"9\" fill=\"#75c25b\"/><rect x=\"16\" y=\"450\" width=\"328\" height=\"11\" fill=\"#75c25b\"/><text x=\"28\" y=\"454\" class=\"dg-mhd\">OUTPUT</text><text x=\"28\" y=\"478\" class=\"dg-mt\">Survey of 3 papers · 742 words</text><text x=\"28\" y=\"496\" class=\"dg-mb\">… builds on prior work  [1]</text><text x=\"28\" y=\"514\" class=\"dg-mb\">… differs in method  [2]</text><text x=\"28\" y=\"532\" class=\"dg-mb\">… confirms the result  [3]</text></svg>",
+      "citestat": "<svg class=\"dg-narrow\" viewBox=\"0 0 360 320\" xmlns=\"http://www.w3.org/2000/svg\" role=\"img\"><defs><marker id=\"a-citem\" viewBox=\"0 0 10 10\" refX=\"8.5\" refY=\"5\" markerWidth=\"7\" markerHeight=\"7\" orient=\"auto-start-reverse\"><path d=\"M0 0 L10 5 L0 10 z\" fill=\"#5ab9d8\"/></marker></defs><rect x=\"16\" y=\"12\" width=\"328\" height=\"96\" rx=\"9\" fill=\"#141528\" stroke=\"#2f3252\"/><rect x=\"16\" y=\"12\" width=\"328\" height=\"22\" rx=\"9\" fill=\"#16172a\"/><rect x=\"16\" y=\"24\" width=\"328\" height=\"10\" fill=\"#16172a\"/><circle cx=\"28\" cy=\"23\" r=\"3.2\" fill=\"#3a3d5c\"/><circle cx=\"39\" cy=\"23\" r=\"3.2\" fill=\"#3a3d5c\"/><circle cx=\"50\" cy=\"23\" r=\"3.2\" fill=\"#3a3d5c\"/><rect x=\"62\" y=\"18\" width=\"270\" height=\"11\" rx=\"5.5\" fill=\"#24263f\"/><text x=\"70\" y=\"27\" class=\"dg-url\">citestat · search</text><rect x=\"28\" y=\"52\" width=\"210\" height=\"30\" rx=\"6\" fill=\"#0b0c17\" stroke=\"#5ab9d8\" stroke-width=\"1.4\"/><text x=\"38\" y=\"71\" class=\"dg-mfl\">Author name or DOI</text><rect x=\"246\" y=\"52\" width=\"86\" height=\"30\" rx=\"6\" fill=\"#5ab9d8\"/><text x=\"289\" y=\"71.5\" class=\"dg-mab\" text-anchor=\"middle\">Search</text><circle cx=\"324\" cy=\"76\" r=\"9\" fill=\"none\" stroke=\"#5ab9d8\" stroke-width=\"1.4\" opacity=\".75\"/><circle cx=\"324\" cy=\"76\" r=\"15\" fill=\"none\" stroke=\"#5ab9d8\" stroke-width=\"1\" opacity=\".35\"/><path d=\"M324 76 l0 15 l4 -4 l3 7 l3 -1.4 l-3 -7 l6 0 z\" fill=\"#f2f0ff\" stroke=\"#0b0c17\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/><circle cx=\"38\" cy=\"98\" r=\"10\" fill=\"#5ab9d8\"/><text x=\"38\" y=\"101.8\" class=\"dg-msn\" text-anchor=\"middle\">1</text><text x=\"54\" y=\"102\" class=\"dg-mcap\" text-anchor=\"start\">search a researcher</text><path d=\"M40 112 L40 152\" fill=\"none\" stroke=\"#5ab9d8\" stroke-width=\"1.5\"  marker-end=\"url(#a-citem)\"/><rect x=\"58\" y=\"115.0\" width=\"210\" height=\"34\" rx=\"17\" fill=\"#1b1c31\" stroke=\"#5ab9d8\" stroke-width=\"1.3\"/><g transform=\"translate(66 120.0)\" fill=\"none\" stroke=\"#5ab9d8\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M8 6 3.5 12 8 18M16 6l4.5 6L16 18M13.5 4.5l-3 15\"/></g><text x=\"96\" y=\"130.0\" class=\"dg-mct\">Crossref API</text><text x=\"96\" y=\"143.0\" class=\"dg-mcs\">fetch citation records</text><rect x=\"16\" y=\"158\" width=\"328\" height=\"128\" rx=\"9\" fill=\"#141528\" stroke=\"#5ab9d8\" stroke-width=\"1.6\"/><rect x=\"16\" y=\"158\" width=\"328\" height=\"23\" rx=\"9\" fill=\"#5ab9d8\"/><rect x=\"16\" y=\"170\" width=\"328\" height=\"11\" fill=\"#5ab9d8\"/><text x=\"28\" y=\"174\" class=\"dg-mhd\">OUTPUT · computed in the browser</text><text x=\"30\" y=\"204\" class=\"dg-mcs\">h-index</text><text x=\"30\" y=\"242\" class=\"dg-mbig\" fill=\"#5ab9d8\">14</text><text x=\"30\" y=\"266\" class=\"dg-mcs\">m-quotient 1.2</text><rect x=\"148\" y=\"250\" width=\"18\" height=\"22\" rx=\"3\" fill=\"#5ab9d8\" opacity=\"0.40\"/><rect x=\"174\" y=\"234\" width=\"18\" height=\"38\" rx=\"3\" fill=\"#5ab9d8\" opacity=\"0.48\"/><rect x=\"200\" y=\"242\" width=\"18\" height=\"30\" rx=\"3\" fill=\"#5ab9d8\" opacity=\"0.56\"/><rect x=\"226\" y=\"220\" width=\"18\" height=\"52\" rx=\"3\" fill=\"#5ab9d8\" opacity=\"0.64\"/><rect x=\"252\" y=\"226\" width=\"18\" height=\"46\" rx=\"3\" fill=\"#5ab9d8\" opacity=\"0.72\"/><rect x=\"278\" y=\"208\" width=\"18\" height=\"64\" rx=\"3\" fill=\"#5ab9d8\" opacity=\"0.80\"/><rect x=\"304\" y=\"214\" width=\"18\" height=\"58\" rx=\"3\" fill=\"#5ab9d8\" opacity=\"0.88\"/><line x1=\"144\" y1=\"273\" x2=\"334\" y2=\"273\" stroke=\"#3a3d5c\"/><text x=\"16\" y=\"308\" class=\"dg-mcap\" text-anchor=\"start\">no backend server — everything runs client-side</text></svg>",
+      "crdt": "<svg class=\"dg-narrow\" viewBox=\"0 0 360 406\" xmlns=\"http://www.w3.org/2000/svg\" role=\"img\"><defs><marker id=\"a-crdtmb\" viewBox=\"0 0 10 10\" refX=\"8.5\" refY=\"5\" markerWidth=\"7\" markerHeight=\"7\" orient=\"auto-start-reverse\"><path d=\"M0 0 L10 5 L0 10 z\" fill=\"#e6c069\"/></marker><marker id=\"a-crdtm\" viewBox=\"0 0 10 10\" refX=\"8.5\" refY=\"5\" markerWidth=\"7\" markerHeight=\"7\" orient=\"auto-start-reverse\"><path d=\"M0 0 L10 5 L0 10 z\" fill=\"#c888dd\"/></marker></defs><circle cx=\"28\" cy=\"20\" r=\"10\" fill=\"#c888dd\"/><text x=\"28\" y=\"23.8\" class=\"dg-msn\" text-anchor=\"middle\">1</text><text x=\"44\" y=\"24\" class=\"dg-mcap\" text-anchor=\"start\">both edit at once — the phone is offline</text><text x=\"24\" y=\"52\" class=\"dg-mdev\" fill=\"#c888dd\">LAPTOP</text><rect x=\"24\" y=\"62\" width=\"176\" height=\"62\" rx=\"7\" fill=\"#141528\" stroke=\"#c888dd\" stroke-width=\"2\"/><rect x=\"30\" y=\"68\" width=\"164\" height=\"50\" rx=\"3\" fill=\"#0e0f1d\"/><path d=\"M16 127 H208 L202 135 H22 Z\" fill=\"#1b1c31\" stroke=\"#c888dd\" stroke-width=\"2\"/><text x=\"38\" y=\"98\" class=\"dg-mtyp\">Hello <tspan fill=\"#c888dd\" font-weight=\"700\">big </tspan>world</text><g transform=\"translate(172 70)\" fill=\"none\" stroke=\"#9ad09a\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"17.5\" r=\"1.7\" fill=\"#9ad09a\" stroke=\"none\"/><path d=\"M7.6 13.3a6.2 6.2 0 0 1 8.8 0\"/><path d=\"M4.6 10.2a10.4 10.4 0 0 1 14.8 0\"/></g><text x=\"220\" y=\"52\" class=\"dg-mdev\" fill=\"#e6c069\">PHONE</text><rect x=\"220\" y=\"62\" width=\"124\" height=\"96\" rx=\"16\" fill=\"#141528\" stroke=\"#e6c069\" stroke-width=\"2\"/><rect x=\"226\" y=\"68\" width=\"112\" height=\"84\" rx=\"11\" fill=\"#0e0f1d\"/><text x=\"234\" y=\"94\" class=\"dg-mtyp\">Hello</text><text x=\"234\" y=\"112\" class=\"dg-mtyp\">world<tspan fill=\"#e6c069\" font-weight=\"700\">!</tspan></text><g transform=\"translate(312 70)\" fill=\"none\" stroke=\"#e08b8b\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"17.5\" r=\"1.7\" fill=\"#e08b8b\" stroke=\"none\"/><path d=\"M7.6 13.3a6.2 6.2 0 0 1 8.8 0\"/><path d=\"M4.6 10.2a10.4 10.4 0 0 1 14.8 0\"/><path d=\"M4 4l16 16\"/></g><rect x=\"230\" y=\"130\" width=\"104\" height=\"16\" rx=\"8\" fill=\"#2a2210\" stroke=\"#e6c069\"/><text x=\"282\" y=\"141.5\" class=\"dg-moff\" text-anchor=\"middle\">offline · 1 queued</text><rect x=\"100\" y=\"192\" width=\"160\" height=\"46\" rx=\"9\" fill=\"#1b1c31\" stroke=\"#c888dd\" stroke-width=\"1.6\"/><g transform=\"translate(110 203.0)\" fill=\"none\" stroke=\"#c888dd\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 5c6 0 6 7 10 7M4 19c6 0 6-7 10-7h6\"/><path d=\"M17 9l3 3-3 3\"/></g><text x=\"140\" y=\"211\" class=\"dg-nt\">Relay</text><text x=\"140\" y=\"227\" class=\"dg-ns\">WebSocket · RGA</text><path d=\"M106 156 C 106 186, 70 215, 96 215\" fill=\"none\" stroke=\"#c888dd\" stroke-width=\"1.5\"  marker-end=\"url(#a-crdtm)\"/><path d=\"M282 146 C 282 186, 290 215, 264 215\" fill=\"none\" stroke=\"#e6c069\" stroke-width=\"1.5\" stroke-dasharray=\"4 4\" marker-end=\"url(#a-crdtmb)\"/><text x=\"270\" y=\"172\" class=\"dg-mcap\" text-anchor=\"end\">sent on reconnect</text><path d=\"M150 238 C 120 252, 106 252, 106 266\" fill=\"none\" stroke=\"#e6c069\" stroke-width=\"1.5\" stroke-dasharray=\"4 4\" marker-end=\"url(#a-crdtmb)\"/><path d=\"M210 238 C 240 252, 282 252, 282 266\" fill=\"none\" stroke=\"#c888dd\" stroke-width=\"1.5\" stroke-dasharray=\"4 4\" marker-end=\"url(#a-crdtm)\"/><rect x=\"24\" y=\"278\" width=\"176\" height=\"62\" rx=\"7\" fill=\"#141528\" stroke=\"#c888dd\" stroke-width=\"2\"/><rect x=\"30\" y=\"284\" width=\"164\" height=\"50\" rx=\"3\" fill=\"#0e0f1d\"/><path d=\"M16 343 H208 L202 351 H22 Z\" fill=\"#1b1c31\" stroke=\"#c888dd\" stroke-width=\"2\"/><text x=\"38\" y=\"314\" class=\"dg-mtyp\">Hello <tspan fill=\"#c888dd\" font-weight=\"700\">big </tspan>world<tspan fill=\"#e6c069\" font-weight=\"700\">!</tspan></text><g transform=\"translate(172 286)\" fill=\"none\" stroke=\"#9ad09a\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"17.5\" r=\"1.7\" fill=\"#9ad09a\" stroke=\"none\"/><path d=\"M7.6 13.3a6.2 6.2 0 0 1 8.8 0\"/><path d=\"M4.6 10.2a10.4 10.4 0 0 1 14.8 0\"/></g><rect x=\"220\" y=\"278\" width=\"124\" height=\"96\" rx=\"16\" fill=\"#141528\" stroke=\"#e6c069\" stroke-width=\"2\"/><rect x=\"226\" y=\"284\" width=\"112\" height=\"84\" rx=\"11\" fill=\"#0e0f1d\"/><text x=\"234\" y=\"310\" class=\"dg-mtyp\">Hello <tspan fill=\"#c888dd\" font-weight=\"700\">big</tspan></text><text x=\"234\" y=\"328\" class=\"dg-mtyp\">world<tspan fill=\"#e6c069\" font-weight=\"700\">!</tspan></text><g transform=\"translate(312 286)\" fill=\"none\" stroke=\"#9ad09a\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"17.5\" r=\"1.7\" fill=\"#9ad09a\" stroke=\"none\"/><path d=\"M7.6 13.3a6.2 6.2 0 0 1 8.8 0\"/><path d=\"M4.6 10.2a10.4 10.4 0 0 1 14.8 0\"/></g><circle cx=\"28\" cy=\"386\" r=\"10\" fill=\"#c888dd\"/><text x=\"28\" y=\"389.8\" class=\"dg-msn\" text-anchor=\"middle\">2</text><text x=\"44\" y=\"390\" class=\"dg-mcap\" text-anchor=\"start\">back online — both converge, nothing lost</text></svg>",
+      "cris": "<svg class=\"dg-narrow\" viewBox=\"0 0 360 550\" xmlns=\"http://www.w3.org/2000/svg\" role=\"img\"><defs><marker id=\"a-crism\" viewBox=\"0 0 10 10\" refX=\"8.5\" refY=\"5\" markerWidth=\"7\" markerHeight=\"7\" orient=\"auto-start-reverse\"><path d=\"M0 0 L10 5 L0 10 z\" fill=\"#e3829f\"/></marker></defs><g transform=\"translate(16 6)\" fill=\"none\" stroke=\"#e3829f\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"8\" r=\"3.6\"/><path d=\"M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5\"/></g><text x=\"44\" y=\"22\" class=\"dg-mdev\" fill=\"#e3829f\">APPLICANT · APP</text><rect x=\"16\" y=\"30\" width=\"150\" height=\"234\" rx=\"20\" fill=\"#141528\" stroke=\"#e3829f\" stroke-width=\"2\"/><rect x=\"23\" y=\"37\" width=\"136\" height=\"220\" rx=\"14\" fill=\"#0e0f1d\"/><rect x=\"30\" y=\"48\" width=\"122\" height=\"24\" rx=\"5\" fill=\"#e3829f\"/><text x=\"38\" y=\"64\" class=\"dg-mab\">Divyangjan Card</text><text x=\"32\" y=\"88\" class=\"dg-mfl\">Name</text><rect x=\"32\" y=\"93\" width=\"118\" height=\"20\" rx=\"4\" fill=\"#0b0c17\" stroke=\"#3a3d5c\"/><text x=\"38\" y=\"107\" class=\"dg-mfv\">R. Kumar</text><text x=\"32\" y=\"128\" class=\"dg-mfl\">Disability</text><rect x=\"32\" y=\"133\" width=\"118\" height=\"20\" rx=\"4\" fill=\"#0b0c17\" stroke=\"#3a3d5c\"/><text x=\"38\" y=\"147\" class=\"dg-mfv\">Locomotor</text><text x=\"144\" y=\"147\" class=\"dg-mfv\" text-anchor=\"end\">▾</text><text x=\"32\" y=\"168\" class=\"dg-mfl\">Division</text><rect x=\"32\" y=\"173\" width=\"118\" height=\"20\" rx=\"4\" fill=\"#0b0c17\" stroke=\"#3a3d5c\"/><text x=\"38\" y=\"187\" class=\"dg-mfv\">Secunderabad</text><text x=\"144\" y=\"187\" class=\"dg-mfv\" text-anchor=\"end\">▾</text><rect x=\"32\" y=\"212\" width=\"118\" height=\"26\" rx=\"6\" fill=\"#e3829f\"/><text x=\"91.0\" y=\"229\" class=\"dg-mab\" text-anchor=\"middle\">Submit</text><circle cx=\"132\" cy=\"225\" r=\"13\" fill=\"none\" stroke=\"#e3829f\" stroke-width=\"1\" opacity=\".4\"/><circle cx=\"132\" cy=\"225\" r=\"4.5\" fill=\"#f2f0ff\" stroke=\"#0b0c17\" stroke-width=\"1\"/><circle cx=\"158\" cy=\"258\" r=\"10\" fill=\"#e3829f\"/><text x=\"158\" y=\"261.8\" class=\"dg-msn\" text-anchor=\"middle\">1</text><rect x=\"186\" y=\"30\" width=\"158\" height=\"92\" rx=\"8\" fill=\"#141528\" stroke=\"#e3829f\" stroke-width=\"1.6\"/><rect x=\"186\" y=\"30\" width=\"158\" height=\"21\" rx=\"8\" fill=\"#e3829f\"/><rect x=\"186\" y=\"41\" width=\"158\" height=\"10\" fill=\"#e3829f\"/><text x=\"196\" y=\"45\" class=\"dg-mhd\">application.json</text><text x=\"196\" y=\"70\" class=\"dg-mbw\">name: \"R. Kumar\"</text><text x=\"196\" y=\"87\" class=\"dg-mbw\">type: \"locomotor\"</text><text x=\"196\" y=\"104\" class=\"dg-mbw\">division: \"SC\"</text><path d=\"M166 170 C 178 170, 172 76, 183 76\" fill=\"none\" stroke=\"#e3829f\" stroke-width=\"1.5\"  marker-end=\"url(#a-crism)\"/><path d=\"M265.0 122 L265.0 138\" fill=\"none\" stroke=\"#e3829f\" stroke-width=\"1.5\"  marker-end=\"url(#a-crism)\"/><rect x=\"186\" y=\"142\" width=\"158\" height=\"44\" rx=\"9\" fill=\"#1b1c31\" stroke=\"#e3829f\" stroke-width=\"1.6\"/><g transform=\"translate(196 152.0)\" fill=\"none\" stroke=\"#e3829f\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M8 6 3.5 12 8 18M16 6l4.5 6L16 18M13.5 4.5l-3 15\"/></g><text x=\"226\" y=\"161\" class=\"dg-nt\">Node.js API</text><text x=\"226\" y=\"177\" class=\"dg-ns\">POST /applications</text><path d=\"M265.0 186 L265.0 202\" fill=\"none\" stroke=\"#e3829f\" stroke-width=\"1.5\"  marker-end=\"url(#a-crism)\"/><rect x=\"186\" y=\"206\" width=\"158\" height=\"44\" rx=\"9\" fill=\"#1b1c31\" stroke=\"#e3829f\" stroke-width=\"1.6\"/><g transform=\"translate(196 216.0)\" fill=\"none\" stroke=\"#e3829f\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><ellipse cx=\"12\" cy=\"5.5\" rx=\"7.5\" ry=\"2.8\"/><path d=\"M4.5 5.5v13c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8v-13\"/><path d=\"M4.5 12c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8\"/></g><text x=\"226\" y=\"225\" class=\"dg-nt\">MySQL</text><text x=\"226\" y=\"241\" class=\"dg-ns\">applications</text><circle cx=\"176\" cy=\"196\" r=\"10\" fill=\"#e3829f\"/><text x=\"176\" y=\"199.8\" class=\"dg-msn\" text-anchor=\"middle\">2</text><path d=\"M265.0 260 C 265.0 278, 180 274, 180 296\" fill=\"none\" stroke=\"#e3829f\" stroke-width=\"1.5\" stroke-dasharray=\"4 4\" marker-end=\"url(#a-crism)\"/><g transform=\"translate(16 300)\" fill=\"none\" stroke=\"#e3829f\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"8\" r=\"3.6\"/><path d=\"M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5\"/></g><text x=\"44\" y=\"316\" class=\"dg-mdev\" fill=\"#e3829f\">OFFICIALS · WEB</text><rect x=\"16\" y=\"326\" width=\"328\" height=\"190\" rx=\"9\" fill=\"#141528\" stroke=\"#2f3252\"/><rect x=\"16\" y=\"326\" width=\"328\" height=\"22\" rx=\"9\" fill=\"#16172a\"/><rect x=\"16\" y=\"338\" width=\"328\" height=\"10\" fill=\"#16172a\"/><circle cx=\"28\" cy=\"337\" r=\"3.2\" fill=\"#3a3d5c\"/><circle cx=\"39\" cy=\"337\" r=\"3.2\" fill=\"#3a3d5c\"/><circle cx=\"50\" cy=\"337\" r=\"3.2\" fill=\"#3a3d5c\"/><rect x=\"62\" y=\"332\" width=\"270\" height=\"11\" rx=\"5.5\" fill=\"#24263f\"/><text x=\"70\" y=\"341\" class=\"dg-url\">cris · reports</text><text x=\"28\" y=\"370\" class=\"dg-mt\">Division-wise report</text><rect x=\"240\" y=\"356\" width=\"92\" height=\"22\" rx=\"5\" fill=\"#0b0c17\" stroke=\"#e3829f\"/><text x=\"248\" y=\"371\" class=\"dg-mfv\">Division ▾</text><circle cx=\"322\" cy=\"374\" r=\"9\" fill=\"none\" stroke=\"#e3829f\" stroke-width=\"1.4\" opacity=\".75\"/><circle cx=\"322\" cy=\"374\" r=\"15\" fill=\"none\" stroke=\"#e3829f\" stroke-width=\"1\" opacity=\".35\"/><path d=\"M322 374 l0 15 l4 -4 l3 7 l3 -1.4 l-3 -7 l6 0 z\" fill=\"#f2f0ff\" stroke=\"#0b0c17\" stroke-width=\"1.1\" stroke-linejoin=\"round\"/><circle cx=\"224\" cy=\"367\" r=\"10\" fill=\"#e3829f\"/><text x=\"224\" y=\"370.8\" class=\"dg-msn\" text-anchor=\"middle\">3</text><rect x=\"38\" y=\"410\" width=\"32\" height=\"80\" rx=\"3\" fill=\"#e3829f\" opacity=\"0.45\"/><text x=\"54\" y=\"405\" class=\"dg-mcs\" text-anchor=\"middle\">38</text><text x=\"54\" y=\"505\" class=\"dg-mcs\" text-anchor=\"middle\">SC</text><rect x=\"88\" y=\"429\" width=\"32\" height=\"61\" rx=\"3\" fill=\"#e3829f\" opacity=\"0.54\"/><text x=\"104\" y=\"424\" class=\"dg-mcs\" text-anchor=\"middle\">29</text><text x=\"104\" y=\"505\" class=\"dg-mcs\" text-anchor=\"middle\">HYB</text><rect x=\"138\" y=\"398\" width=\"32\" height=\"92\" rx=\"3\" fill=\"#e3829f\" opacity=\"0.63\"/><text x=\"154\" y=\"393\" class=\"dg-mcs\" text-anchor=\"middle\">44</text><text x=\"154\" y=\"505\" class=\"dg-mcs\" text-anchor=\"middle\">BZA</text><rect x=\"188\" y=\"452\" width=\"32\" height=\"38\" rx=\"3\" fill=\"#e3829f\" opacity=\"0.72\"/><text x=\"204\" y=\"447\" class=\"dg-mcs\" text-anchor=\"middle\">18</text><text x=\"204\" y=\"505\" class=\"dg-mcs\" text-anchor=\"middle\">GTL</text><rect x=\"238\" y=\"442\" width=\"32\" height=\"48\" rx=\"3\" fill=\"#e3829f\" opacity=\"0.81\"/><text x=\"254\" y=\"437\" class=\"dg-mcs\" text-anchor=\"middle\">23</text><text x=\"254\" y=\"505\" class=\"dg-mcs\" text-anchor=\"middle\">GNT</text><rect x=\"288\" y=\"465\" width=\"32\" height=\"25\" rx=\"3\" fill=\"#e3829f\" opacity=\"0.90\"/><text x=\"304\" y=\"460\" class=\"dg-mcs\" text-anchor=\"middle\">12</text><text x=\"304\" y=\"505\" class=\"dg-mcs\" text-anchor=\"middle\">NED</text><line x1=\"30\" y1=\"491\" x2=\"330\" y2=\"491\" stroke=\"#3a3d5c\"/><text x=\"16\" y=\"538\" class=\"dg-mcap\" text-anchor=\"start\">officials review applications by railway division</text></svg>"
+  };
+
+  /* Card thumbnails: one shared 3:1 shape for every featured project — four
+     tiles ending in the output — so collapsed cards on phones look like a set.
+     The detailed diagrams have different shapes (CRDT is nearly square), which
+     made the thumbnails come out different sizes. Desktop and opened cards keep
+     using the detailed versions. */
+  const PROJECT_DIAGRAMS_THUMB = {
+      "intrusion": "<svg class=\"dg-thumb\" preserveAspectRatio=\"xMidYMid slice\" viewBox=\"0 0 600 200\" xmlns=\"http://www.w3.org/2000/svg\" role=\"img\"><defs><marker id=\"a-nidst\" viewBox=\"0 0 10 10\" refX=\"8.5\" refY=\"5\" markerWidth=\"7\" markerHeight=\"7\" orient=\"auto-start-reverse\"><path d=\"M0 0 L10 5 L0 10 z\" fill=\"#da8062\"/></marker></defs><rect x=\"4\" y=\"14\" width=\"88\" height=\"172\" rx=\"13\" fill=\"#141528\" stroke=\"#3a3d5c\" stroke-width=\"1.5\"/><g transform=\"translate(21.599999999999998 55.599999999999994) scale(2.2)\" fill=\"none\" stroke=\"#da8062\" stroke-width=\"1.45\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"3\"/><circle cx=\"4\" cy=\"5\" r=\"2\"/><circle cx=\"20\" cy=\"5\" r=\"2\"/><circle cx=\"4\" cy=\"19\" r=\"2\"/><circle cx=\"20\" cy=\"19\" r=\"2\"/><path d=\"M5.6 6.3 9.7 10M18.4 6.3 14.3 10M5.6 17.7 9.7 14M18.4 17.7 14.3 14\"/></g><text x=\"48.0\" y=\"150\" class=\"dg-tl\" text-anchor=\"middle\">Network</text><rect x=\"108\" y=\"14\" width=\"88\" height=\"172\" rx=\"13\" fill=\"#141528\" stroke=\"#3a3d5c\" stroke-width=\"1.5\"/><g transform=\"translate(125.6 55.599999999999994) scale(2.2)\" fill=\"none\" stroke=\"#da8062\" stroke-width=\"1.45\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"10.5\" cy=\"10.5\" r=\"6.2\"/><path d=\"M15.1 15.1 20.6 20.6\"/><path d=\"M8 10.5h5M10.5 8v5\"/></g><text x=\"152.0\" y=\"150\" class=\"dg-tl\" text-anchor=\"middle\">Detect</text><rect x=\"212\" y=\"14\" width=\"88\" height=\"172\" rx=\"13\" fill=\"#141528\" stroke=\"#3a3d5c\" stroke-width=\"1.5\"/><g transform=\"translate(229.6 55.599999999999994) scale(2.2)\" fill=\"none\" stroke=\"#da8062\" stroke-width=\"1.45\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 2.6 19.4 5.5V11c0 5-3.3 8.4-7.4 10.4C7.9 19.4 4.6 16 4.6 11V5.5Z\"/><path d=\"M8.6 8.6l6.8 6.8\"/></g><text x=\"256.0\" y=\"150\" class=\"dg-tl\" text-anchor=\"middle\">Block</text><rect x=\"316\" y=\"14\" width=\"280\" height=\"172\" rx=\"13\" fill=\"#141528\" stroke=\"#da8062\" stroke-width=\"2.5\"/><path d=\"M316 27 a13 13 0 0 1 13 -13 h254 a13 13 0 0 1 13 13 v19 h-280 z\" fill=\"#da8062\"/><text x=\"330\" y=\"35\" class=\"dg-to\">OUTPUT</text><text x=\"332\" y=\"78\" class=\"dg-ob\" text-anchor=\"start\">DROP 10.0.0.42</text><text x=\"332\" y=\"106\" class=\"dg-od\" text-anchor=\"start\">port scan · 37 ports / 2s</text><text x=\"332\" y=\"130\" class=\"dg-od\" text-anchor=\"start\">iptables · Win Firewall</text><text x=\"332\" y=\"162\" class=\"dg-og\" text-anchor=\"start\">✓ attacker blocked</text><path d=\"M94 100.0 L105 100.0\" fill=\"none\" stroke=\"#da8062\" stroke-width=\"1.5\"  marker-end=\"url(#a-nidst)\"/><path d=\"M198 100.0 L209 100.0\" fill=\"none\" stroke=\"#da8062\" stroke-width=\"1.5\"  marker-end=\"url(#a-nidst)\"/><path d=\"M302 100.0 L313 100.0\" fill=\"none\" stroke=\"#da8062\" stroke-width=\"1.5\"  marker-end=\"url(#a-nidst)\"/></svg>",
+      "agentic": "<svg class=\"dg-thumb\" preserveAspectRatio=\"xMidYMid slice\" viewBox=\"0 0 600 200\" xmlns=\"http://www.w3.org/2000/svg\" role=\"img\"><defs><marker id=\"a-ait\" viewBox=\"0 0 10 10\" refX=\"8.5\" refY=\"5\" markerWidth=\"7\" markerHeight=\"7\" orient=\"auto-start-reverse\"><path d=\"M0 0 L10 5 L0 10 z\" fill=\"#75c25b\"/></marker></defs><rect x=\"4\" y=\"14\" width=\"88\" height=\"172\" rx=\"13\" fill=\"#141528\" stroke=\"#3a3d5c\" stroke-width=\"1.5\"/><path d=\"M19.0 50 h24 l10 10 v32 h-34 z\" fill=\"#141528\" stroke=\"#75c25b\" stroke-width=\"2\"/><path d=\"M43.0 50 v10 h10\" fill=\"none\" stroke=\"#75c25b\" stroke-width=\"2\"/><path d=\"M33.0 60 h24 l10 10 v32 h-34 z\" fill=\"#141528\" stroke=\"#75c25b\" stroke-width=\"2\"/><path d=\"M57.0 60 v10 h10\" fill=\"none\" stroke=\"#75c25b\" stroke-width=\"2\"/><path d=\"M47.0 70 h24 l10 10 v32 h-34 z\" fill=\"#141528\" stroke=\"#75c25b\" stroke-width=\"2\"/><path d=\"M71.0 70 v10 h10\" fill=\"none\" stroke=\"#75c25b\" stroke-width=\"2\"/><rect x=\"47.0\" y=\"88\" width=\"27\" height=\"12\" rx=\"2.5\" fill=\"#75c25b\"/><text x=\"60.5\" y=\"97.5\" class=\"dg-tp\" text-anchor=\"middle\">PDF</text><text x=\"48.0\" y=\"150\" class=\"dg-tl\" text-anchor=\"middle\">PDFs</text><rect x=\"108\" y=\"14\" width=\"88\" height=\"172\" rx=\"13\" fill=\"#141528\" stroke=\"#3a3d5c\" stroke-width=\"1.5\"/><g transform=\"translate(125.6 55.599999999999994) scale(2.2)\" fill=\"none\" stroke=\"#75c25b\" stroke-width=\"1.45\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"5\" cy=\"12\" r=\"2\"/><circle cx=\"19\" cy=\"6\" r=\"2\"/><circle cx=\"19\" cy=\"18\" r=\"2\"/><path d=\"M7 12h4l6-5.4M11 12l6 5.4\"/></g><text x=\"152.0\" y=\"150\" class=\"dg-tl\" text-anchor=\"middle\">Router</text><rect x=\"212\" y=\"14\" width=\"88\" height=\"172\" rx=\"13\" fill=\"#141528\" stroke=\"#3a3d5c\" stroke-width=\"1.5\"/><g transform=\"translate(229.6 55.599999999999994) scale(2.2)\" fill=\"none\" stroke=\"#75c25b\" stroke-width=\"1.45\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 6h16M4 10h12.5M4 14h9M4 18h5.5\"/></g><text x=\"256.0\" y=\"150\" class=\"dg-tl\" text-anchor=\"middle\">Summary</text><rect x=\"316\" y=\"14\" width=\"280\" height=\"172\" rx=\"13\" fill=\"#141528\" stroke=\"#75c25b\" stroke-width=\"2.5\"/><path d=\"M316 27 a13 13 0 0 1 13 -13 h254 a13 13 0 0 1 13 13 v19 h-280 z\" fill=\"#75c25b\"/><text x=\"330\" y=\"35\" class=\"dg-to\">OUTPUT</text><text x=\"332\" y=\"78\" class=\"dg-ob\" text-anchor=\"start\">Survey of 3 papers</text><text x=\"332\" y=\"104\" class=\"dg-od\" text-anchor=\"start\">742 words · 11 citations</text><rect x=\"332\" y=\"118\" width=\"186\" height=\"4\" rx=\"2\" fill=\"#3a3d5c\"/><text x=\"526\" y=\"123\" class=\"dg-oc\" fill=\"#75c25b\">[1]</text><rect x=\"332\" y=\"135\" width=\"160\" height=\"4\" rx=\"2\" fill=\"#3a3d5c\"/><text x=\"500\" y=\"140\" class=\"dg-oc\" fill=\"#75c25b\">[2]</text><rect x=\"332\" y=\"152\" width=\"176\" height=\"4\" rx=\"2\" fill=\"#3a3d5c\"/><text x=\"516\" y=\"157\" class=\"dg-oc\" fill=\"#75c25b\">[3]</text><path d=\"M94 100.0 L105 100.0\" fill=\"none\" stroke=\"#75c25b\" stroke-width=\"1.5\"  marker-end=\"url(#a-ait)\"/><path d=\"M198 100.0 L209 100.0\" fill=\"none\" stroke=\"#75c25b\" stroke-width=\"1.5\"  marker-end=\"url(#a-ait)\"/><path d=\"M302 100.0 L313 100.0\" fill=\"none\" stroke=\"#75c25b\" stroke-width=\"1.5\"  marker-end=\"url(#a-ait)\"/></svg>",
+      "citestat": "<svg class=\"dg-thumb\" preserveAspectRatio=\"xMidYMid slice\" viewBox=\"0 0 600 200\" xmlns=\"http://www.w3.org/2000/svg\" role=\"img\"><defs><marker id=\"a-citet\" viewBox=\"0 0 10 10\" refX=\"8.5\" refY=\"5\" markerWidth=\"7\" markerHeight=\"7\" orient=\"auto-start-reverse\"><path d=\"M0 0 L10 5 L0 10 z\" fill=\"#5ab9d8\"/></marker></defs><rect x=\"4\" y=\"14\" width=\"88\" height=\"172\" rx=\"13\" fill=\"#141528\" stroke=\"#3a3d5c\" stroke-width=\"1.5\"/><g transform=\"translate(21.599999999999998 55.599999999999994) scale(2.2)\" fill=\"none\" stroke=\"#5ab9d8\" stroke-width=\"1.45\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"8\" r=\"3.6\"/><path d=\"M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5\"/></g><text x=\"48.0\" y=\"150\" class=\"dg-tl\" text-anchor=\"middle\">Author</text><rect x=\"108\" y=\"14\" width=\"88\" height=\"172\" rx=\"13\" fill=\"#141528\" stroke=\"#3a3d5c\" stroke-width=\"1.5\"/><g transform=\"translate(125.6 55.599999999999994) scale(2.2)\" fill=\"none\" stroke=\"#5ab9d8\" stroke-width=\"1.45\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M8 6 3.5 12 8 18M16 6l4.5 6L16 18M13.5 4.5l-3 15\"/></g><text x=\"152.0\" y=\"150\" class=\"dg-tl\" text-anchor=\"middle\">Crossref</text><rect x=\"212\" y=\"14\" width=\"88\" height=\"172\" rx=\"13\" fill=\"#141528\" stroke=\"#3a3d5c\" stroke-width=\"1.5\"/><g transform=\"translate(229.6 55.599999999999994) scale(2.2)\" fill=\"none\" stroke=\"#5ab9d8\" stroke-width=\"1.45\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 20V13M10 20V8M15 20v-5M20 20V4M3 20.5h18\"/></g><text x=\"256.0\" y=\"150\" class=\"dg-tl\" text-anchor=\"middle\">Analyse</text><rect x=\"316\" y=\"14\" width=\"280\" height=\"172\" rx=\"13\" fill=\"#141528\" stroke=\"#5ab9d8\" stroke-width=\"2.5\"/><path d=\"M316 27 a13 13 0 0 1 13 -13 h254 a13 13 0 0 1 13 13 v19 h-280 z\" fill=\"#5ab9d8\"/><text x=\"330\" y=\"35\" class=\"dg-to\">OUTPUT</text><text x=\"332\" y=\"114\" class=\"dg-obig\" text-anchor=\"start\">14</text><text x=\"332\" y=\"138\" class=\"dg-od\" text-anchor=\"start\">h-index</text><text x=\"332\" y=\"162\" class=\"dg-od\" text-anchor=\"start\">m-quotient 1.2</text><rect x=\"492\" y=\"138\" width=\"9\" height=\"26\" rx=\"2\" fill=\"#5ab9d8\" opacity=\"0.45\"/><rect x=\"506\" y=\"120\" width=\"9\" height=\"44\" rx=\"2\" fill=\"#5ab9d8\" opacity=\"0.54\"/><rect x=\"520\" y=\"130\" width=\"9\" height=\"34\" rx=\"2\" fill=\"#5ab9d8\" opacity=\"0.63\"/><rect x=\"534\" y=\"104\" width=\"9\" height=\"60\" rx=\"2\" fill=\"#5ab9d8\" opacity=\"0.72\"/><rect x=\"548\" y=\"112\" width=\"9\" height=\"52\" rx=\"2\" fill=\"#5ab9d8\" opacity=\"0.81\"/><rect x=\"562\" y=\"90\" width=\"9\" height=\"74\" rx=\"2\" fill=\"#5ab9d8\" opacity=\"0.90\"/><rect x=\"576\" y=\"98\" width=\"9\" height=\"66\" rx=\"2\" fill=\"#5ab9d8\" opacity=\"0.99\"/><line x1=\"488\" y1=\"165\" x2=\"582\" y2=\"165\" stroke=\"#3a3d5c\" stroke-width=\"1.5\"/><text x=\"582\" y=\"78\" class=\"dg-og\" text-anchor=\"end\">no backend</text><path d=\"M94 100.0 L105 100.0\" fill=\"none\" stroke=\"#5ab9d8\" stroke-width=\"1.5\"  marker-end=\"url(#a-citet)\"/><path d=\"M198 100.0 L209 100.0\" fill=\"none\" stroke=\"#5ab9d8\" stroke-width=\"1.5\"  marker-end=\"url(#a-citet)\"/><path d=\"M302 100.0 L313 100.0\" fill=\"none\" stroke=\"#5ab9d8\" stroke-width=\"1.5\"  marker-end=\"url(#a-citet)\"/></svg>",
+      "crdt": "<svg class=\"dg-thumb\" preserveAspectRatio=\"xMidYMid slice\" viewBox=\"0 0 600 200\" xmlns=\"http://www.w3.org/2000/svg\" role=\"img\"><defs><marker id=\"a-crdttb\" viewBox=\"0 0 10 10\" refX=\"8.5\" refY=\"5\" markerWidth=\"7\" markerHeight=\"7\" orient=\"auto-start-reverse\"><path d=\"M0 0 L10 5 L0 10 z\" fill=\"#e6c069\"/></marker><marker id=\"a-crdtt\" viewBox=\"0 0 10 10\" refX=\"8.5\" refY=\"5\" markerWidth=\"7\" markerHeight=\"7\" orient=\"auto-start-reverse\"><path d=\"M0 0 L10 5 L0 10 z\" fill=\"#c888dd\"/></marker></defs><rect x=\"14\" y=\"10\" width=\"164\" height=\"50\" rx=\"6\" fill=\"#141528\" stroke=\"#c888dd\" stroke-width=\"2.2\"/><path d=\"M7 63 H185 L180 70 H12 Z\" fill=\"#1b1c31\" stroke=\"#c888dd\" stroke-width=\"2.2\"/><text x=\"26\" y=\"41\" class=\"dg-dt\">Hello <tspan fill=\"#c888dd\" font-weight=\"700\">big </tspan>world</text><rect x=\"14\" y=\"84\" width=\"104\" height=\"104\" rx=\"14\" fill=\"#141528\" stroke=\"#e6c069\" stroke-width=\"2.2\"/><rect x=\"54.0\" y=\"90\" width=\"24\" height=\"4\" rx=\"2\" fill=\"#3a3d5c\"/><text x=\"26\" y=\"132\" class=\"dg-dt\">Hello</text><text x=\"26\" y=\"156\" class=\"dg-dt\">world<tspan fill=\"#e6c069\" font-weight=\"700\">!</tspan></text><g transform=\"translate(92.36 99.36) scale(0.72)\" fill=\"none\" stroke=\"#e08b8b\" stroke-width=\"1.45\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"17.5\" r=\"1.7\" fill=\"#e08b8b\" stroke=\"none\"/><path d=\"M7.6 13.3a6.2 6.2 0 0 1 8.8 0\"/><path d=\"M4.6 10.2a10.4 10.4 0 0 1 14.8 0\"/><path d=\"M4 4l16 16\"/></g><rect x=\"422\" y=\"10\" width=\"164\" height=\"50\" rx=\"6\" fill=\"#141528\" stroke=\"#c888dd\" stroke-width=\"2.2\"/><path d=\"M415 63 H593 L588 70 H420 Z\" fill=\"#1b1c31\" stroke=\"#c888dd\" stroke-width=\"2.2\"/><text x=\"434\" y=\"41\" class=\"dg-dt\">Hello <tspan fill=\"#c888dd\" font-weight=\"700\">big </tspan>world<tspan fill=\"#e6c069\" font-weight=\"700\">!</tspan></text><rect x=\"422\" y=\"84\" width=\"104\" height=\"104\" rx=\"14\" fill=\"#141528\" stroke=\"#e6c069\" stroke-width=\"2.2\"/><rect x=\"462.0\" y=\"90\" width=\"24\" height=\"4\" rx=\"2\" fill=\"#3a3d5c\"/><text x=\"434\" y=\"132\" class=\"dg-dt\">Hello <tspan fill=\"#c888dd\" font-weight=\"700\">big</tspan></text><text x=\"434\" y=\"156\" class=\"dg-dt\">world<tspan fill=\"#e6c069\" font-weight=\"700\">!</tspan></text><g transform=\"translate(500.36 99.36) scale(0.72)\" fill=\"none\" stroke=\"#9ad09a\" stroke-width=\"1.45\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"17.5\" r=\"1.7\" fill=\"#9ad09a\" stroke=\"none\"/><path d=\"M7.6 13.3a6.2 6.2 0 0 1 8.8 0\"/><path d=\"M4.6 10.2a10.4 10.4 0 0 1 14.8 0\"/></g><rect x=\"250\" y=\"66\" width=\"100\" height=\"64\" rx=\"12\" fill=\"#141528\" stroke=\"#3a3d5c\" stroke-width=\"1.6\"/><g transform=\"translate(284.4 72.4) scale(1.3)\" fill=\"none\" stroke=\"#c888dd\" stroke-width=\"1.45\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 5c6 0 6 7 10 7M4 19c6 0 6-7 10-7h6\"/><path d=\"M17 9l3 3-3 3\"/></g><text x=\"300\" y=\"120\" class=\"dg-tl\" text-anchor=\"middle\">Relay</text><path d=\"M186 36 C 215 36, 220 84, 246 86\" fill=\"none\" stroke=\"#c888dd\" stroke-width=\"1.5\"  marker-end=\"url(#a-crdtt)\"/><path d=\"M122 136 C 200 136, 222 116, 246 112\" fill=\"none\" stroke=\"#e6c069\" stroke-width=\"1.5\" stroke-dasharray=\"4 4\" marker-end=\"url(#a-crdttb)\"/><path d=\"M354 86 C 380 84, 386 36, 412 36\" fill=\"none\" stroke=\"#c888dd\" stroke-width=\"1.5\"  marker-end=\"url(#a-crdtt)\"/><path d=\"M354 112 C 380 116, 392 136, 418 136\" fill=\"none\" stroke=\"#e6c069\" stroke-width=\"1.5\"  marker-end=\"url(#a-crdttb)\"/><text x=\"300\" y=\"168\" class=\"dg-og\" text-anchor=\"middle\">✓ both edits kept</text></svg>"
+  };
+
+  function diagramFor(title) {
+    const media = SITE_CONFIG.media || {};
+    if (media.showDiagrams === false) return '';
+    if ((media.hiddenDiagrams || {})[title]) return '';
+    const t = String(title || '').toLowerCase().replace(/\./g, '');
+    const key = Object.keys(PROJECT_DIAGRAMS).find(k => t.indexOf(k) >= 0);
+    if (!key) return '';
+    const wide = PROJECT_DIAGRAMS[key].replace('<svg ', '<svg class="dg-wide" ');
+    const narrow = PROJECT_DIAGRAMS_MOBILE[key] || '';
+    const thumb = PROJECT_DIAGRAMS_THUMB[key] || '';
+    return '<figure class="proj-diagram" data-diagram="' + key + '">' +
+             wide + narrow + thumb +
+           '</figure>';
+  }
+
+
+  /* Where a project's diagram goes. Four layouts, chosen with
+     media.diagramPlacement:
+       beside  text on the left, diagram on the right (stacks on narrow screens)
+       below   full width, after the description and stack
+       top     full width, leading the entry, before the title
+       toggle  collapsed behind a "How it works" control
+     Returns the pieces each renderer drops into place, so the two renderers
+     can't drift apart in how they handle it. */
+  /* ---------- Project media: image, GIF, or both ----------
+     Each showcased project can carry a diagram (the "image") and, once you
+     make one, a GIF or short video. media.featuredMedia picks which to show
+     — "image", "gif" or "both" — and media.mediaMode[title] overrides it per
+     project. A project with no GIF yet always falls back to its image, so
+     choosing "gif" early never leaves a blank slot.
+
+     GIF paths live in media.gifs[title], relative to media.imageDir.
+     .mp4 / .webm play like a GIF (autoplay, muted, looping) at a fraction
+     of the size, so they're accepted too. */
+  function gifFor(title) {
+    const media = SITE_CONFIG.media || {};
+    const g = (media.gifs || {})[title];
+    if (!g) return '';
+    const src = /^(https?:|\/|data:)/.test(g) ? g : (media.imageDir || 'assets/') + g;
+    const alt = escapeHTML(title) + ' in action';
+    if (/\.(mp4|webm)(\?|$)/i.test(src)) {
+      return '<figure class="proj-gif-frame"><video class="proj-gif" src="' + escapeHTML(src) +
+             '" autoplay muted loop playsinline preload="metadata" aria-label="' + alt + '"></video></figure>';
+    }
+    return '<figure class="proj-gif-frame"><img class="proj-gif" src="' + escapeHTML(src) +
+           '" alt="' + alt + '" loading="lazy" decoding="async"></figure>';
+  }
+  function mediaModeFor(title) {
+    const media = SITE_CONFIG.media || {};
+    return (media.mediaMode || {})[title] || media.featuredMedia || 'image';
+  }
+  function mediaRow(title) {
+    const fig = diagramFor(title);
+    const gif = gifFor(title);
+    let mode = mediaModeFor(title);
+    if (!gif) mode = 'image';            /* no GIF yet: the image stands in */
+    if (!fig && gif) mode = 'gif';
+    if (!fig && !gif) return '';
+    if (mode === 'gif')  return '<div class="dg-media is-gif">' + gif + '</div>';
+    if (mode === 'both') return '<div class="dg-media is-both">' + fig + gif + '</div>';
+    return '<div class="dg-media is-image">' + fig + '</div>';
+  }
+
+  /* Where a project's media goes. media.diagramPlacement:
+       wide    title, then the media across the full width, then the text
+               (default — nothing is left empty beside a short image)
+       beside  text on the left, media on the right
+       below   full width, after the text
+       top     full width, before the title
+       toggle  collapsed behind a "How it works" control */
+  function placeDiagram(title) {
+    const fig = mediaRow(title);
+    const mode = ((SITE_CONFIG.media || {}).diagramPlacement) || 'wide';
+    const out = { top: '', wide: '', below: '', side: '', cls: '', inline: false, mode: mode };
+    if (!fig) return out;
+    if (mode === 'top') out.top = fig;
+    else if (mode === 'below') out.below = fig;
+    else if (mode === 'toggle') {
+      out.below = '<details class="dg-toggle"><summary>How it works</summary>' + fig + '</details>';
+    } else if (mode === 'beside') {
+      out.side = '<div class="dg-side">' + fig + '</div>';
+      out.cls = ' dg-beside';
+      out.inline = true;
+    } else {
+      out.wide = fig;
+      out.cls = ' dg-widelayout';
+      out.inline = true;               /* no right-hand column: links go inline */
+    }
+    return out;
+  }
+
+
+  /* ---------- Compact cards on phones ----------
+     On a phone each project collapses to its visual plus one line of text,
+     with the rest behind a More toggle, so the whole list can be scanned
+     before choosing what to read. Desktop is untouched: the toggle is hidden
+     there and nothing collapses. Turn it off with media.mobileCollapse =
+     false. */
+  function mCollapseOn() { return ((SITE_CONFIG.media || {}).mobileCollapse) !== false; }
+  function mToggle() {
+    if (!mCollapseOn()) return '';
+    return '<button type="button" class="m-more" aria-expanded="false">' +
+             '<span class="m-more-l">More</span><span class="m-more-c" aria-hidden="true">\u25be</span>' +
+           '</button>';
+  }
+  function mCls() { return mCollapseOn() ? ' m-collapsible' : ''; }
+
+  let _mBound = false;
+  function bindMobileToggles() {
+    if (_mBound) return; _mBound = true;
+    const setOpen = (card, open) => {
+      card.classList.toggle('is-open', open);
+      const btn = card.querySelector(':scope > .m-more');
+      if (btn) {
+        btn.setAttribute('aria-expanded', String(open));
+        const l = btn.querySelector('.m-more-l'); if (l) l.textContent = open ? 'Less' : 'More';
+      }
+    };
+    document.addEventListener('click', e => {
+      const btn = e.target.closest ? e.target.closest('.m-more') : null;
+      if (btn) {
+        const card = btn.parentNode;
+        const opening = !card.classList.contains('is-open');
+        setOpen(card, opening);
+        /* Closing a long card would leave you far below it; bring its top
+           back into view so you keep your place in the list. */
+        if (!opening && card.getBoundingClientRect().top < 0) {
+          card.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        }
+        return;
+      }
+      /* A collapsed project card opens when tapped anywhere on it (links
+         still work as links). Only opening — closing stays on the chevron,
+         so reading or selecting text in an open card doesn't snap it shut. */
+      const pc = e.target.closest
+        ? e.target.closest('.pc-card.m-collapsible:not(.is-open), .work-item.m-collapsible:not(.is-open)')
+        : null;
+      /* On a collapsed tile the title is still a link to the repo; a tap
+         there should open the tile, not leave the site. The repo link is
+         reachable once it's open. */
+      const titleLink = pc && e.target.closest ? e.target.closest('h3 a, h4 a') : null;
+      if (pc && (!e.target.closest('a') || titleLink) &&
+          window.matchMedia('(max-width: 640px)').matches) {
+        if (titleLink) e.preventDefault();
+        setOpen(pc, true);
+        /* A featured tile jumps from half width to full width when it opens;
+           keep its top in view so the reader lands on what they tapped. */
+        if (pc.classList.contains('feature')) {
+          setTimeout(() => pc.scrollIntoView({ block: 'start', behavior: 'smooth' }), 30);
+        }
+        return;
+      }
+      /* Course blocks on phones: tapping a heading shows or hides the
+         courses beneath it. Category rows already toggle on their label. */
+      const ch = e.target.closest ? e.target.closest('.course-featured-head, .course-online-head') : null;
+      if (ch && window.matchMedia('(max-width: 640px)').matches) {
+        const blk = ch.parentNode;
+        const open = !blk.classList.contains('m-open');
+        blk.classList.toggle('m-open', open);
+        ch.setAttribute('aria-expanded', String(open));
+        return;
+      }
+      /* Tapping the faded diagram preview opens the card too — it's the
+         thing that looks tappable. */
+      const fig = e.target.closest ? e.target.closest('.m-collapsible:not(.is-open) .proj-diagram') : null;
+      if (fig && window.matchMedia('(max-width: 640px)').matches) {
+        setOpen(fig.closest('.m-collapsible'), true);
+      }
+    });
+  }
+
+
+  /* Trim each diagram to what's actually drawn. The drawings were authored
+     with a margin inside their viewBox, and on short phones a full-width
+     image box letterboxed the scaled-down drawing with bands of background
+     either side — both read as padding. Measuring the drawn content and
+     setting the viewBox to it (plus a hair for stroke widths), and an
+     aspect-ratio to match, lets the box hug the drawing exactly. */
+  function fitDiagramBoxes() {
+    document.querySelectorAll('.proj-diagram svg:not(.dg-thumb)').forEach(svg => {
+      if (svg.dataset.fitted) return;
+      let bb;
+      try { bb = svg.getBBox(); } catch (e) { return; }
+      if (!bb || !bb.width || !bb.height) return;    /* hidden right now: try later */
+      const pad = 3;
+      const x = bb.x - pad, y = bb.y - pad, w = bb.width + pad * 2, h = bb.height + pad * 2;
+      svg.setAttribute('viewBox', x + ' ' + y + ' ' + w + ' ' + h);
+      svg.style.aspectRatio = w + ' / ' + h;
+      svg.style.setProperty('--ar', (w / h).toFixed(4));   /* for CSS width maths */
+      svg.dataset.fitted = '1';
+    });
+  }
+
+
+  /* ---------- Phone menu ----------
+     At phone width the nav bar's links are hidden, so a menu button lists
+     every section actually on the page — built from the sections themselves,
+     in page order, so it can't drift from the layout. Tapping one scrolls to
+     it and closes the menu; tapping outside or pressing Esc closes it too. */
+  function buildMobileMenu() {
+    const bar = document.querySelector('.topbar');
+    if (!bar || bar.querySelector('.m-menu-btn')) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'm-menu-btn';
+    btn.setAttribute('aria-label', 'Menu');
+    btn.setAttribute('aria-expanded', 'false');
+    btn.innerHTML = '<span></span><span></span><span></span>';
+    /* a div with role=navigation, not a <nav>: the phone rules that hide the
+       desktop nav's links target `.topbar nav`, and would hide these too */
+    const panel = document.createElement('div');
+    panel.setAttribute('role', 'navigation');
+    panel.className = 'm-menu';
+    panel.setAttribute('aria-label', 'Sections');
+    const fill = () => {
+      const secs = [...document.querySelectorAll('.shell > section[id]')]
+        .filter(s => s.id !== 'hero' && s.offsetParent !== null && getComputedStyle(s).display !== 'none');
+      panel.innerHTML = secs.map(s => {
+        /* Short section names, not the headings: "What I studied." makes a
+           poor menu item where "Courses" is clear. */
+        const NAMES = { Work: 'Experience', Featured: 'Selected projects', Projects: 'All projects' };
+        const key = (s.querySelector('[data-section-title]') || {}).getAttribute
+          ? s.querySelector('[data-section-title]').getAttribute('data-section-title') : '';
+        const label = NAMES[key] || key || (s.id.charAt(0).toUpperCase() + s.id.slice(1).replace(/-.*/, ''));
+        return '<a href="#' + s.id + '">' + escapeHTML(label) + '</a>';
+      }).join('');
+    };
+    const setOpen = open => {
+      bar.classList.toggle('m-nav-open', open);
+      btn.setAttribute('aria-expanded', String(open));
+      if (open) fill();
+    };
+    btn.addEventListener('click', e => { e.stopPropagation(); setOpen(!bar.classList.contains('m-nav-open')); });
+    panel.addEventListener('click', e => {
+      const a = e.target.closest('a'); if (!a) return;
+      e.preventDefault();
+      setOpen(false);
+      const t = document.querySelector(a.getAttribute('href'));
+      if (t) {
+        /* Layout position, not the on-screen one: a section that hasn't
+           revealed yet is still offset by its fade-in slide, and measuring
+           that made the scroll overshoot and tuck it under the sticky bar. */
+        let y = 0;
+        for (let n = t; n; n = n.offsetParent) y += n.offsetTop;
+        window.scrollTo({ top: Math.max(0, y - bar.offsetHeight - 6), behavior: 'smooth' });
+      }
+    });
+    document.addEventListener('click', e => {
+      if (bar.classList.contains('m-nav-open') && !e.target.closest('.m-menu, .m-menu-btn')) setOpen(false);
+    });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') setOpen(false); });
+    bar.appendChild(btn);
+    bar.appendChild(panel);
+  }
+
+  let _featurePalette = null;
 
   function renderFeaturedItem(project, index, opts) {
     opts = opts || {};
     const showDescription = opts.showDescription !== false;
     const links = normalizeLinks(project);
-    const idx = String(index + 1).padStart(2, '0');
+    const num = String(index + 1).padStart(2, '0');
+    const domain = (project.domains || [])[0] || 'Project';
+    const leaves = (project.leaves || []).filter(l => l !== domain).slice(0, 3);
+
+    /* Each feature takes its domain's hue, so the four read as a set of
+       distinct pieces of work rather than four copies of one template. */
+    /* The palette must be built across ALL domains at once: it assigns hues
+       by position in the list, so building it per project gave every
+       project's first domain position 0 — the same colour four times. */
+    const hue = (_featurePalette && _featurePalette[domain]) || '';
+
     const titleEl = links.length
-      ? '<a href="' + escapeHTML(links[0].url) + '" target="_blank" rel="noopener">' + escapeHTML(project.title) + '</a>'
+      ? '<a href="' + escapeHTML(links[0].url) + '" target="_blank" rel="noopener">' +
+          escapeHTML(project.title) + '</a>'
       : escapeHTML(project.title);
     const showDesc = showDescription && project.description && !project.hideDescription;
-    /* Featured projects previously carried "NN / Intern" because they share
-       the work-item template with internships. They're a separate section
-       now, so they get their own label — and no running count, which said
-       nothing useful. */
-    return '<article class="work-item" data-entry="' + escapeHTML(project.title || '') + '">' +
-      '<span class="idx">' + escapeHTML((project.domains || [])[0] || 'Project') + '</span>' +
-      '<div>' +
+
+    const P = placeDiagram(project.title);
+    const meta = entryTile(project.title || '') + renderLinks(links);
+    /* Beside mode needs the right-hand column for the diagram, so the links
+       move into the body instead. */
+    return '<article class="work-item feature' + P.cls + mCls() + '" data-entry="' + escapeHTML(project.title || '') + '"' +
+        (hue ? ' style="--feat:' + hue + '"' : '') + '>' +
+      '<div class="feat-rail">' +
+        '<span class="feat-num">' + num + '</span>' +
+        '<span class="feat-domain">' + escapeHTML(domain) + '</span>' +
+        (leaves.length
+          ? '<span class="feat-leaves">' +
+              leaves.map(l => '<span>' + escapeHTML(l) + '</span>').join('') + '</span>'
+          : '') +
+      '</div>' +
+      '<div class="feat-body">' +
+        P.top +
         '<h3>' + entryMark(project.title || '') + titleEl + '</h3>' +
+        P.wide +
         (project.role ? '<div class="role">' + escapeHTML(project.role) + '</div>' : '') +
+        (showDesc ? '<p class="feat-lede">' + escapeHTML(project.description) + '</p>' : '') +
         (project.summary ? '<p>' + escapeHTML(project.summary) + '</p>' : '') +
-        (showDesc ? '<p class="project-description">' + escapeHTML(project.description) + '</p>' : '') +
         renderBullets(project.bullets) +
         renderStack(project.stack, 'stack', project.category) +
+        P.below +
+        (P.inline ? '<div class="feat-meta-inline">' + meta + '</div>' : '') +
       '</div>' +
-      '<div class="meta-right">' + entryTile(project.title || '') +
-        renderLinks(links) + '</div>' +
+      (P.side ? P.side : P.inline ? '' : '<div class="meta-right">' + meta + '</div>') +
+      mToggle() +
     '</article>';
   }
 
@@ -1226,6 +1684,12 @@
           const groups = groupByCategory(featured, categoryOrder);
           let runningIdx = 0;
           featuredEl.innerHTML = groups.map(g => {
+            if (!_featurePalette) {
+              try {
+                _featurePalette = spreadHues(uniqueStrings(
+                  featured.map(p => (p.domains || [])[0]).filter(Boolean)));
+              } catch (e) { _featurePalette = null; }
+            }
             const items = g.projects.map(p => renderFeaturedItem(p, runningIdx++, featuredOpts)).join('');
             return '<div class="project-group work-group" id="work-cat-' + slug(g.category) + '">' +
               '<h3 class="project-group-head">' + escapeHTML(g.category) +
@@ -1234,6 +1698,14 @@
             '</div>';
           }).join('');
         } else {
+          /* Spread hues across only the featured projects' lead domains.
+             Built from all 17 domains, neighbours crowded — Security and
+             Distributed Systems both came out green. Four cards spread
+             evenly around the wheel are maximally distinct. */
+          try {
+            _featurePalette = spreadHues(uniqueStrings(
+              featured.map(p => (p.domains || [])[0]).filter(Boolean)));
+          } catch (e) { _featurePalette = null; }
           featuredEl.innerHTML = featured.map((p, i) => renderFeaturedItem(p, i, featuredOpts)).join('');
         }
       }
@@ -1338,10 +1810,13 @@
      the editor — NOT from the full catalogue, which visitors never fetch.
      Each entry is { n, d, c, t } where t is 1 for primary tech and 2 for
      secondary, so the whole secondary set can be hidden with one toggle. */
-  let _logoIndex = null;
+  let _logoIndex = null, _logoIndexOf = null;
   function logoIndex() {
-    if (_logoIndex) return _logoIndex;
+    /* Rebuilt when the list itself is replaced (the editor swaps it in and
+       out when Skill icons changes between symbols and brand logos). */
+    if (_logoIndex && _logoIndexOf === SITE_CONFIG.logos) return _logoIndex;
     _logoIndex = {};
+    _logoIndexOf = SITE_CONFIG.logos;
     const list = (SITE_CONFIG.logos) || [];
     list.forEach(l => {
       (l.match || []).forEach(m => { _logoIndex[normTerm(m)] = l; });
@@ -1422,7 +1897,9 @@
     return _bgCache;
   }
 
-  const MIN_LOGO_CONTRAST = 2.6;
+  /* 3.2 rather than 2.6: at 2.6 deep brand colours like NumPy's navy came
+     out technically legible but visibly dim beside their neighbours. */
+  const MIN_LOGO_CONTRAST = 3.2;
   function legibleLogoColor(brand) {
     const bg = _pageBg();
     if (_contrast(brand, bg) >= MIN_LOGO_CONTRAST) return brand;
@@ -1443,6 +1920,17 @@
      third-party artwork never does. Drop real Simple Icons path data into
      the catalogue's `d:` field to upgrade any of them. */
   function logoSVG(logo, colored) {
+    /* Stroke glyphs (s: 1) are original icons drawn as outlines rather than
+       filled brand marks. They're symbolic, not trademarks, so they never get
+       a backing plate — the stroke is just lightened or darkened to stay
+       legible on the current background. */
+    if (logo && logo.s && logo.d) {
+      const col = colored ? legibleLogoColor(logo.c) : 'currentColor';
+      return '<svg class="pc-logo pc-glyph" viewBox="0 0 24 24" aria-hidden="true" ' +
+             'preserveAspectRatio="xMidYMid meet" fill="none" stroke="' + col + '" ' +
+             'stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' +
+             '<path d="' + logo.d + '"/></svg>';
+    }
     /* A `tile` logo's artwork is a solid brand-colour block with the glyph
        cut out of it. Shifting that colour for contrast destroys the mark —
        JavaScript's yellow becomes olive — so keep it exactly and give the
@@ -1459,6 +1947,68 @@
            '" viewBox="0 0 24 24" aria-hidden="true" ' +
            'preserveAspectRatio="xMidYMid meet" ' +
            'fill="' + tint + '"><path d="' + logo.d + '"/></svg>';
+  }
+
+
+  /* ----------------------------------------------------------
+     Skill symbols
+     ----------------------------------------------------------
+     Every skill card shows a symbol for what the tool is used for, not the
+     tool's logo: a cylinder for a database, a branch for Git, a container
+     for Docker. One line weight, one colour, one size, and nothing here is
+     anyone's trademark, so nothing has to be recoloured for the theme.
+     Programming languages can't be told apart by a generic picture, so they
+     get a file badge carrying their file extension (py, rs, java).
+
+     The drawings are data, not code: site-config.json carries
+     symbols.map (tool -> symbol) and symbols.defs (symbol -> drawing) for
+     exactly the tools the resume names. The editor holds the full set and
+     rewrites that subset on Save, so visitors never download a symbol the
+     page doesn't show. A tool with no entry simply shows its name. Every
+     drawing, and the file badge below, is original to this site - no
+     third-party icons. */
+
+  /* 'symbols' (default) or 'brand' (a logo catalogue the editor writes into
+     site-config.json only while this is set to 'brand'). */
+  function symbolsOn() {
+    return (SITE_CONFIG.media || {}).skillIcons !== 'brand';
+  }
+  function symbolSpecFor(name) {
+    const media = SITE_CONFIG.media || {};
+    if (media.showTechLogos === false) return '';
+    const own = (media.cardSymbols || {})[name];
+    if (own !== undefined) return own;          // '' = no symbol on this card
+    return ((SITE_CONFIG.symbols || {}).map || {})[normTerm(name)] || '';
+  }
+  /* small = inside a one-line chip, where a badge's lettering would be a
+     smudge; languages get the plain "code file" symbol there instead. */
+  function symbolSVG(spec, small) {
+    if (!spec) return '';
+    const media = SITE_CONFIG.media || {};
+    const defs = (SITE_CONFIG.symbols || {}).defs || {};
+    const cls = 'pc-logo pc-sym' + (media.techLogoColor === false ? ' is-plain' : '');
+    const open = '<svg class="' + cls + '" viewBox="0 0 24 24" aria-hidden="true" ' +
+      'fill="none" stroke="currentColor" stroke-width="' + (small ? 2 : 1.75) +
+      '" stroke-linecap="round" stroke-linejoin="round">';
+    if (spec.slice(0, 4) === 'ext:') {
+      if (small) return defs['file-code'] ? open + defs['file-code'] + '</svg>' : '';
+      const label = spec.slice(4).replace(/[^A-Za-z0-9+#.]/g, '').slice(0, 5);
+      return open +
+        '<path d="M4 10.5V5a2.5 2.5 0 0 1 2.5-2.5h7L20 9v1.5"/>' +
+        '<path d="M13.5 2.5V9H20"/>' +
+        '<rect x="1" y="10.5" width="22" height="11" rx="2"/>' +
+        '<text class="pc-ext" x="12" y="18.5" text-anchor="middle" font-size="' +
+        (label.length > 4 ? 5.6 : 7) + '" stroke="none" fill="currentColor">' +
+        escapeHTML(label) + '</text></svg>';
+    }
+    return defs[spec] ? open + defs[spec] + '</svg>' : '';
+  }
+  /* One place decides what mark a tool name gets, so the skill cards, the
+     project keyword chips and the AI cards can never disagree. */
+  function techMark(name, small) {
+    if (symbolsOn()) return symbolSVG(symbolSpecFor(name), small);
+    const lg = logoFor(name);
+    return lg ? logoSVG(lg, (SITE_CONFIG.media || {}).techLogoColor !== false) : '';
   }
 
   function pfDomainsOf(p)  { return p.domains || (p.category ? [p.category] : []); }
@@ -1539,8 +2089,7 @@
       .map(l => '<span class="pc-topic" style="border:1px solid var(--rule);color:var(--muted)">' + escapeHTML(l) + '</span>').join('');
     const colored = (SITE_CONFIG.media || {}).techLogoColor !== false;
     const techHTML = pfTechOf(p).map(t => {
-      const lg = logoFor(t);
-      return '<span>' + (lg ? logoSVG(lg, colored) : '') + escapeHTML(t) + '</span>';
+      return '<span>' + techMark(t, true) + escapeHTML(t) + '</span>';
     }).join('');
     const dots = (pfAnyActive() && matched.length)
       ? '<span class="pc-match-dots">' + matched.map(f =>
@@ -1585,7 +2134,7 @@
     const borderColor = opts.color || PF.palette[pfDomainsOf(p)[0]] || 'var(--rule)';
     const style = opts.multi ? '' : ' style="border-left-color:' + borderColor + '"';
 
-    return '<article class="' + cls + '"' + style + ' data-title="' + escapeHTML(p.title) + '">' +
+    return '<article class="' + cls + mCls() + '"' + style + ' data-title="' + escapeHTML(p.title) + '">' +
       edge +
       thumbHTML +
       '<div class="pc-card-head">' +
@@ -1595,6 +2144,7 @@
       (p.description ? '<p class="pc-desc">' + escapeHTML(p.description) + '</p>' : '') +
       (techHTML ? '<div class="pc-tech">' + techHTML + '</div>' : '') +
       (links ? '<div class="pc-links">' + links + '</div>' : '') +
+      mToggle() +
     '</article>';
   }
 
@@ -2085,7 +2635,233 @@
     pfRender();
   }
 
+  /* Courses grouped by where they were taken. Sources keep the order they
+     first appear in resume.tex, so degree coursework leads and online
+     courses follow, without needing a hardcoded list here. */
+  /* Domain colours for the Courses section. Hues are spread around the wheel
+     and each is solved for a target luminance rather than a fixed lightness —
+     blue and yellow at equal HSL lightness differ hugely in perceived
+     brightness, which left some categories indistinguishable from the page. */
+  let _courseCols = null;
+  function courseColors(domains) {
+    const key = domains.join('|');
+    if (_courseCols && _courseCols.key === key) return _courseCols;
+    const toHex = (r, g, b) =>
+      '#' + [r, g, b].map(v => ('0' + Math.round(v * 255).toString(16)).slice(-2)).join('');
+    const hls = (h, l, s) => {
+      if (s === 0) return [l, l, l];
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+      const f = t => {
+        if (t < 0) t += 1; if (t > 1) t -= 1;
+        if (t < 1/6) return p + (q - p) * 6 * t;
+        if (t < 1/2) return q;
+        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+        return p;
+      };
+      return [f(h + 1/3), f(h), f(h - 1/3)];
+    };
+    const out = { key: key, vivid: {}, ink: {} };
+    const bg = _pageBg();
+    const dark = _relLum(bg) < 0.5;
+    domains.forEach((d, i) => {
+      const h = (i / domains.length + 0.58) % 1;
+      /* Solve for a luminance that clears the page by a wide margin either
+         way, so a filled label is unmissable in both themes. */
+      const target = dark ? Math.max(0.32, _relLum(bg) * 9) : Math.min(0.30, _relLum(bg) / 3);
+      let lo = 0, hi = 1, c = '#888';
+      for (let k = 0; k < 30; k++) {
+        const mid = (lo + hi) / 2;
+        c = toHex.apply(null, hls(h, mid, 0.70));
+        if (_relLum(c) < target) lo = mid; else hi = mid;
+      }
+      out.vivid[d] = c;
+      /* Pick whichever ink actually contrasts more. A fixed brightness
+         cut-off put white text on mid-tone boxes in light mode, which read
+         at about 3:1. */
+      const L = _relLum(c);
+      const onDark  = (L + 0.05) / (_relLum('#12101c') + 0.05);
+      const onLight = (_relLum('#f4f2ff') + 0.05) / (L + 0.05);
+      out.ink[d] = onDark >= onLight ? '#12101c' : '#f4f2ff';
+    });
+    return (_courseCols = out);
+  }
+
+  function renderCourses(courses) {
+    window.__pfRenderCourses = renderCourses;   // let the editor re-render live
+    const el = document.getElementById('courses-list');
+    const featEl = document.getElementById('courses-featured');
+    const section = document.getElementById('courses');
+    if (!el) return;
+    if (!courses || !courses.length) {
+      if (section) section.style.display = 'none';
+      return;
+    }
+    if (section) section.style.display = '';
+
+    const media = SITE_CONFIG.media || {};
+    const cfg = SITE_CONFIG.courses || {};
+    const hidden = media.hiddenCourses || {};
+    const visible = courses.filter(c => hidden[c.name] !== true);
+    const style = cfg.labelStyle === 'text' ? 'text' : 'box';
+
+    const DEFAULT_ORDER = [
+      'Systems & Networking', 'Distributed & Parallel', 'Compilers', 'Security',
+      'AI & Machine Learning', 'Algorithms & Theory', 'Data & Databases',
+      'Robotics', 'Software Engineering', 'Mathematics', 'Foundations', 'Professional'
+    ];
+    const order = cfg.domainOrder || DEFAULT_ORDER;
+    const rank = d => { const i = order.indexOf(d); return i < 0 ? order.length : i; };
+
+    const groups = {};
+    visible.forEach(c => { (groups[c.domain || 'Other'] = groups[c.domain || 'Other'] || []).push(c); });
+    const domains = Object.keys(groups).sort((a, b) => rank(a) - rank(b));
+    const COLS = courseColors(domains);
+
+    /* Featured stays its own block above; the list below carries no extra
+       emphasis for those courses, since that job is already done. */
+    const featured = visible.filter(c => c.featured);
+    if (featEl) {
+      if (featured.length && media.showFeaturedCourses !== false) {
+        featEl.innerHTML =
+          '<h4 class="course-featured-head">Selected coursework' +
+            '<span class="course-count">' + featured.length + '</span></h4>' +
+          '<div class="course-items is-open">' + featured.map(c =>
+          '<article class="course-card is-featured" data-entry="' + escapeHTML(c.name) + '">' +
+            '<h5 class="course-name">' + escapeHTML(c.name) + '</h5>' +
+            (c.description ? '<p class="course-desc">' + escapeHTML(c.description) + '</p>' : '') +
+            '<span class="course-origin">' + escapeHTML(c.source || '') + '</span>' +
+          '</article>').join('') + '</div>';
+        featEl.style.display = '';
+      } else { featEl.innerHTML = ''; featEl.style.display = 'none'; }
+    }
+
+    /* The secondary row used to be "<Domain> b", which announces itself as
+       a demotion. An adjacent name for the same territory reads as a normal
+       category instead. Overridable from site-config. */
+    const ALT = Object.assign({
+      'Systems & Networking':   'Operating Environments',
+      'Distributed & Parallel': 'Large-Scale & Decentralised Systems',
+      'AI & Machine Learning':  'Applied Machine Learning',
+      'Algorithms & Theory':    'Formal Methods',
+      'Data & Databases':       'Data Infrastructure',
+      'Security':               'Applied Security',
+      'Compilers':              'Language Implementation',
+      'Software Engineering':   'Development Practice'
+    }, cfg.altNames || {});
+    const altName = d => ALT[d] || (d + ' — further study');
+
+    const label = (d, n, secondary) => {
+      const text = secondary ? altName(d) : d;
+      if (style === 'text') {
+        return '<div class="course-lab is-text' + (secondary ? ' is-b' : '') + '"' +
+               (secondary ? '' : ' style="color:' + COLS.vivid[d] + '"') + '>' +
+               escapeHTML(text) +
+               '<span class="course-count">' + n + '</span></div>';
+      }
+      /* Filled box. Secondary rows are deliberately uncoloured — a plain
+         outline reads as "same category, less of it" without adding a
+         second tone to keep track of. */
+      return '<div class="course-lab"><span class="lab-box' + (secondary ? ' is-b' : '') + '"' +
+             (secondary ? '' : ' style="background:' + COLS.vivid[d] + ';color:' + COLS.ink[d] + '"') + '>' +
+             escapeHTML(text) +
+             '<span class="course-count">' + n + '</span></span></div>';
+    };
+
+    const line = c =>
+      '<span class="course-line" data-entry="' + escapeHTML(c.name) + '">' +
+        escapeHTML(c.name) +
+        (c.source && /educative|nptel|coursera|udemy/i.test(c.source)
+          ? '<span class="course-ext"> \u2197</span>' : '') +
+        (c.brief ? '<span class="course-gloss">' + escapeHTML(c.brief) + '</span>' : '') +
+      '</span>';
+
+    const cards = (items, d) => items.map(c =>
+      '<article class="course-card" data-entry="' + escapeHTML(c.name) + '"' +
+        ' style="border-left-color:' + COLS.vivid[d] + '">' +
+        '<h5 class="course-name">' + escapeHTML(c.name) + '</h5>' +
+        (c.description ? '<p class="course-desc">' + escapeHTML(c.description) + '</p>' : '') +
+        '<span class="course-origin">' + escapeHTML(c.source || '') + '</span>' +
+      '</article>').join('');
+
+    const row = (d, items, secondary) =>
+      '<section class="course-group is-collapsed' + (secondary ? ' is-secondary' : '') +
+        '" data-domain="' + escapeHTML(d) + '">' +
+        label(d, items.length, secondary) +
+        '<div class="course-body">' +
+          '<div class="course-lines">' + items.map(line).join('') + '</div>' +
+          '<div class="course-items">' + cards(items, d) + '</div>' +
+        '</div>' +
+      '</section>';
+
+    /* Online courses are a different kind of evidence from a degree — chosen
+       rather than required — so they get their own block after the college
+       coursework instead of being mixed into its categories. */
+    const isOnline = c => /educative|nptel|coursera|udemy|edx|online/i.test(c.source || '');
+
+    /* College rows first, in domain order; the lighter-weight rows after
+       them, renamed so they don't read as a demotion. */
+    let main = '', tail = '';
+    domains.forEach(d => {
+      const items = groups[d].filter(c => !isOnline(c));
+      const m = items.filter(c => !c.minor), q = items.filter(c => c.minor);
+      if (m.length) main += row(d, m, false);
+      if (q.length) tail += row(d, q, true);
+    });
+
+    const online = visible.filter(isOnline);
+    let onlineHTML = '';
+    if (online.length) {
+      const providers = {};
+      online.forEach(c => { (providers[c.source] = providers[c.source] || []).push(c); });
+      onlineHTML =
+        '<div class="course-online">' +
+          '<h4 class="course-online-head">Self-directed' +
+            '<span class="course-online-sub">courses taken outside the degree</span>' +
+            '<span class="course-count">' + online.length + '</span></h4>' +
+          '<div class="course-online-list">' +
+            Object.keys(providers).map(p =>
+              providers[p].map(c =>
+                '<article class="course-online-item" data-entry="' + escapeHTML(c.name) + '">' +
+                  '<span class="course-online-prov">' + escapeHTML(p) + '</span>' +
+                  '<span class="course-online-name">' + escapeHTML(c.name) + '</span>' +
+                  (c.description
+                    ? '<span class="course-online-desc">' + escapeHTML(c.description) + '</span>'
+                    : '') +
+                '</article>').join('')
+            ).join('') +
+          '</div>' +
+        '</div>';
+    }
+    el.innerHTML = main + tail + onlineHTML;
+
+    el.querySelectorAll('.course-lab').forEach(lab => {
+      lab.addEventListener('click', () => {
+        const g = lab.parentNode;
+        g.classList.toggle('is-collapsed');
+      });
+    });
+  }
+
+
+  /* Official icon files for skill cards: media.iconFiles[name] is a path or
+     URL, or { light, dark } when the project publishes separate versions for
+     light and dark backgrounds. Shown exactly as published — never recoloured
+     or put on a plate — so a brand mark looks like the real one. Paths are
+     relative to media.imageDir. */
+  function iconFileFor(name) {
+    const media = SITE_CONFIG.media || {};
+    const spec = (media.iconFiles || {})[name];
+    if (!spec) return '';
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const f = typeof spec === 'string' ? spec : ((dark && spec.dark) || spec.light || spec.dark);
+    if (!f) return '';
+    const src = /^(https?:|\/|data:)/.test(f) ? f : (media.imageDir || 'assets/') + f;
+    return '<img class="pc-logo pc-logo-img" src="' + escapeHTML(src) + '" alt="" ' +
+           'width="44" height="44" loading="lazy" decoding="async">';
+  }
+
   function renderSkills(skills) {
+    window.__pfRenderSkills = renderSkills;   // editor re-renders live
     const el = document.getElementById('skills-list');
     if (!el) return;
     const colored = (SITE_CONFIG.media || {}).techLogoColor !== false;
@@ -2103,10 +2879,15 @@
                data-entry makes the card right-clickable like every other
                item, which is what surfaces its source and edit options. */
             const over = ((SITE_CONFIG.media || {}).cardLogos || {})[i];
+            const file = iconFileFor(i);
             let mark = '';
             if (over === '') {
               mark = '';
-            } else if (over) {
+            } else if (file) {
+              mark = file;
+            } else if (over && !(symbolsOn() && /[A-Za-z]/.test(over))) {
+              /* In symbol mode a leftover brand-logo name is ignored (the
+                 card falls through to its symbol); an emoji still wins. */
               const byName = (SITE_CONFIG.logos || [])
                 .filter(l => String(l.n).toLowerCase() === String(over).toLowerCase())[0];
               const monoOn = (SITE_CONFIG.media || {}).monoEmoji === true;
@@ -2115,8 +2896,7 @@
                 : '<span class="card-emoji' + (monoOn ? ' is-mono' : '') + '">' +
                   escapeHTML(monoOn ? String(over) + '\uFE0E' : over) + '</span>';
             } else {
-              const lg = logoFor(i);
-              mark = lg ? logoSVG(lg, colored) : '';
+              mark = techMark(i, false);
             }
             return '<span class="' + (mark ? 'has-logo' : 'is-textonly') +
                    '" data-entry="' + escapeHTML(i) + '">' +
@@ -2155,7 +2935,13 @@
       entries.forEach(e => {
         if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
       });
-    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    /* threshold 0, not a fraction: a fraction is "this share of the section
+       must be visible", and a section taller than about 8x the screen can
+       never reach 12% — on a phone the project list is ~6,200px in a ~670px
+       screen, so it stayed at opacity 0 forever. Any part entering view now
+       triggers it; the bottom margin keeps it fading in as you scroll rather
+       than popping in at the screen's edge. */
+    }, { threshold: 0, rootMargin: '0px 0px -8% 0px' });
     els.forEach(el => io.observe(el));
   }
 
@@ -2516,7 +3302,9 @@
     filters: {},
     logos:  [],
     media:  { imageDir: 'assets/', showIcons: true, iconStyle: 'emoji',
-              showTechLogos: true, techLogoColor: true, showSecondaryLogos: true }
+              showTechLogos: true, techLogoColor: true, showSecondaryLogos: true,
+              skillIcons: 'symbols', cardSymbols: {} },
+    symbols: { map: {}, defs: {} }
   };
 
   let SITE_CONFIG = JSON.parse(JSON.stringify(SITE_CONFIG_DEFAULTS));
@@ -2533,7 +3321,7 @@
            site-config.json never reached the runtime and every tech term
            landed in the same band — which looked exactly like the ordering
            code doing nothing. */
-        ['colors', 'sizes', 'sections', 'media', 'filters'].forEach(k => {
+        ['colors', 'sizes', 'sections', 'media', 'filters', 'courses', 'symbols'].forEach(k => {
           if (json[k] && typeof json[k] === 'object') {
             SITE_CONFIG[k] = Object.assign({}, SITE_CONFIG[k], json[k]);
           }
@@ -2541,6 +3329,47 @@
         return SITE_CONFIG;
       })
       .catch(() => SITE_CONFIG);           // absent file is fine
+  }
+
+
+  /* ---------- Colour overrides, per stylesheet ----------
+     Overrides live in colors.themes[<stylesheet id>][light|dark]; the id
+     comes from the active stylesheet's --theme-id token, so a colour set
+     while one theme is loaded never bleeds into another. A config written
+     before this existed (plain colors.light / colors.dark) still applies
+     to whatever stylesheet is loaded, until the editor migrates it. */
+  function activeThemeId() {
+    const v = getComputedStyle(document.documentElement).getPropertyValue('--theme-id');
+    return (v || '').trim().replace(/^["']|["']$/g, '') || 'default';
+  }
+  function colourSetFor(cfg, mode) {
+    const c = (cfg && cfg.colors) || {};
+    if (c.themes) return ((c.themes[activeThemeId()] || {})[mode]) || {};
+    return c[mode] || {};
+  }
+  function applyColourOverrides(cfg) {
+    const root = document.documentElement;
+    const c = (cfg && cfg.colors) || {};
+    /* Clear every key any set could have written: switching mode OR
+       stylesheet must not leave a stale inline value behind. */
+    const sets = [c.light, c.dark];
+    Object.keys(c.themes || {}).forEach(id => {
+      const t = c.themes[id] || {}; sets.push(t.light, t.dark);
+    });
+    sets.forEach(set => Object.keys(set || {}).forEach(k => {
+      if (k.charAt(0) === '_') return;
+      root.style.removeProperty(k.charAt(0) === '-' ? k : '--' + k);
+    }));
+    const mode = root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    const set = colourSetFor(cfg, mode);
+    Object.keys(set).forEach(k => {
+      if (k.charAt(0) === '_') return;
+      root.style.setProperty(k.charAt(0) === '-' ? k : '--' + k, set[k]);
+    });
+  }
+  if (typeof window !== 'undefined') {     /* the parser is also loaded in node */
+    window.__applyColourOverrides = () => applyColourOverrides(SITE_CONFIG);
+    window.__activeThemeId = activeThemeId;
   }
 
   function applySiteConfig(cfg) {
@@ -2575,23 +3404,7 @@
     if (sizes.maxWidth)  root.style.setProperty('--site-max-w',
       typeof sizes.maxWidth === 'number' ? sizes.maxWidth + 'px' : sizes.maxWidth);
 
-    /* Colour overrides are plain CSS variable assignments, applied for the
-       theme currently in effect. theme-init.js sets data-theme before paint. */
-    const theme = root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
-    const other = theme === 'dark' ? 'light' : 'dark';
-    /* Inline styles on :root outrank the stylesheet, so an override left
-       behind from the other theme would leak across when you switch. Clear
-       the other set first, then apply this one. */
-    Object.keys((cfg.colors && cfg.colors[other]) || {}).forEach(k => {
-      if (k.charAt(0) === '_') return;
-      root.style.removeProperty(k.charAt(0) === '-' ? k : '--' + k);
-    });
-    const overrides = (cfg.colors && cfg.colors[theme]) || {};
-    Object.keys(overrides).forEach(k => {
-      if (k.charAt(0) === '_') return;
-      const name = k.charAt(0) === '-' ? k : '--' + k;
-      root.style.setProperty(name, overrides[k]);
-    });
+    applyColourOverrides(cfg);
   }
 
   /* Per-section size overrides + icon rendering. Called after render so
@@ -2741,6 +3554,7 @@
       'Education':       'education',
       'Internships':     'work',
       'Projects':        'projects-all',
+      'Courses':         'courses',
       'Skills':          'skills',
       'Accomplishments': 'accomplishments'
     };
@@ -2834,6 +3648,7 @@
           if (sec.showInternships === false && sec.showProjects === false) hideSection('work');
         }
         if (sec.showProjects        === false) hideSection('projects-all');
+        if (sec.showCourses         === false) hideSection('courses');
         if (sec.showSkills          === false) hideSection('skills');
         if (sec.showAccomplishments === false) hideSection('recognition');
 
@@ -2846,15 +3661,48 @@
 
         renderContact(contact);
         if (sec.showEducation   !== false) renderEducation(education);
-        if (sec.showInternships !== false) renderInternships(internships);
-        if (sec.showProjects    !== false) {
-          renderProjects(projects, {
-            categoryOrder:          sec.projectCategoryOrder,
-            groupByCategory:        sec.groupProjectsByCategory !== false,
-            expandAllProjects:      !!sec.expandAllProjectsByDefault,
-            showDescriptions:       sec.showProjectDescriptions !== false
+        /* Wrapped so the editor can redraw these two sections in place when a
+           layout setting changes, without a full reload. */
+        const renderWork = () => {
+          if (sec.showInternships !== false) renderInternships(internships);
+          if (sec.showProjects    !== false) {
+            renderProjects(projects, {
+              categoryOrder:          sec.projectCategoryOrder,
+              groupByCategory:        sec.groupProjectsByCategory !== false,
+              expandAllProjects:      !!sec.expandAllProjectsByDefault,
+              showDescriptions:       sec.showProjectDescriptions !== false
+            });
+          }
+        };
+        renderWork();
+        bindMobileToggles();
+        buildMobileMenu();
+
+        /* Logo legibility (lighten a mark, or put a dark one on a plate) is
+           decided when cards are drawn, against the current background. The
+           page draws in whichever theme it loads in, so switching theme left
+           marks tuned for the other one — black Rust, Flask, Express and
+           Linux logos on dark cards. Redraw the cards that carry logos
+           whenever the theme actually changes. */
+        let _lastTheme = document.documentElement.getAttribute('data-theme');
+        new MutationObserver(() => {
+          const t = document.documentElement.getAttribute('data-theme');
+          if (t === _lastTheme) return;
+          _lastTheme = t;
+          requestAnimationFrame(() => {
+            try {
+              if (sec.showSkills !== false) renderSkills(skills);
+              if (window.__pfRenderWork) window.__pfRenderWork();
+            } catch (e) { console.warn('[portfolio] theme redraw failed', e); }
           });
-        }
+        }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
+        requestAnimationFrame(fitDiagramBoxes);
+        /* a diagram hidden at load (the phone version on desktop, say) is
+           fitted the first time it can be measured */
+        window.addEventListener('resize', () => requestAnimationFrame(fitDiagramBoxes));
+        document.addEventListener('click', () => requestAnimationFrame(fitDiagramBoxes));
+        window.__pfRenderWork = () => { renderWork(); loadDeferredImages(); requestAnimationFrame(fitDiagramBoxes); };
+        if (sec.showCourses         !== false) renderCourses(data.courses || []);
         if (sec.showSkills          !== false) renderSkills(skills);
         if (sec.showAccomplishments !== false) renderAccomplishments(accomplishments);
 
@@ -2916,7 +3764,14 @@
           document.dispatchEvent(new CustomEvent('portfolio:rendered', { detail: data }));
         } catch (e) { /* CustomEvent unsupported: editor falls back to polling */ }
         window.__siteConfig = SITE_CONFIG;
-        window.__domainPalette = PF.palette;
+        /* A live view, not a copy: PF.palette is rebuilt (a new object) when
+           the theme changes, and a plain assignment left the editor reading
+           the old day palette in night mode. Writes go through to PF. */
+        Object.defineProperty(window, '__domainPalette', {
+          configurable: true,
+          get: () => PF.palette,
+          set: v => { PF.palette = v; }
+        });
         /* Hook for the dev editor: re-render the filter UI and redraw the
            connector lines after a colour change, without a page reload. */
         window.__pfRedraw = function () { pfRender(); };

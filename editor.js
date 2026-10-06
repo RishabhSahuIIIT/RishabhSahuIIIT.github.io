@@ -50,6 +50,8 @@
      is dev-only and never reaches a visitor, so an extra file
      bought nothing but complexity. Size is irrelevant here.
 
+     ICON_CATALOG.symbols   - skill symbols, original drawings (40)
+     ICON_CATALOG.symbolFor - which symbol each tool gets
      ICON_CATALOG.emoji — keyworded emoji for the picker
      ICON_CATALOG.logos — inline brand SVGs, tiered:
                             t:1 primary   (languages, major tools)
@@ -63,6 +65,93 @@
      in assets/ and point at them with the image field.
      ============================================================ */
   window.ICON_CATALOG = {
+    /* Skill symbols: the whole set lives here, in the editor. Visitors never
+       load this file; Save copies into site-config.json only the drawings
+       the resume's tools use (see buildSymbols).
+
+       Every drawing is original to this site: plain geometry on a 24-unit
+       grid, drawn as outlines (stroke 1.75, round caps and joins), the
+       convention popularised by open icon sets such as Feather and Lucide.
+       No third-party artwork is included, so there is no licence to carry.
+       To add one, write the inner SVG for a 0 0 24 24 viewBox and give it a
+       name here, then point a tool at it in symbolFor below. */
+    symbols: {
+      'cylinder': '<ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v13c0 1.66 3.58 3 8 3s8-1.34 8-3v-13"/><path d="M4 12c0 1.66 3.58 3 8 3s8-1.34 8-3"/>',
+      'braces': '<path d="M8.5 3.5C6.6 3.5 6 4.6 6 6.2v2.6c0 1.6-.9 2.7-2.5 3.2 1.6.5 2.5 1.6 2.5 3.2v2.6c0 1.6.6 2.7 2.5 2.7"/><path d="M15.5 3.5c1.9 0 2.5 1.1 2.5 2.7v2.6c0 1.6.9 2.7 2.5 3.2-1.6.5-2.5 1.6-2.5 3.2v2.6c0 1.6-.6 2.7-2.5 2.7"/><path d="M12 9.6h.01M12 14.4h.01" stroke-width="2.3"/>',
+      'request': '<rect x="14" y="4" width="7" height="16" rx="1.5"/><path d="M17 8h1M17 12h1"/><path d="M3 9h7m-2.5-2.5L10 9l-2.5 2.5"/><path d="M10 15H3m2.5-2.5L3 15l2.5 2.5"/>',
+      'puzzle': '<path d="M3 9h4.7a2.7 2.7 0 1 1 4.6 0H17v4.7a2.7 2.7 0 1 1 0 4.6V21H3z"/>',
+      'server-loop': '<rect x="3" y="14" width="18" height="7" rx="2"/><path d="M7 17.5h.01M10.5 17.5h.01" stroke-width="2.3"/><path d="M14.57 3.44A4 4 0 1 1 10.63 2.74"/><path d="M8.4 1.9l2.2.8-1.2 2.1"/>',
+      'endpoint': '<rect x="3" y="16" width="5" height="5" rx="1"/><path d="M8 18.5h6.5a3.5 3.5 0 0 0 0-7h-5a3.5 3.5 0 0 1 0-7H19"/><path d="m16.5 2 3 2.5-3 2.5"/>',
+      'phone': '<rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M10.5 18.5h3"/>',
+      'terminal': '<rect x="2.5" y="4" width="19" height="16" rx="2.5"/><path d="M2.5 8.5h19"/><path d="M6.5 12l2.5 2-2.5 2"/><path d="M11.5 16.5h4"/>',
+      'containers': '<rect x="2" y="12.5" width="13" height="8" rx="1.2"/><rect x="9" y="3.5" width="13" height="8" rx="1.2"/><path d="M6.3 15v3M10.7 15v3M13.3 6v3M17.7 6v3"/>',
+      'branch': '<circle cx="6.5" cy="5" r="2.3"/><circle cx="6.5" cy="19" r="2.3"/><circle cx="17.5" cy="7.5" r="2.3"/><path d="M6.5 7.3v9.4"/><path d="M17.5 9.8c0 3.6-3.4 4.6-11 5.2"/>',
+      'chip': '<rect x="6" y="6" width="12" height="12" rx="2"/><rect x="9.75" y="9.75" width="4.5" height="4.5" rx=".8"/><path d="M9.5 2.5V6M14.5 2.5V6M9.5 18v3.5M14.5 18v3.5M2.5 9.5H6M2.5 14.5H6M18 9.5h3.5M18 14.5h3.5"/>',
+      'mesh': '<rect x="3" y="3" width="6" height="6" rx="1.2"/><rect x="15" y="3" width="6" height="6" rx="1.2"/><rect x="3" y="15" width="6" height="6" rx="1.2"/><rect x="15" y="15" width="6" height="6" rx="1.2"/><path d="M9 6h6M9 18h6M6 9v6M18 9v6"/>',
+      'job-queue': '<path d="M3 5.5h18M3 11h7M3 16.5h5"/><circle cx="16.5" cy="15.5" r="5"/><path d="M16.5 13v2.7l1.8 1"/>',
+      'tokens': '<path d="M3 5h18"/><path d="M12 8v4.5M9.8 10.5l2.2 2.2 2.2-2.2"/><rect x="2.5" y="16" width="5.5" height="5" rx="1"/><rect x="10" y="16" width="4" height="5" rx="1"/><rect x="16" y="16" width="5.5" height="5" rx="1"/>',
+      'packet': '<rect x="6" y="7" width="16" height="10" rx="1.5"/><path d="M11 7v10M15 7v10"/><path d="M1.5 9.5h2M1.5 12h2.5M1.5 14.5h2"/>',
+      'tree': '<rect x="9.5" y="2.5" width="5" height="5" rx="1"/><rect x="3" y="16.5" width="5" height="5" rx="1"/><rect x="16" y="16.5" width="5" height="5" rx="1"/><path d="M12 7.5V12M5.5 16.5V12h13v4.5"/>',
+      'cube': '<path d="M12 2.5l8 4.5v10l-8 4.5-8-4.5V7z"/><path d="M4 7l8 4.5 8-4.5M12 11.5v10"/>',
+      'grid': '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>',
+      'dataframe': '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 9v12"/><path d="M5 3h14a2 2 0 0 1 2 2v4H3V5a2 2 0 0 1 2-2z" fill="currentColor" fill-opacity=".3" stroke="none"/>',
+      'merge': '<path d="M3 5.5h4c4 0 4 6.5 8 6.5"/><path d="M3 12h18"/><path d="M3 18.5h4c4 0 4-6.5 8-6.5"/><path d="M18 9l3 3-3 3"/>',
+      'robot-arm': '<path d="M2.5 21h10M7.5 21v-2.8"/><circle cx="7.5" cy="16" r="2.2"/><circle cx="13" cy="7.2" r="2.2"/><path d="M8.67 14.13L11.83 9.07M14.97 8.18L18.60 10.00"/><path d="M21.6 8.2l-3 1.8 1.4 3"/>',
+      'chat': '<path d="M5.5 4h13A2.5 2.5 0 0 1 21 6.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4A2.5 2.5 0 0 1 3 14.5v-8A2.5 2.5 0 0 1 5.5 4z"/><path d="M7.5 9h9M7.5 12.5h6"/>',
+      'search': '<circle cx="10.5" cy="10.5" r="7"/><path d="M15.6 15.6L21 21"/><path d="M7.5 9h6M7.5 12.2h4"/>',
+      'laptop': '<rect x="4.5" y="4" width="15" height="11" rx="2"/><path d="M2 19h20"/><rect x="10" y="7.5" width="4" height="4" rx=".8"/>',
+      'neural-net': '<circle cx="4.5" cy="6.5" r="2.1"/><circle cx="4.5" cy="17.5" r="2.1"/><circle cx="12" cy="6.5" r="2.1"/><circle cx="12" cy="17.5" r="2.1"/><circle cx="19.5" cy="12" r="2.1"/><path d="M6.60 6.50L9.90 6.50M5.68 8.24L10.82 15.76M5.68 15.76L10.82 8.24M6.60 17.50L9.90 17.50M13.69 7.74L17.81 10.76M13.69 16.26L17.81 13.24"/>',
+      'file-code': '<path d="M7 2.5h6.7l5.8 5.8V19a2.5 2.5 0 0 1-2.5 2.5H7A2.5 2.5 0 0 1 4.5 19V5A2.5 2.5 0 0 1 7 2.5z"/><path d="M13.5 2.5v6h6"/><path d="M10 12.5L7.8 15l2.2 2.5M14 12.5l2.2 2.5-2.2 2.5"/>',
+      'file-text': '<path d="M7 2.5h6.7l5.8 5.8V19a2.5 2.5 0 0 1-2.5 2.5H7A2.5 2.5 0 0 1 4.5 19V5A2.5 2.5 0 0 1 7 2.5z"/><path d="M13.5 2.5v6h6"/><path d="M8.5 13h7M8.5 17h5"/>',
+      'hammer': '<path d="M4.5 19.5l8.2-8.2"/><rect x="10.5" y="6.25" width="10" height="4.5" rx="1" transform="rotate(45 15.5 8.5)"/>',
+      'drop': '<path d="M12 3c3.2 3.8 6 7.2 6 10.8a6 6 0 0 1-12 0C6 10.2 8.8 6.8 12 3z"/>',
+      'bar-chart': '<path d="M4 3.5v17h17"/><path d="M9 17v-4M13.5 17V8M18 17v-6.5"/>',
+      'code': '<path d="M8 7l-5 5 5 5M16 7l5 5-5 5M13.8 5l-3.6 14"/>',
+      'graph': '<circle cx="5.5" cy="17.5" r="2.3"/><circle cx="12" cy="6" r="2.3"/><circle cx="18.5" cy="15" r="2.3"/><path d="M6.63 15.50L10.87 8.00M13.35 7.86L17.15 13.14M7.76 17.07L16.24 15.43"/>',
+      'two-way': '<path d="M3 12h18"/><path d="M6.5 8.5L3 12l3.5 3.5M17.5 8.5L21 12l-3.5 3.5"/>',
+      'call': '<circle cx="5" cy="17.5" r="2.5"/><circle cx="19.5" cy="6" r="2.5"/><path d="M7 15.9l8.6-6.8"/><path d="M12.4 8.6l3.2.5-.5 3.2"/>',
+      'binary': '<rect x="4" y="3.5" width="5" height="7" rx="2.5"/><path d="M14.5 4.5l2-1v7"/><path d="M5 14.5l1.5-1v7"/><rect x="14" y="13.5" width="5" height="7" rx="2.5"/>',
+      'globe': '<circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="3.8" ry="9"/><path d="M3 12h18"/>',
+      'link': '<circle cx="5" cy="12" r="2.5"/><circle cx="19" cy="12" r="2.5"/><path d="M8.8 12h1.6M11.2 12h1.6M13.6 12h1.6"/>',
+      'panels': '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9.5 9v12"/>',
+      'wall': '<rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M3 9.3h18M3 14.7h18M12 4v5.3M8 9.3v5.4M16 9.3v5.4M12 14.7V20"/>',
+      'robot': '<rect x="4" y="8.5" width="16" height="11.5" rx="3"/><path d="M12 8.5V5"/><circle cx="12" cy="3.8" r="1.2"/><path d="M9 13v2M15 13v2M2 13.5V16M22 13.5V16"/>'
+    },
+    /* Which symbol each tool gets. Keys are normTerm() forms (lower case, no
+       spaces or punctuation). "ext:py" is a file badge reading "py".
+       Two rules: a symbol says what the tool does (no plays on its name),
+       and no two cards share a silhouette - tools of the same kind get
+       visibly different drawings (Flask answers requests, Express routes to
+       an endpoint, Node.js is the server runtime, Ollama runs on your own
+       machine). Add a line here when the resume gains a new tool. */
+    symbolFor: {
+      // languages - file badge with the extension
+      python: 'ext:py', c: 'ext:c', 'c++': 'ext:c++', 'cc++': 'ext:c++', cpp: 'ext:c++',
+      rust: 'ext:rs', java: 'ext:java', typescript: 'ext:ts', dart: 'ext:dart',
+      sql: 'ext:sql', html5: 'ext:html', html: 'ext:html', css: 'ext:css', css3: 'ext:css',
+      javascript: 'ext:js', bash: 'ext:sh', gnubash: 'ext:sh', shell: 'ext:sh',
+      // data stores
+      postgresql: 'cylinder', mysql: 'cylinder', indexeddb: 'cylinder', mongodb: 'braces',
+      // web
+      flask: 'request', react: 'puzzle', nodejs: 'server-loop', express: 'endpoint',
+      flutter: 'phone', vite: 'hammer', tailwindcss: 'drop', chartjs: 'bar-chart',
+      codemirror6: 'code', reagraph: 'graph',
+      websocket: 'two-way', grpc: 'call', protocolbuffers: 'binary',
+      http: 'globe', tcp: 'link',
+      // systems and tooling
+      linux: 'terminal', 'curses(tui)': 'panels', docker: 'containers',
+      git: 'branch', llvm: 'chip', mpi: 'mesh', slurm: 'job-queue',
+      gnuflexlex: 'tokens', flex: 'tokens', lex: 'tokens', scapy: 'packet',
+      iptables: 'wall',
+      // concepts
+      datastructuresandalgorithms: 'tree', objectorientedprogramming: 'cube',
+      // data and ML
+      numpy: 'grid', pandas: 'dataframe', pyspark: 'merge', pybullet: 'robot-arm',
+      pymupdf: 'file-text',
+      // AI tools
+      claude: 'chat', perplexity: 'search', ollama: 'laptop',
+      llama: 'neural-net', 'llama3132': 'neural-net', moyaframework: 'robot'
+    },
     emoji: {
     categories: [
       {
@@ -221,18 +310,10 @@
         d: 'M14.23 12.004a2.236 2.236 0 01-2.235 2.236 2.236 2.236 0 01-2.236-2.236 2.236 2.236 0 012.235-2.236 2.236 2.236 0 012.236 2.236zm2.648-10.69c-1.346 0-3.107.96-4.888 2.622-1.78-1.653-3.542-2.602-4.887-2.602-.41 0-.783.093-1.106.278-1.375.793-1.683 3.264-.973 6.365C1.98 8.917 0 10.42 0 12.004c0 1.59 1.99 3.097 5.043 4.03-.704 3.113-.39 5.588.988 6.38.32.187.69.275 1.102.275 1.345 0 3.107-.96 4.888-2.624 1.78 1.654 3.542 2.603 4.887 2.603.41 0 .783-.09 1.106-.275 1.374-.792 1.683-3.263.973-6.365C22.02 15.096 24 13.59 24 12.004c0-1.59-1.99-3.097-5.043-4.032.704-3.11.39-5.587-.988-6.38-.318-.184-.688-.277-1.092-.278zm-.005 1.09v.006c.225 0 .406.044.558.127.666.382.955 1.835.73 3.704-.054.46-.142.945-.25 1.44a23.476 23.476 0 00-3.107-.534A23.892 23.892 0 0012.769 4.7c1.592-1.48 3.087-2.292 4.105-2.295zm-9.77.02c1.012 0 2.514.808 4.11 2.28-.686.72-1.37 1.537-2.02 2.442a22.73 22.73 0 00-3.113.538 15.02 15.02 0 01-.254-1.42c-.23-1.868.054-3.32.714-3.707.19-.09.4-.127.563-.132zm4.882 3.05c.455.468.91.992 1.36 1.564-.44-.02-.89-.034-1.345-.034-.46 0-.915.01-1.36.034.44-.572.895-1.096 1.345-1.565zM12 8.1c.74 0 1.477.034 2.202.093.406.582.802 1.203 1.183 1.86.372.64.71 1.29 1.018 1.946-.308.655-.646 1.31-1.013 1.95-.38.66-.773 1.288-1.18 1.87a25.64 25.64 0 01-4.412.005 26.64 26.64 0 01-1.183-1.86c-.372-.64-.71-1.29-1.018-1.946a25.17 25.17 0 011.013-1.954c.38-.66.773-1.286 1.18-1.868A25.245 25.245 0 0112 8.098zm-3.635.254c-.24.377-.48.763-.704 1.16-.225.39-.435.782-.635 1.174-.265-.656-.49-1.31-.676-1.947.64-.15 1.315-.283 2.015-.386zm7.26 0c.695.103 1.365.23 2.006.387-.18.632-.405 1.282-.66 1.933a25.952 25.952 0 00-1.345-2.32zm3.063.675c.484.15.944.317 1.375.498 1.732.74 2.852 1.708 2.852 2.476-.005.768-1.125 1.74-2.857 2.475-.42.18-.88.342-1.355.493a23.966 23.966 0 00-1.1-2.98c.45-1.017.81-2.01 1.085-2.964zm-13.395.004c.278.96.645 1.957 1.1 2.98a23.142 23.142 0 00-1.086 2.964c-.484-.15-.944-.318-1.37-.5-1.732-.737-2.852-1.706-2.852-2.474 0-.768 1.12-1.742 2.852-2.476.42-.18.88-.342 1.356-.494zm11.678 4.28c.265.657.49 1.312.676 1.948-.64.157-1.316.29-2.016.39a25.819 25.819 0 001.341-2.338zm-9.945.02c.2.392.41.783.635 1.175.23.39.465.772.705 1.143a22.005 22.005 0 01-2.006-.386c.18-.63.406-1.282.665-1.933zM12 14.75c.46 0 .915-.01 1.36-.034-.44.572-.895 1.095-1.345 1.565-.455-.47-.91-.993-1.36-1.565.44.02.89.034 1.345.034zm-2.335 2.98c.686-.72 1.37-1.536 2.02-2.44a22.73 22.73 0 003.113-.538c.135.52.24 1.02.318 1.5.23 1.868-.054 3.32-.714 3.708-.19.09-.4.127-.563.132-1.012 0-2.514-.807-4.11-2.28z' },
       { n: 'Docker', t: 1,      c: '#2496ED', match: ['docker', 'container'],
         d: 'M13.983 11.078h2.119a.186.186 0 00.186-.185V9.006a.186.186 0 00-.186-.186h-2.119a.185.185 0 00-.185.185v1.888c0 .102.083.185.185.185m-2.954-5.43h2.118a.187.187 0 00.186-.186V3.574a.186.186 0 00-.186-.185h-2.118a.185.185 0 00-.185.185v1.888c0 .102.082.185.185.186m0 2.716h2.118a.187.187 0 00.186-.186V6.29a.186.186 0 00-.186-.185h-2.118a.185.185 0 00-.185.185v1.887c0 .102.082.185.185.186m-2.93 0h2.12a.186.186 0 00.184-.186V6.29a.185.185 0 00-.185-.185H8.1a.185.185 0 00-.185.185v1.887c0 .102.083.185.185.186m-2.964 0h2.119a.186.186 0 00.185-.186V6.29a.185.185 0 00-.185-.185H5.136a.186.186 0 00-.186.185v1.887c0 .102.084.185.186.186m5.893 2.715h2.118a.186.186 0 00.186-.185V9.006a.186.186 0 00-.186-.186h-2.118a.185.185 0 00-.185.185v1.888c0 .102.082.185.185.185m-2.93 0h2.12a.185.185 0 00.184-.185V9.006a.185.185 0 00-.184-.186h-2.12a.185.185 0 00-.184.185v1.888c0 .102.083.185.185.185m-2.964 0h2.119a.185.185 0 00.185-.185V9.006a.185.185 0 00-.184-.186h-2.12a.186.186 0 00-.186.186v1.887c0 .102.084.185.186.185m-2.92 0h2.12a.185.185 0 00.184-.185V9.006a.185.185 0 00-.184-.186h-2.12a.185.185 0 00-.184.185v1.888c0 .102.082.185.185.185M23.763 9.89c-.065-.051-.672-.51-1.954-.51-.338.001-.676.03-1.01.087-.248-1.7-1.653-2.53-1.716-2.566l-.344-.199-.226.327c-.284.438-.49.922-.612 1.43-.23.97-.09 1.882.403 2.661-.595.332-1.55.413-1.744.42H.751a.751.751 0 00-.75.748 11.376 11.376 0 00.692 4.062c.545 1.428 1.355 2.48 2.41 3.124 1.18.723 3.1 1.137 5.275 1.137a16.19 16.19 0 002.996-.271 12.481 12.481 0 003.917-1.425 10.78 10.78 0 002.676-2.185c1.259-1.428 2.008-3.02 2.565-4.437h.221c1.372 0 2.215-.549 2.68-1.009.309-.293.55-.65.707-1.046l.098-.288z' },
-      { n: 'NumPy', t: 1,       c: '#013243', match: ['numpy', 'np'],
-        d: 'M10.315 4.876l3.53 1.474-3.53 1.475-3.53-1.475zm-4.53 2.474l3.53 1.475v3.472l-3.53-1.474zm9.06 0v3.473l-3.53 1.474V8.825zM.755 9.324l3.53 1.475v3.472l-3.53-1.474zm19.49 0v3.473l-3.53 1.474v-3.473zm-14.96 2.474l3.53 1.475v3.472l-3.53-1.474zm10.43 0v3.473l-3.53 1.474v-3.473zM10.315 14.3l3.53 1.474-3.53 1.475-3.53-1.475z' },
       { n: 'Flask', t: 2,       c: '#000000', match: ['flask'],
         d: 'M6.383 5.541c-.09-.244-.28-.44-.52-.54a1.06 1.06 0 00-.75 0c-.24.1-.43.296-.52.54L1.06 15.86a2.68 2.68 0 002.51 3.6h16.86a2.68 2.68 0 002.51-3.6L19.41 5.54a1.06 1.06 0 00-2 0l-2.86 7.77-2.26-6.14a1.06 1.06 0 00-2 0L8.03 13.3z' },
-      { n: 'LLVM', t: 1,        c: '#262D3A', match: ['llvm', 'llvm ir', 'clang'],
-        d: 'M5.5 2h2v14a2 2 0 002 2h9v2h-9a4 4 0 01-4-4V2zm11 0h2v6h-2V2zm-4 0h2v6h-2V2z' },
       { n: 'Git', t: 1,         c: '#F05032', match: ['git', 'github', 'gitlab', 'version control'],
         d: 'M23.546 10.93L13.067.452a1.55 1.55 0 00-2.19 0L8.708 2.62l2.76 2.76a1.838 1.838 0 012.327 2.341l2.658 2.66a1.838 1.838 0 011.9 3.039 1.837 1.837 0 01-3.001-2.001l-2.48-2.478v6.525a1.838 1.838 0 11-2.13.336 1.838 1.838 0 01.597-.394V8.835a1.84 1.84 0 01-.999-2.412L7.626 3.7.452 10.876a1.55 1.55 0 000 2.19l10.48 10.48a1.55 1.55 0 002.19 0l10.424-10.427a1.55 1.55 0 000-2.19' },
-      { n: 'Pandas', t: 2,      c: '#150458', match: ['pandas', 'dataframe'],
-        d: 'M16.922 0h3.822v24h-3.822zm-4.503 12.24h3.821v5.529h-3.82zm0-8.579h3.821v5.482h-3.82zM7.915 0h3.822v24H7.915zm-4.502 14.231h3.821v5.53h-3.82zm0-8.578h3.821v5.482h-3.82z' },
-      { n: 'Ollama', t: 2,      c: '#000000', match: ['ollama', 'llama', 'llama 3.1/3.2'],
-        d: 'M12 2c-2.2 0-4 1.8-4 4v1.5C6.8 8.3 6 9.6 6 11v4c0 2.2 1.8 4 4 4h4c2.2 0 4-1.8 4-4v-4c0-1.4-.8-2.7-2-3.5V6c0-2.2-1.8-4-4-4zm-2 8c.6 0 1 .4 1 1s-.4 1-1 1-1-.4-1-1 .4-1 1-1zm4 0c.6 0 1 .4 1 1s-.4 1-1 1-1-.4-1-1 .4-1 1-1z' },
       { n: 'Vite', t: 2,        c: '#646CFF', match: ['vite'],
         d: 'M8.286 10.578l.512-8.657a.306.306 0 01.247-.282L17.377.006a.306.306 0 01.353.385l-1.558 5.403a.306.306 0 00.352.385l2.388-.46a.306.306 0 01.332.438l-6.79 13.55-.123.19a.294.294 0 01-.252.14c-.177 0-.35-.152-.305-.369l1.095-5.301a.306.306 0 00-.388-.355l-1.433.435a.306.306 0 01-.389-.354l.69-3.375a.306.306 0 00-.37-.36l-2.32.536a.306.306 0 01-.374-.316z' },
       { n: 'Tailwind CSS', t: 2,c: '#06B6D4', match: ['tailwind', 'tailwind css'],
@@ -245,12 +326,10 @@
         d: 'M12 0L1.5 6v12L12 24l10.5-6V6L12 0zm0 2.3l8.5 4.9v9.6L12 21.7 3.5 16.8V7.2L12 2.3zm0 3.4a6.3 6.3 0 100 12.6 6.3 6.3 0 000-12.6zm0 2.1a4.2 4.2 0 110 8.4 4.2 4.2 0 010-8.4z' },
       { n: 'C', t: 1,           c: '#A8B9CC', match: ['c', 'ansi c'],
         d: 'M16.5921 9.1962s-.354-3.298-3.627-3.234c-3.2741.063-4.4552 2.1-4.4552 6.02 0 3.9181 1.3771 6.1783 4.6062 6.1783 3.2291 0 3.4763-3.4143 3.4763-3.4143l5.0942.0301s.1801 2.5111-1.7502 4.5252c-1.9302 2.014-4.3611 2.7311-7.0002 2.7311S3.4489 21.7 1.7327 17.7259C.9058 15.8107.7 13.9245.7 12.0002c0-1.9243.2058-3.8105 1.0327-5.7257C3.4489 2.3 8.9302 1.6 11.5352 1.6c2.6051 0 5.07.7171 7.0002 2.7312 1.9303 2.014 1.7502 4.5252 1.7502 4.5252z' },
-      { n: 'MPI', t: 2,         c: '#005B96', match: ['mpi', 'openmpi', 'slurm', 'parallel'],
+      { n: 'MPI', t: 2,         c: '#005B96', match: ['mpi', 'openmpi', 'parallel'],
         d: 'M4 4h4v4H4V4zm6 0h4v4h-4V4zm6 0h4v4h-4V4zM4 10h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4zM4 16h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4z' },
 
       /* Terms that appear only in the Tools section, not in any project. */
-      { n: 'Claude', t: 1,      c: '#D97757', match: ['claude', 'anthropic'],
-        d: 'M12 2.4l2.9 6.1 6.7.9-4.9 4.6 1.3 6.6L12 17.5l-6 3.1 1.3-6.6L2.4 9.4l6.7-.9L12 2.4z' },
       { n: 'Perplexity', t: 1,  c: '#20808D', match: ['perplexity'],
         d: 'M12 2L3 7v10l9 5 9-5V7l-9-5zm0 2.3l6.8 3.8L12 11.9 5.2 8.1 12 4.3zM5 9.8l6 3.4v6.6l-6-3.3V9.8zm14 0v6.7l-6 3.3v-6.6l6-3.4z' },
 
@@ -261,8 +340,6 @@
         d: 'M12 2c-4.4 0-8 1.3-8 3v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5c0-1.7-3.6-3-8-3zm0 2c3.9 0 6 1.1 6 1s-2.1 1-6 1-6-1.1-6-1 2.1-1 6-1zm6 15c0 .5-2.1 1-6 1s-6-.5-6-1v-2.3c1.5.8 3.7 1.3 6 1.3s4.5-.5 6-1.3V19zm0-5c0 .5-2.1 1-6 1s-6-.5-6-1v-2.3c1.5.8 3.7 1.3 6 1.3s4.5-.5 6-1.3V14zm0-5c0 .5-2.1 1-6 1s-6-.5-6-1V6.7C7.5 7.5 9.7 8 12 8s4.5-.5 6-1.3V9z' },
       { n: 'MySQL', t: 1,       c: '#00758F', match: ['sql', 'mysql', 'rdbms'],
         d: 'M12 2C7.6 2 4 3.3 4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5c0-1.7-3.6-3-8-3zm0 2c3.9 0 6 1.1 6 1s-2.1 1-6 1-6-1.1-6-1 2.1-1 6-1zM6 8.7C7.5 9.5 9.7 10 12 10s4.5-.5 6-1.3V12c0 .5-2.1 1-6 1s-6-.5-6-1V8.7zm0 6C7.5 15.5 9.7 16 12 16s4.5-.5 6-1.3V19c0 .5-2.1 1-6 1s-6-.5-6-1v-4.3z' },
-      { n: 'Linux', t: 1,       c: '#4A4A4A', match: ['linux', 'linux api', 'unix'],
-        d: 'M12 2a5 5 0 00-5 5v3.2c0 .9-.3 1.7-.9 2.4L4.4 15c-.9 1.1-.6 2.7.6 3.4l.6.3A9 9 0 0012 20a9 9 0 006.4-1.3l.6-.3c1.2-.7 1.5-2.3.6-3.4l-1.7-2.4a3.6 3.6 0 01-.9-2.4V7a5 5 0 00-5-5zm-1.6 5.2a.9.9 0 110 1.8.9.9 0 010-1.8zm3.2 0a.9.9 0 110 1.8.9.9 0 010-1.8zM12 11.4l2.2 1.4-2.2 1.4-2.2-1.4L12 11.4z' },
       { n: 'GNU Bash', t: 1,    c: '#3E4A52', match: ['bash', 'gnu bash', 'shell', 'sh', 'zsh'],
         d: 'M3 4h18a1 1 0 011 1v14a1 1 0 01-1 1H3a1 1 0 01-1-1V5a1 1 0 011-1zm1 3v11h16V7H4zm2.6 2.1l1.3-1.3 3.6 3.6-3.6 3.6-1.3-1.3 2.3-2.3-2.3-2.3zM12 14.6h5v1.8h-5v-1.8z' },
       { n: 'Java', t: 1,        c: '#ED8B00', match: ['java', 'jvm'],
@@ -286,7 +363,21 @@
       { n: 'Node.js', t: 1,     c: '#5FA04E', match: ['node.js', 'nodejs', 'node', 'npm'],
         d: 'M11.998 24c-.321 0-.641-.084-.922-.247l-2.936-1.737c-.438-.245-.224-.332-.08-.383.585-.203.703-.25 1.328-.604.065-.037.151-.023.218.017l2.256 1.339c.082.045.197.045.272 0l8.795-5.076c.082-.047.134-.141.134-.238V6.921c0-.099-.053-.192-.137-.242l-8.791-5.072c-.081-.047-.189-.047-.271 0L3.075 6.68c-.084.05-.139.145-.139.241v10.15c0 .097.055.189.139.235l2.409 1.392c1.307.654 2.108-.116 2.108-.89V7.787c0-.142.114-.253.256-.253h1.115c.139 0 .255.112.255.253v10.021c0 1.745-.95 2.745-2.604 2.745-.508 0-.909 0-2.026-.551L2.28 18.675c-.57-.329-.922-.945-.922-1.604V6.921c0-.659.353-1.275.922-1.603L11.076.242c.555-.313 1.294-.313 1.844 0l8.795 5.076c.57.329.924.944.924 1.603v10.15c0 .659-.354 1.273-.924 1.604l-8.795 5.078c-.28.163-.599.247-.922.247zm2.717-6.993c-3.849 0-4.653-1.766-4.653-3.246 0-.14.114-.253.255-.253h1.136c.126 0 .231.091.251.215.171 1.157.682 1.741 3.010 1.741 1.852 0 2.640-.419 2.640-1.402 0-.566-.224-.986-3.101-1.268-2.406-.238-3.894-.769-3.894-2.692 0-1.774 1.494-2.83 3.999-2.83 2.814 0 4.207.977 4.383 3.074a.256.256 0 01-.255.278h-1.141a.255.255 0 01-.249-.2c-.273-1.216-.938-1.605-2.738-1.605-2.016 0-2.251.702-2.251 1.229 0 .638.276.823 3.005 1.184 2.702.357 3.99.862 3.99 2.760 0 1.915-1.596 3.014-4.378 3.014z' },
       { n: 'Express', t: 2,     c: '#000000', match: ['express', 'expressjs'],
-        d: 'M24 18.588a1.529 1.529 0 01-1.895-.72l-3.45-4.771-.5-.667-4.003 5.444a1.466 1.466 0 01-1.802.708l5.158-6.92-4.798-6.251a1.595 1.595 0 011.9.666l3.576 4.83 3.596-4.81a1.435 1.435 0 011.788-.668L21.708 7.9l-2.522 3.283a.666.666 0 000 .994L24 18.588zM.002 11.576l.42-2.075c1.154-4.103 5.858-5.81 9.094-3.27 1.895 1.489 2.368 3.597 2.275 5.973H1.116C.943 16.447 4.005 19.009 7.92 17.7a4.078 4.078 0 002.582-2.876c.207-.666.548-.78 1.174-.588a5.417 5.417 0 01-2.589 3.957 6.272 6.272 0 01-7.306-.933 6.575 6.575 0 01-1.64-3.858c0-.235-.08-.455-.134-.666A88.33 88.33 0 010 11.577zm1.127-.286h9.654c-.06-3.076-2.001-5.258-4.59-5.278-2.882-.04-4.944 2.094-5.071 5.264z' }
+        d: 'M24 18.588a1.529 1.529 0 01-1.895-.72l-3.45-4.771-.5-.667-4.003 5.444a1.466 1.466 0 01-1.802.708l5.158-6.92-4.798-6.251a1.595 1.595 0 011.9.666l3.576 4.83 3.596-4.81a1.435 1.435 0 011.788-.668L21.708 7.9l-2.522 3.283a.666.666 0 000 .994L24 18.588zM.002 11.576l.42-2.075c1.154-4.103 5.858-5.81 9.094-3.27 1.895 1.489 2.368 3.597 2.275 5.973H1.116C.943 16.447 4.005 19.009 7.92 17.7a4.078 4.078 0 002.582-2.876c.207-.666.548-.78 1.174-.588a5.417 5.417 0 01-2.589 3.957 6.272 6.272 0 01-7.306-.933 6.575 6.575 0 01-1.64-3.858c0-.235-.08-.455-.134-.666A88.33 88.33 0 010 11.577zm1.127-.286h9.654c-.06-3.076-2.001-5.258-4.59-5.278-2.882-.04-4.944 2.094-5.071 5.264z' },
+      { n: "GNU Flex/Lex", t: 2, c: '#a9b84f', s: 1, match: ["gnu flex/lex", "flex", "lex", "gnu flex", "lexer"],
+        d: 'M3 5.5h18M3 9.5h11M3.5 14h4.5v5H3.5zM10 14h4v5h-4zM16 14h4.5v5H16zM12 9.5v2.5' },
+      { n: "Scapy", t: 2, c: '#4fa3dc', s: 1, match: ["scapy"],
+        d: 'M3.5 4h17v4.5h-17zM5.5 8.5h13V13h-13zM7.5 13h9v4.5h-9zM12 17.5V21M9.5 19.5 12 21l2.5-1.5' },
+      { n: "Pyspark", t: 2, c: '#e8783f', s: 1, match: ["pyspark", "spark", "apache spark"],
+        d: 'M12 3.5l1.6 4.1 4.1 1.6-4.1 1.6L12 15l-1.6-4.2L6.3 9.2l4.1-1.6zM5 20.5h2.5M10.75 20.5h2.5M16.5 20.5H19M12 15v3.5M6.3 18.5 9 15.5M17.7 18.5 15 15.5' },
+      { n: "PyBullet", t: 2, c: '#57b9a8', s: 1, match: ["pybullet", "bullet", "physics"],
+        d: 'M11.5 8.5a4 4 0 1 0 8 0a4 4 0 1 0 -8 0M3 5.5h6M2.5 9h6M4 12.5h5M3 20.5h18M12 18.2h7' },
+      { n: "Data Structures and Algorithms", t: 2, c: '#e09b5a', s: 1, match: ["data structures and algorithms", "dsa", "data structures", "algorithms"],
+        d: 'M9.8 4.5a2.2 2.2 0 1 0 4.4 0a2.2 2.2 0 1 0 -4.4 0M3.8 12a2.2 2.2 0 1 0 4.4 0a2.2 2.2 0 1 0 -4.4 0M15.8 12a2.2 2.2 0 1 0 4.4 0a2.2 2.2 0 1 0 -4.4 0M1.5 19.5a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M7 19.5a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M10.4 6.1 7.6 10.4M13.6 6.1l2.8 4.3M5 13.9l-1 3.6M7 13.9l1.4 3.6' },
+      { n: "Object Oriented Programming", t: 2, c: '#9d82e2', s: 1, match: ["object oriented programming", "oop", "object-oriented programming"],
+        d: 'M7 2.5h10v6.5H7zM7 5.3h10M12 9l2 2.8h-4zM12 11.8v2.2M5.5 14h13M5.5 14v2M18.5 14v2M2.5 16h6v5.5h-6zM15.5 16h6v5.5h-6z' },
+      { n: 'SLURM', t: 2, c: '#6fa8dc', s: 1, match: ['slurm'],
+        d: 'M3 5.5h7M3 9.5h7M3 13.5h7M11.5 9.5h3.2M13.4 7.6l2 1.9-2 1.9M16.5 4.5h4.5v10h-4.5zM17.8 7.5h2M17.8 10.5h2M4 19.5h16' }
     ]
   };
 
@@ -380,6 +471,11 @@
     '.ed-row input[type=range]{flex:2;}',
     '.ed-row .ed-val{width:36px;text-align:right;opacity:.65;}',
     '.ed-sw{display:flex;flex-wrap:wrap;gap:3px;margin:3px 0 8px;}',
+    '.ed-symgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(30px,1fr));gap:4px;margin:4px 0 8px;}',
+    '.ed-sym{height:30px;padding:4px;border:1px solid var(--rule,#ccc);border-radius:5px;background:transparent;cursor:pointer;line-height:0;}',
+    '.ed-sym svg{width:100%;height:100%;margin:0;vertical-align:top;color:inherit;}',
+    '.ed-sym:hover{border-color:var(--accent,#b5452a);}',
+    '.ed-sym.is-on{border-color:var(--accent,#b5452a);box-shadow:inset 0 0 0 1px var(--accent,#b5452a);}',
     '.ed-pick{width:20px;height:22px;border:1px solid var(--rule,#ccc);border-radius:4px;',
     '  background:transparent;color:inherit;cursor:pointer;font-size:9px;line-height:1;padding:0;}',
     '.ed-pop{display:none;margin:4px 0 8px;padding:6px;border:1px solid var(--rule,#ccc);',
@@ -561,6 +657,434 @@
     }
   }
 
+
+  /* ============================================================
+     Docked inspector
+     ------------------------------------------------------------
+     The editor used to be four free-floating windows — the main
+     panel, the item panel, a preview and a source editor — each
+     positioned on its own, so they piled on top of each other and
+     over the page. Now there is one panel fixed to the right edge,
+     and the page shifts left to make room for it: nothing covers
+     the content and nothing can overlap. Preview and source
+     editing are tabs inside it.
+
+     The controls themselves are unchanged; build() still creates
+     them. dockify() only re-homes each section into a tab.
+     ============================================================ */
+  var dock = { panes: {}, tabs: {}, active: null, selEl: null };
+
+  var DOCK_TABS = [
+    ['inspect',    'Inspect'],
+    ['look',       'Look'],
+    ['content',    'Content'],
+    ['visibility', 'Visibility'],
+    ['source',     'Source']
+  ];
+
+  /* Which tab, and which group within it, each existing section belongs to.
+     Matched on the section heading so it survives small wording changes. */
+  var DOCK_MAP = [
+    [/^palette/i,                 'look',       'Theme & colour'],
+    [/^colours/i,                 'look',       'Theme & colour'],
+    [/^domains/i,                 'look',       'Theme & colour'],
+    [/^size/i,                    'look',       'Type & spacing'],
+    [/^per-section/i,             'look',       'Type & spacing'],
+    [/^global/i,                  'look',       'Effects'],
+    [/^text/i,                    'content',    'Words'],
+    [/^section titles/i,          'content',    'Words'],
+    [/^portrait/i,                'content',    'Media'],
+    [/^icon \/ image/i,           'content',    'Media'],
+    [/^project diagrams/i,        'content',    'Media'],
+    [/^courses/i,                 'content',    'Sections'],
+    [/^projects dropdown/i,       'content',    'Sections'],
+    [/^hidden items/i,            'visibility', 'Hidden'],
+    [/^show \/ hide/i,            'visibility', 'Hidden'],
+    [/^resume source/i,           'source',     'Files']
+  ];
+
+  var DOCK_CSS = [
+    'html.ed-docked body{margin-right:var(--ed-w,400px)!important;transition:margin-right .2s ease;}',
+    '.ed-panel.ed-dock{position:fixed;top:0;right:0;left:auto!important;bottom:0;width:var(--ed-w,400px);',
+    '  max-height:none;height:100vh;border-radius:0;border:0;border-left:1px solid var(--rule,#ccc);',
+    '  padding:0;display:none;flex-direction:column;overflow:hidden;',
+    '  box-shadow:-10px 0 30px rgba(0,0,0,.18);font-size:11.5px;}',
+    '.ed-panel.ed-dock.open{display:flex;}',
+    '.ed-dock .ed-grip{display:none;}',
+    '.ed-dock-hd{flex:0 0 auto;padding:12px 14px 0;border-bottom:1px solid var(--rule,#ccc);}',
+    '.ed-dock-top{display:flex;align-items:center;gap:8px;margin-bottom:10px;}',
+    '.ed-dock-top b{font-size:12px;letter-spacing:.06em;text-transform:uppercase;}',
+    '.ed-dock-top .sp{flex:1;}',
+    '.ed-dock-ic{border:1px solid var(--rule,#ccc);background:transparent;color:inherit;cursor:pointer;',
+    '  border-radius:6px;font:inherit;font-size:11px;padding:3px 8px;}',
+    '.ed-dock-ic:hover{border-color:var(--accent,#8a5a44);}',
+    '.ed-tabs{display:flex;gap:2px;}',
+    '.ed-tab{flex:1;border:0;background:transparent;color:inherit;opacity:.6;cursor:pointer;font:inherit;',
+    '  font-size:11px;padding:7px 2px 9px;border-bottom:2px solid transparent;margin-bottom:-1px;}',
+    '.ed-tab:hover{opacity:.9;}',
+    '.ed-tab.on{opacity:1;border-bottom-color:var(--accent,#8a5a44);font-weight:600;}',
+    '.ed-dock-body{flex:1 1 auto;overflow-y:auto;padding:14px;}',
+    '.ed-pane{display:none;}',
+    '.ed-pane.on{display:block;}',
+    '.ed-dock-ft{flex:0 0 auto;border-top:1px solid var(--rule,#ccc);padding:10px 14px;',
+    '  background:var(--bg-soft,#fff);}',
+    '.ed-dock-ft .ed-btns{margin:0;}',
+    '.ed-dock-ft .ed-note{margin:6px 0 0;}',
+    /* groups: a caption over related sections */
+    '.ed-cap{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;opacity:.5;',
+    '  margin:18px 0 6px;}',
+    '.ed-cap:first-child{margin-top:0;}',
+    '.ed-group{margin-bottom:6px;}',
+    '.ed-group.ed-miss{display:none;}',
+    '.ed-search{width:100%;font:inherit;font-size:11.5px;padding:7px 10px;margin-bottom:12px;',
+    '  border:1px solid var(--rule,#ccc);border-radius:7px;background:transparent;color:inherit;}',
+    /* resize handle on the left edge */
+    '.ed-resize{position:absolute;left:-3px;top:0;bottom:0;width:7px;cursor:ew-resize;z-index:2;}',
+    '.ed-resize:hover{background:linear-gradient(90deg,transparent 2px,var(--accent,#8a5a44) 2px,',
+    '  var(--accent,#8a5a44) 4px,transparent 4px);}',
+    /* inspect tab */
+    '.ed-empty{opacity:.65;line-height:1.6;padding:6px 2px;}',
+    '.ed-empty b{opacity:1;}',
+    '.ed-dock .ed-pvwin{position:static!important;display:none;width:auto!important;max-width:none;',
+    '  min-width:0;box-shadow:none;border:1px solid var(--rule,#ccc);border-radius:10px;',
+    '  resize:none;margin-bottom:14px;overflow:hidden;}',
+    '.ed-dock .ed-pvwin.open{display:block;}',
+    '.ed-dock .ed-pvwin-bar{cursor:default;}',
+    '.ed-dock .ed-pvwin-x{display:none;}',
+    '.ed-dock .ed-pvwin-body{padding:10px;max-height:none;overflow:hidden;}',
+    '.ed-clip{position:relative;overflow:hidden;border-radius:6px;background:var(--bg,#fff);}',
+    '.ed-clip-in{transform-origin:0 0;pointer-events:none;}',
+    '.ed-clip-in .reveal{opacity:1!important;transform:none!important;}',
+    '.ed-dock .ed-item{display:block;border:0;padding:0;margin:0;}',
+    '.ed-dock .ed-item-close{display:none;}',
+    /* source tab */
+    '.ed-dock .ed-doc{position:static!important;display:none;width:auto!important;max-width:none;',
+    '  min-width:0;box-shadow:none;border:1px solid var(--rule,#ccc);border-radius:10px;',
+    '  resize:none;margin-top:14px;overflow:hidden;}',
+    '.ed-dock .ed-doc.open{display:block;}',
+    '.ed-dock .ed-doc .ed-pvwin-x{display:none;}',
+    '.ed-dock .ed-doc textarea{height:calc(100vh - 330px)!important;min-height:240px;resize:none!important;}',
+    /* the page element currently being inspected */
+    '.ed-selected{outline:2px dashed var(--accent,#8a5a44)!important;outline-offset:6px;}',
+    'html.ed-docked .ed-fab{display:none;}',
+    '.ed-crow{border-radius:8px;padding:4px 6px 6px;margin:0 -6px 4px;transition:background .15s;}',
+    '.ed-crow:hover{background:rgba(127,127,127,.08);}',
+    '.ed-crow.is-pinned{background:rgba(255,43,214,.10);box-shadow:inset 2px 0 0 #ff2bd6;}',
+    '.ed-tok-name{cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;}',
+    '.ed-tok-desc{font-size:10.5px;opacity:.7;line-height:1.4;margin:2px 0 3px;}',
+    '.ed-tok-state{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:10.5px;}',
+    '.ed-tok-def{opacity:.65;display:inline-flex;align-items:center;gap:4px;}',
+    '.ed-tok-sw{display:inline-block;width:10px;height:10px;border-radius:3px;border:1px solid rgba(127,127,127,.5);}',
+    '.ed-tok-badge{background:#e0a100;color:#1a1300;font-weight:700;border-radius:4px;padding:0 5px;',
+    '  font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;}',
+    '.ed-crow.is-changed > .ed-row > label::after{content:" \\25CF";color:#e0a100;}',
+    '.ed-tok-reset{border:1px solid var(--rule,#ccc);background:transparent;color:inherit;cursor:pointer;',
+    '  border-radius:5px;font:inherit;font-size:10.5px;padding:1px 7px;}',
+    '.ed-tok-reset:hover{border-color:var(--accent,#8a5a44);}',
+    '#ed-colour-summary{border:1px solid var(--rule,#ccc);border-radius:8px;padding:8px 10px;margin:8px 0 10px;}',
+    '.ed-sum-head{display:flex;align-items:baseline;gap:8px;}',
+    '.ed-sum-hash{font-family:ui-monospace,monospace;font-size:10px;opacity:.55;}',
+    '#ed-item-colours .ed-h{margin-top:14px;}',
+    /* uses of a colour, outlined on the page in a colour no theme uses */
+    '.ed-hl{outline:2px dashed #ff2bd6 !important;outline-offset:2px !important;}',
+    '.ed-tok-uses{font-size:10.5px;color:#ff2bd6;margin-top:3px;}',
+    '.ed-flash{background:rgba(255,43,214,.10);border-radius:6px;padding:5px 8px;margin:0 0 8px !important;}',
+    '.ed-dock-ft .ed-btns button:last-child{display:none;}'
+  ].join('\n');
+
+  function switchTab(id) {
+    if (!dock.panes[id]) return;
+    Object.keys(dock.panes).forEach(function (k) {
+      dock.panes[k].classList.toggle('on', k === id);
+      dock.tabs[k].classList.toggle('on', k === id);
+    });
+    dock.active = id;
+    try { localStorage.setItem('ed-dock-tab', id); } catch (e) {}
+  }
+
+  function setDockWidth(w) {
+    w = Math.max(320, Math.min(Math.round(window.innerWidth * 0.62), w));
+    document.documentElement.style.setProperty('--ed-w', w + 'px');
+    try { localStorage.setItem('ed-dock-w', String(w)); } catch (e) {}
+    relayoutPage();
+  }
+
+  /* The page reflows when the dock opens or resizes; the project explorer
+     draws its connector lines from measured positions, so redraw them. */
+  function relayoutPage() {
+    clearTimeout(relayoutPage._t);
+    relayoutPage._t = setTimeout(function () {
+      if (window.__pfRedraw) { try { window.__pfRedraw(); } catch (e) {} }
+      if (dock.selEl && dock.active === 'inspect') renderClonePreview();
+    }, 240);
+  }
+
+  function dockify() {
+    var st = el('style'); st.textContent = DOCK_CSS; document.head.appendChild(st);
+    panel.classList.add('ed-dock');
+
+    /* header: title, width, close, tabs */
+    var hd = el('div', 'ed-dock-hd');
+    var top = el('div', 'ed-dock-top');
+    top.appendChild(el('b', null, 'Editor'));
+    top.appendChild(el('span', 'sp'));
+    var wide = el('button', 'ed-dock-ic', '\u2194 width');
+    wide.title = 'Cycle the panel width';
+    wide.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var cur = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--ed-w'), 10) || 400;
+      setDockWidth(cur < 480 ? 560 : cur < 700 ? 760 : 400);
+    });
+    var x = el('button', 'ed-dock-ic', '\u00d7');
+    x.title = 'Close (Esc)';
+    x.addEventListener('click', function (e) { e.stopPropagation(); hide(); });
+    top.appendChild(wide); top.appendChild(x);
+    hd.appendChild(top);
+    var tabs = el('div', 'ed-tabs');
+    DOCK_TABS.forEach(function (t) {
+      var b = el('button', 'ed-tab', t[1]);
+      b.addEventListener('click', function (e) { e.stopPropagation(); switchTab(t[0]); });
+      tabs.appendChild(b);
+      dock.tabs[t[0]] = b;
+    });
+    hd.appendChild(tabs);
+
+    var body = el('div', 'ed-dock-body');
+    DOCK_TABS.forEach(function (t) {
+      var p = el('div', 'ed-pane'); p.dataset.tab = t[0];
+      dock.panes[t[0]] = p; body.appendChild(p);
+    });
+
+    /* Search, for the two tabs that hold most of the settings. */
+    ['look', 'content'].forEach(function (id) {
+      var s = el('input', 'ed-search');
+      s.type = 'search';
+      s.placeholder = 'Find a setting\u2026';
+      s.addEventListener('click', function (e) { e.stopPropagation(); });
+      s.addEventListener('input', function () {
+        var q = s.value.trim().toLowerCase();
+        dock.panes[id].querySelectorAll('.ed-group').forEach(function (g) {
+          var hit = !q || g.textContent.toLowerCase().indexOf(q) >= 0;
+          g.classList.toggle('ed-miss', !hit);
+          /* open matches so the setting is actually visible */
+          if (q && hit) {
+            g.querySelectorAll('.ed-h.collapsed, .ed-sec.collapsed').forEach(function (n) {
+              n.classList.remove('collapsed');
+            });
+          }
+        });
+        dock.panes[id].querySelectorAll('.ed-cap').forEach(function (c) {
+          var any = false, n = c.nextElementSibling;
+          while (n && !n.classList.contains('ed-cap')) {
+            if (n.classList.contains('ed-group') && !n.classList.contains('ed-miss')) any = true;
+            n = n.nextElementSibling;
+          }
+          c.style.display = any ? '' : 'none';
+        });
+      });
+      dock.panes[id].appendChild(s);
+    });
+
+    /* Re-home every section (heading + its body) into its tab and group. */
+    var heads = Array.prototype.slice.call(panel.querySelectorAll(':scope > .ed-h'));
+    var lastCap = {};
+    heads.forEach(function (h) {
+      var sec = h.nextElementSibling;
+      var label = (h.textContent || '').trim();
+      var dest = ['look', 'Other'];
+      for (var i = 0; i < DOCK_MAP.length; i++) {
+        if (DOCK_MAP[i][0].test(label)) { dest = [DOCK_MAP[i][1], DOCK_MAP[i][2]]; break; }
+      }
+      var pane = dock.panes[dest[0]];
+      if (lastCap[dest[0]] !== dest[1]) {
+        pane.appendChild(el('div', 'ed-cap', dest[1]));
+        lastCap[dest[0]] = dest[1];
+      }
+      var g = el('div', 'ed-group');
+      g.appendChild(h);
+      if (sec && sec.classList && sec.classList.contains('ed-sec')) g.appendChild(sec);
+      pane.appendChild(g);
+    });
+
+    /* Put groups in a deliberate order rather than whatever order build()
+       happened to create them in. */
+    var CAP_ORDER = ['Theme & colour', 'Type & spacing', 'Effects',
+                     'Words', 'Media', 'Sections', 'Hidden', 'Files', 'Other'];
+    Object.keys(dock.panes).forEach(function (k) {
+      var pane = dock.panes[k];
+      var caps = Array.prototype.slice.call(pane.querySelectorAll(':scope > .ed-cap'));
+      var blocks = caps.map(function (c) {
+        var items = [c], n = c.nextElementSibling;
+        while (n && !n.classList.contains('ed-cap')) { items.push(n); n = n.nextElementSibling; }
+        return { name: c.textContent, items: items };
+      });
+      blocks.sort(function (x, y) {
+        return CAP_ORDER.indexOf(x.name) - CAP_ORDER.indexOf(y.name);
+      });
+      blocks.forEach(function (bl) { bl.items.forEach(function (it) { pane.appendChild(it); }); });
+      /* Sections that weren't adjacent when built each got a caption; once
+         sorted they sit together, so drop the repeated caption. */
+      var prev = null;
+      Array.prototype.slice.call(pane.querySelectorAll(':scope > .ed-cap')).forEach(function (c) {
+        if (prev && prev === c.textContent) c.parentNode.removeChild(c);
+        else prev = c.textContent;
+      });
+    });
+
+    /* Within each tab, open the first section and collapse the rest. */
+    Object.keys(dock.panes).forEach(function (k) {
+      var hs = dock.panes[k].querySelectorAll('.ed-group > .ed-h');
+      hs.forEach(function (h, i) {
+        var s = h.nextElementSibling;
+        var open = i === 0 || k === 'source' || k === 'visibility';
+        h.classList.toggle('collapsed', !open);
+        if (s) s.classList.toggle('collapsed', !open);
+      });
+    });
+
+    /* Inspect tab: an empty state, then the live preview, then the item's
+       own controls. */
+    var empty = el('div', 'ed-empty');
+    empty.id = 'ed-empty';
+    empty.innerHTML = '<b>Right-click anything on the page</b> to inspect it here — ' +
+      'a project, a course, a skill, the title, a filter or a menu entry. ' +
+      'The whole area it belongs to is outlined on the page and previewed below, ' +
+      'with its settings and its source underneath.';
+    dock.panes.inspect.appendChild(empty);
+    if (pvwin) {
+      var lab = pvwin.querySelector('.ed-pvwin-bar b');
+      if (lab) lab.textContent = 'Preview';
+      dock.panes.inspect.appendChild(pvwin);
+    }
+    var ic = el('div'); ic.id = 'ed-item-colours';
+    dock.panes.inspect.appendChild(ic);
+    var item = document.getElementById('ed-item');
+    if (item) dock.panes.inspect.appendChild(item);
+
+    /* footer: save / revert / status, always in reach */
+    var ft = el('div', 'ed-dock-ft');
+    var btns = panel.querySelector(':scope > .ed-btns');
+    if (btns) ft.appendChild(btns);
+    if (statusEl && statusEl.parentNode !== ft) ft.appendChild(statusEl);
+
+    /* drag the left edge to resize */
+    var rz = el('div', 'ed-resize');
+    rz.title = 'Drag to resize';
+    rz.addEventListener('mousedown', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      function mv(ev) { setDockWidth(window.innerWidth - ev.clientX); }
+      function up() {
+        document.removeEventListener('mousemove', mv);
+        document.removeEventListener('mouseup', up);
+      }
+      document.addEventListener('mousemove', mv);
+      document.addEventListener('mouseup', up);
+    });
+
+    /* Whatever build() left loose at the top level (stray notes, rows) goes
+       to the Look tab rather than vanishing. */
+    Array.prototype.slice.call(panel.children).forEach(function (c) {
+      if (c.classList && c.classList.contains('ed-grip')) return;
+      dock.panes.look.appendChild(c);
+    });
+
+    panel.appendChild(rz);
+    panel.appendChild(hd);
+    panel.appendChild(body);
+    panel.appendChild(ft);
+
+    var w = 400, t = 'look';
+    try {
+      w = parseInt(localStorage.getItem('ed-dock-w'), 10) || 400;
+      t = localStorage.getItem('ed-dock-tab') || 'look';
+    } catch (e) {}
+    document.documentElement.style.setProperty('--ed-w', Math.max(320, w) + 'px');
+    switchTab(dock.panes[t] && t !== 'inspect' ? t : 'look');
+    window.addEventListener('resize', relayoutPage);
+  }
+
+  /* ---------- selecting an area of the page ----------
+     Right-clicking should inspect the whole thing you pointed at, not the
+     one line of text under the cursor: the whole project card, the whole
+     hero, the whole skills category. Ordered smallest-meaningful first. */
+  var AREA_SELECTORS = [
+    '.skills-cluster .tags > span', '.course-card', '.course-group', '.work-item', '.pc-card', '.timeline-row', '.course-online-item',
+    '.course-group', '.courses-featured', '.skills-cluster', '.contact-grid .item',
+    '.pf-rail', '.pf-chips', '.hero', '.topbar', '.colophon', 'section.block'
+  ];
+  function broadArea(node) {
+    for (var n = node; n && n !== document.body; n = n.parentNode) {
+      if (!n.matches) continue;
+      for (var i = 0; i < AREA_SELECTORS.length; i++) {
+        if (n.matches(AREA_SELECTORS[i])) return n;
+      }
+    }
+    return null;
+  }
+  function selectArea(node) {
+    if (dock.selEl) dock.selEl.classList.remove('ed-selected');
+    dock.selEl = broadArea(node);
+    if (dock.selEl) dock.selEl.classList.add('ed-selected');
+    var empty = document.getElementById('ed-empty');
+    if (empty) empty.style.display = dock.selEl ? 'none' : '';
+  }
+
+  /* A real copy of the selected area, rendered by the page's own CSS at the
+     page's own width, then scaled down to fit the panel. Because it's a copy
+     of what's on screen, it always matches the page — including edits you
+     haven't saved yet. */
+  function renderClonePreview() {
+    var src = dock.selEl;
+    var body = document.getElementById('ed-pvwin-body');
+    if (!src || !body || !document.body.contains(src)) return false;
+    var r = src.getBoundingClientRect();
+    var w = Math.max(1, r.width), h = Math.max(1, r.height);
+    var c = src.cloneNode(true);
+    c.classList.remove('ed-selected');
+    c.removeAttribute('id');
+    c.querySelectorAll('[id]').forEach(function (n) { n.removeAttribute('id'); });
+    c.querySelectorAll('img[data-src]').forEach(function (i) { i.src = i.getAttribute('data-src'); });
+    c.querySelectorAll('.reveal').forEach(function (n) { n.classList.add('in'); });
+    c.classList.add('in');
+
+    var avail = Math.max(120, body.clientWidth - 2);
+    var s = Math.min(1, avail / w);
+    var clip = el('div', 'ed-clip');
+    clip.style.height = Math.ceil(h * s) + 'px';
+    var inner = el('div', 'ed-clip-in');
+    inner.style.width = w + 'px';
+    inner.style.transform = 'scale(' + s + ')';
+    /* Styles like `.skills-cluster .tags span` only match inside their
+       containers, so a lone card copied out of context renders unstyled.
+       Wrap the copy in empty copies of its ancestors (up to the section)
+       so every selector still matches; flatten their layout so the item
+       keeps its own width. */
+    var node = c;
+    for (var a = src.parentElement; a && a !== document.body; a = a.parentElement) {
+      if (a.classList.contains('shell')) break;
+      var shell = a.cloneNode(false);
+      shell.removeAttribute('id');
+      shell.classList.add('in');
+      shell.style.cssText += ';display:block;margin:0;padding:0;border:0;background:none;' +
+        'box-shadow:none;width:auto;max-width:none;min-height:0;position:static;opacity:1;transform:none;';
+      shell.appendChild(node);
+      node = shell;
+      if (a.tagName === 'SECTION') break;
+    }
+    inner.appendChild(node);
+    clip.appendChild(inner);
+    body.innerHTML = '';
+    body.appendChild(clip);
+
+    var nm = document.getElementById('ed-pvwin-name');
+    if (nm) nm.textContent = ' \u00b7 ' + (src.getAttribute('data-entry') ||
+      src.getAttribute('data-title') || src.id || src.className.split(' ')[0] || 'area');
+    var wl = document.getElementById('ed-pvwin-w');
+    if (wl) wl.textContent = Math.round(w) + 'px wide, shown at ' + Math.round(s * 100) + '%';
+    if (pvwin) pvwin.classList.add('open');
+    return true;
+  }
+
   function build() {
     var st = el('style'); st.textContent = CSS; document.head.appendChild(st);
 
@@ -592,6 +1116,8 @@
     var tNote = el('div', 'ed-note', '');
     tNote.id = 'ed-theme-note';
     panel.appendChild(tNote);
+    var sumBox = el('div'); sumBox.id = 'ed-colour-summary';
+    panel.appendChild(sumBox);
     var colorBox = el('div'); colorBox.id = 'ed-colors';
     panel.appendChild(colorBox);
 
@@ -765,8 +1291,8 @@
 
     /* ---- Section titles ------------------------------------------ */
     panel.appendChild(el('div', 'ed-h', 'Section titles'));
-    var TITLE_KEYS = ['About', 'Work', 'Featured', 'Projects', 'Skills',
-                      'Education', 'Accomplishments', 'Contact'];
+    var TITLE_KEYS = ['About', 'Work', 'Featured', 'Projects', 'Courses',
+                      'Skills', 'Education', 'Accomplishments', 'Contact'];
     TITLE_KEYS.forEach(function (k) {
       var row = el('div', 'ed-row');
       row.appendChild(el('label', null, k));
@@ -880,6 +1406,114 @@
     panel._monoEmoji = monoEmoji;
     panel._autoSh = autoSh;
 
+    /* ---- Project diagrams ------------------------------------------ */
+    panel.appendChild(el('div', 'ed-h', 'Project diagrams'));
+    var dpRow = el('div', 'ed-row');
+    dpRow.appendChild(el('label', null, 'Placement'));
+    var dpSel = el('select');
+    dpSel.id = 'ed-dg-place';
+    dpSel.style.cssText = 'font:inherit;font-size:11px;padding:3px 6px;border-radius:5px;' +
+      'border:1px solid var(--rule,#ccc);background:transparent;color:inherit;';
+    [['wide', 'full width, under the title'], ['beside', 'beside the text'],
+     ['below', 'below the text'], ['top', 'above the title'],
+     ['toggle', 'behind "How it works"']].forEach(function (o) {
+      var op = el('option', null, o[1]); op.value = o[0]; dpSel.appendChild(op);
+    });
+    dpSel.addEventListener('click', function (e) { e.stopPropagation(); });
+    dpSel.addEventListener('change', function () {
+      mediaStore().diagramPlacement = dpSel.value;
+      markDirty();
+      if (window.__pfRenderWork) window.__pfRenderWork();
+      else note('Placement set to "' + dpSel.value + '". Save + reload to see it.');
+    });
+    dpRow.appendChild(dpSel);
+    panel.appendChild(dpRow);
+
+    var fmRow = el('div', 'ed-row');
+    fmRow.appendChild(el('label', null, 'Media'));
+    var fmSel = el('select');
+    fmSel.id = 'ed-fm';
+    fmSel.style.cssText = dpSel.style.cssText;
+    [['image', 'image only'], ['gif', 'GIF only'], ['both', 'image + GIF']].forEach(function (o) {
+      var op = el('option', null, o[1]); op.value = o[0]; fmSel.appendChild(op);
+    });
+    fmSel.addEventListener('click', function (e) { e.stopPropagation(); });
+    fmSel.addEventListener('change', function () {
+      mediaStore().featuredMedia = fmSel.value;
+      markDirty();
+      if (window.__pfRenderWork) window.__pfRenderWork();
+    });
+    fmRow.appendChild(fmSel);
+    panel.appendChild(fmRow);
+    panel.appendChild(el('div', 'ed-note',
+      'Projects without a GIF yet keep showing their image, whatever this is set to. ' +
+      'Add a GIF per project by right-clicking it.'));
+
+    var dsRow = el('div', 'ed-row');
+    var dsBtn = el('button', 'ed-pick', 'diagrams on');
+    dsBtn.style.width = 'auto'; dsBtn.style.padding = '3px 12px';
+    function paintDs() {
+      var on = mediaStore().showDiagrams !== false;
+      dsBtn.textContent = on ? 'diagrams on' : 'diagrams off';
+      dsBtn.style.background = on ? 'var(--accent)' : 'transparent';
+      dsBtn.style.color = on ? '#fff' : 'inherit';
+    }
+    dsBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var m = mediaStore();
+      m.showDiagrams = m.showDiagrams === false;
+      markDirty(); paintDs();
+      if (window.__pfRenderWork) window.__pfRenderWork();
+    });
+    dsRow.appendChild(dsBtn);
+    panel.appendChild(dsRow);
+    panel._paintDs = paintDs;
+    panel.appendChild(el('div', 'ed-note',
+      'Switches live so you can compare on the real page. Individual diagrams ' +
+      'can be hidden by right-clicking their project.'));
+
+    /* ---- Courses -------------------------------------------------- */
+    panel.appendChild(el('div', 'ed-h', 'Courses'));
+    var clRow = el('div', 'ed-row');
+    clRow.appendChild(el('label', null, 'Category label'));
+    var lsBox = el('button', 'ed-pick', 'box');
+    var lsTxt = el('button', 'ed-pick', 'text');
+    [lsBox, lsTxt].forEach(function (b) {
+      b.style.width = 'auto'; b.style.padding = '3px 12px';
+    });
+    lsBox.title = 'Filled colour box with theme ink on it';
+    lsTxt.title = 'Category name set in its own colour, no box';
+    function coursesStore() {
+      var cfg = ensure();
+      if (!cfg.courses) cfg.courses = {};
+      return cfg.courses;
+    }
+    function paintLabelStyle() {
+      var s = (coursesStore().labelStyle === 'text') ? 'text' : 'box';
+      lsBox.style.background = s === 'box' ? 'var(--accent)' : 'transparent';
+      lsBox.style.color = s === 'box' ? '#fff' : 'inherit';
+      lsTxt.style.background = s === 'text' ? 'var(--accent)' : 'transparent';
+      lsTxt.style.color = s === 'text' ? '#fff' : 'inherit';
+    }
+    function setLabelStyle(s) {
+      coursesStore().labelStyle = s;
+      markDirty(); paintLabelStyle();
+      /* Re-render so the choice is visible before saving. */
+      if (window.__pfRenderCourses && window.__resumeData) {
+        window.__pfRenderCourses(window.__resumeData.courses || []);
+      } else {
+        note('Label style set to "' + s + '". Save + reload to see it.');
+      }
+    }
+    lsBox.addEventListener('click', function (e) { e.stopPropagation(); setLabelStyle('box'); });
+    lsTxt.addEventListener('click', function (e) { e.stopPropagation(); setLabelStyle('text'); });
+    clRow.appendChild(lsBox); clRow.appendChild(lsTxt);
+    panel.appendChild(clRow);
+    panel._paintLabelStyle = paintLabelStyle;
+    panel.appendChild(el('div', 'ed-note',
+      'Box: filled hue per category, page ink on top. Text: the name in its ' +
+      'own colour. Secondary "b" rows stay uncoloured either way.'));
+
     /* ---- Nav dropdown --------------------------------------------
        Every domain the top-bar Projects menu can show, with a switch each.
        Right-clicking an entry in the menu reaches the same thing, but the
@@ -960,6 +1594,39 @@
     });
     texRow.appendChild(texRevert);
     panel.appendChild(texRow);
+
+    /* Skill icons: neutral symbols (default) or the brand-logo catalogue.
+       Applies to the skill cards, the project keyword chips and AI cards. */
+    var siRow = el('div', 'ed-row');
+    siRow.appendChild(el('label', null, 'Skill icons'));
+    var siSym = el('button', 'ed-pick', 'symbols');
+    var siBrand = el('button', 'ed-pick', 'brand logos');
+    [siSym, siBrand].forEach(function (b) { b.style.width = 'auto'; b.style.padding = '3px 9px'; });
+    siSym.title = 'A symbol for what each tool does. Uniform and brand-neutral.';
+    siBrand.title = 'The logo catalogue from site-config.json.';
+    function paintSkillIcons() {
+      var m = (state.config && state.config.media) || {};
+      var sym = m.skillIcons !== 'brand';
+      siSym.style.background = sym ? 'var(--accent)' : 'transparent';
+      siSym.style.color = sym ? '#fff' : 'inherit';
+      siBrand.style.background = sym ? 'transparent' : 'var(--accent)';
+      siBrand.style.color = sym ? 'inherit' : '#fff';
+    }
+    function setSkillIcons(v) {
+      var m = mediaStore();
+      m.skillIcons = v;
+      /* Brand mode needs the logo catalogue in the config; symbol mode
+         doesn't, so it is taken back out and visitors don't download it. */
+      if (v === 'brand') syncLogos(); else ensure().logos = [];
+      markDirty(); paintSkillIcons(); refreshTechMarks();
+      note(v === 'brand' ? 'Skill cards show brand logos. Save to keep it.'
+                         : 'Skill cards show neutral symbols. Save to keep it.');
+    }
+    siSym.addEventListener('click', function (e) { e.stopPropagation(); setSkillIcons('symbols'); });
+    siBrand.addEventListener('click', function (e) { e.stopPropagation(); setSkillIcons('brand'); });
+    siRow.appendChild(siSym); siRow.appendChild(siBrand);
+    panel.appendChild(siRow);
+    panel._paintSkillIcons = paintSkillIcons;
 
     /* Tech-logo toggles — brand marks on keyword chips. */
     var logoRow = el('div', 'ed-row');
@@ -1122,10 +1789,10 @@
     fab.addEventListener('click', function (e) {
       e.stopPropagation();
       if (panel.classList.contains('open')) { hide(); return; }
-      var r = fab.getBoundingClientRect();
-      show(Math.max(12, r.right - 290), Math.max(12, r.top - 460));
+      show();
     });
     document.body.appendChild(fab);
+    dockify();
   }
 
   function addSlider(parent, key, label, min, max, step) {
@@ -1163,10 +1830,13 @@
   /* A colour control: free picker + its own swatch popover, so presets and
      recents are reachable for every entry rather than only the last-focused
      one. Returns a fragment holding the row and its (hidden) popover. */
-  function colorRow(key, value, onPick) {
-    var wrap = el('div');
+  function colorRow(key, value, onPick, opts) {
+    opts = opts || {};
+    var wrap = el('div', opts.token ? 'ed-crow' : null);
+    if (opts.token) wrap.dataset.tok = key;
     var row = el('div', 'ed-row');
-    row.appendChild(el('label', null, labelFor(key)));
+    var lab = el('label', null, opts.label || labelFor(key));
+    row.appendChild(lab);
 
     var inp = el('input'); inp.type = 'color';
     inp.dataset.varKey = key;
@@ -1228,7 +1898,109 @@
       pop.classList.add('open');
     });
     wrap.appendChild(pop);
+    if (opts.token) decorateTokenRow(wrap, key, lab, opts);
     return wrap;
+  }
+
+  /* A colour token's row: what it's for, whether this stylesheet's default
+     has been replaced (with the default shown and a reset), and its uses
+     outlined on the page — on hover while you look, pinned with a click on
+     the name. */
+  function decorateTokenRow(wrap, key, lab, opts) {
+    lab.classList.add('ed-tok-name');
+    lab.title = 'Click to outline everywhere --' + key + ' is used';
+    var desc = el('div', 'ed-tok-desc', (opts.role ? opts.role + ' \u2014 ' : '') +
+                  (USAGE[key] || ('CSS variable --' + key)));
+    wrap.appendChild(desc);
+    var st = el('div', 'ed-tok-state');
+    wrap.appendChild(st);
+    paintRowState(key, wrap);
+
+    wrap.addEventListener('mouseenter', function () {
+      if (_pinned) return;
+      highlightToken(key, false);
+    });
+    wrap.addEventListener('mouseleave', function () {
+      if (_pinned) return;
+      clearHighlight();
+    });
+    lab.addEventListener('click', function (e) {
+      e.stopPropagation(); e.preventDefault();
+      if (_pinned === key) {
+        _pinned = null; clearHighlight(); paintPins();
+        var u0 = wrap.querySelector('.ed-tok-uses'); if (u0) u0.remove();
+        return;
+      }
+      document.querySelectorAll('.ed-tok-uses').forEach(function (x) { x.remove(); });
+      _pinned = key;
+      var r = highlightToken(key, true);
+      paintPins();
+      var u = wrap.querySelector('.ed-tok-uses') || wrap.appendChild(el('div', 'ed-tok-uses'));
+      u.textContent = 'outlined on the page: ' + r.total + ' use' + (r.total === 1 ? '' : 's') +
+        (r.shown < r.total ? ' (' + r.shown + ' on screen)' : '');
+      note(labelFor(key) + ' (--' + key + ') is used in ' + r.total + ' place' +
+           (r.total === 1 ? '' : 's') + (r.shown < r.total ? ' \u2014 outlining the ' + r.shown + ' on screen' : '') +
+           '. Click the name again to clear.');
+    });
+  }
+  var _pinned = null;
+  function paintPins() {
+    document.querySelectorAll('.ed-crow').forEach(function (w) {
+      w.classList.toggle('is-pinned', w.dataset.tok === _pinned);
+    });
+  }
+  /* "changed" badge, the stylesheet default it replaced, and Reset. */
+  function paintRowState(key, only) {
+    var rows = only ? [only] : document.querySelectorAll('.ed-crow[data-tok="' + key + '"]');
+    Array.prototype.forEach.call(rows, function (wrap) {
+      var st = wrap.querySelector('.ed-tok-state');
+      if (!st) return;
+      st.innerHTML = '';
+      var def = sheetDefault(key);
+      if (!isOverridden(key)) {
+        st.appendChild(el('span', 'ed-tok-def', 'stylesheet default ' + toHex(def)));
+        wrap.classList.remove('is-changed');
+        return;
+      }
+      wrap.classList.add('is-changed');
+      st.appendChild(el('span', 'ed-tok-badge', 'changed'));
+      var d = el('span', 'ed-tok-def', 'stylesheet: ');
+      var sw = el('i', 'ed-tok-sw'); sw.style.background = def;
+      d.appendChild(sw); d.appendChild(document.createTextNode(toHex(def)));
+      st.appendChild(d);
+      var rb = el('button', 'ed-tok-reset', 'reset');
+      rb.title = 'Use the stylesheet value again';
+      rb.addEventListener('click', function (e) { e.stopPropagation(); resetVar(key); });
+      st.appendChild(rb);
+    });
+  }
+  /* Which stylesheet is being edited, how many of its colours are changed,
+     and a warning if the stylesheet changed after they were saved. */
+  function paintColourSummary() {
+    var box = document.getElementById('ed-colour-summary');
+    if (!box) return;
+    box.innerHTML = '';
+    var id = activeThemeId(), h = activeThemeHash();
+    var t = ((((state.config || {}).colors || {}).themes || {})[id]) || {};
+    var n = Object.keys(curSet(false)).filter(function (k) { return k.charAt(0) !== '_'; }).length;
+    var head = el('div', 'ed-sum-head');
+    head.appendChild(el('b', null, id));
+    head.appendChild(el('span', 'ed-sum-hash', '#' + (h || 'no hash')));
+    box.appendChild(head);
+    box.appendChild(el('div', 'ed-note',
+      n ? n + ' colour' + (n === 1 ? '' : 's') + ' changed in ' + (theme() === 'dark' ? 'night' : 'day') +
+          ' mode, for this stylesheet only.'
+        : 'Using this stylesheet\u2019s own colours in ' + (theme() === 'dark' ? 'night' : 'day') + ' mode.'));
+    if (t.hash && h && t.hash !== h) {
+      box.appendChild(el('div', 'ed-note ed-dirty',
+        'This stylesheet changed since these colours were saved (#' + t.hash + ' \u2192 #' + h +
+        '). Check the changed colours still suit it.'));
+    }
+    if (n) {
+      var all = el('button', 'ed-tok-reset', 'reset all ' + n);
+      all.addEventListener('click', function (e) { e.stopPropagation(); resetAllVars(); });
+      box.appendChild(all);
+    }
   }
 
   function paintColors() {
@@ -1236,7 +2008,7 @@
     if (!box) return;
     box.innerHTML = '';
     discoverVars().forEach(function (key) {
-      box.appendChild(colorRow(key, cssVar(key), function (v) { setVar(key, v); }));
+      box.appendChild(colorRow(key, cssVar(key), function (v) { setVar(key, v); }, { token: true }));
     });
   }
 
@@ -1258,6 +2030,92 @@
   }
 
 
+
+
+  /* ---------- Colours on the inspected item ----------
+     Right-clicking a card lists every theme colour it actually uses and
+     what for: "Card fill — background of the card", "Accent — the
+     left edge", and so on, each editable in place with reset. */
+  var ROLE_WORDS = { fill: 'background', text: 'text', border: 'outline', edge: 'left edge' };
+  function describeEl(e, root) {
+    if (e === root) return 'card';
+    if (e.matches && e.matches('.skills-cluster .tags > span')) return 'skill card';
+    if (e.matches && e.matches('.pc-logo, .pc-glyph, .card-emoji')) return 'icon';
+    var c = (typeof e.className === 'string' ? e.className : '').split(' ')[0];
+    var names = { 'pc-card-title': 'title', 'pc-desc': 'description', 'pc-topic': 'topic chips',
+      'pc-tech': 'tech chips', 'pc-links': 'links', 'feat-num': 'number', 'feat-domain': 'domain',
+      'feat-lede': 'description', 'repo-link': 'repo link', 'stack': 'tech stack', 'role': 'dates',
+      'course-name': 'course name', 'course-desc': 'description', 'course-origin': 'institution',
+      'lab-box': 'category box', 'pc-logo-plate': 'logo plate' };
+    if (names[c]) return names[c];
+    var tag = e.tagName.toLowerCase();
+    return ({ h3: 'title', h4: 'title', h5: 'heading', li: 'bullet points', a: 'link',
+              p: 'paragraph', ul: 'list', span: c ? c.replace(/^[a-z]+-/, '').replace(/-/g, ' ') : 'label' })[tag] || tag;
+  }
+  function renderItemColours() {
+    var box = document.getElementById('ed-item-colours');
+    if (!box) return;
+    box.innerHTML = '';
+    var root = dock.selEl;
+    if (!root || !document.body.contains(root)) return;
+    var tokens = discoverVars().filter(function (k) { return NON_COLOR.indexOf(k) < 0; });
+    var byHex = {};
+    tokens.forEach(function (k) {
+      var h = resolveColour('var(--' + k + ')');
+      (byHex[h] = byHex[h] || []).push(k);
+    });
+    var pal = window.__domainPalette || {}, domHex = {};
+    Object.keys(pal).forEach(function (d) { domHex[resolveColour(pal[d])] = d; });   /* may be hsl() */
+
+    var found = {}, domains = {};
+    var els = [root].concat(Array.prototype.slice.call(root.querySelectorAll('*'), 0, 600));
+    els.forEach(function (e) {
+      if (e.closest('svg') && e.tagName.toLowerCase() !== 'svg') return;
+      var cs = getComputedStyle(e);
+      if (cs.display === 'none') return;
+      PROPS.forEach(function (pp) {
+        var v = cs[pp[0]];
+        if (!opaque(v)) return;
+        if (pp[1] === 'border' && parseFloat(cs.borderTopWidth) === 0) return;
+        if (pp[1] === 'edge' && parseFloat(cs.borderLeftWidth) === 0) return;
+        if (pp[1] === 'text' && !/\S/.test(ownText(e))) return;
+        if (pp[1] === 'edge' && toHex(cs.borderTopColor) === toHex(v)) return;   /* same as its outline */
+        var who = describeEl(e, root);
+        var what = who === 'card'
+          ? ({ fill: 'card background', text: 'card text', border: 'card outline', edge: 'card left edge' })[pp[1]]
+          : ROLE_WORDS[pp[1]] + ' of ' + who;
+        var hx = toHex(v);
+        if (byHex[hx]) {
+          var k = byHex[hx][0];
+          (found[k] = found[k] || {})[what] = 1;
+        } else if (domHex[hx]) {
+          (domains[domHex[hx]] = domains[domHex[hx]] || {})[what] = 1;
+        }
+      });
+    });
+    var keys = Object.keys(found);
+    if (!keys.length && !Object.keys(domains).length) return;
+    box.appendChild(el('div', 'ed-h', 'Colours on this item'));
+    box.appendChild(el('div', 'ed-note',
+      'Changing one changes it everywhere it’s used, for stylesheet “' + activeThemeId() +
+      '” in ' + (theme() === 'dark' ? 'night' : 'day') + ' mode. Click a name to outline its other uses.'));
+    var order = ['bg-soft', 'bg', 'accent', 'rule', 'ink', 'ink-soft', 'muted', 'accent-soft'];
+    keys.sort(function (a, b) {
+      var ia = order.indexOf(a), ib = order.indexOf(b);
+      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+    });
+    keys.forEach(function (k) {
+      var roles = Object.keys(found[k]);
+      box.appendChild(colorRow(k, cssVar(k), function (v) { setVar(k, v); },
+        { token: true, role: 'here: ' + roles.slice(0, 3).join(', ') + (roles.length > 3 ? '…' : '') }));
+    });
+    Object.keys(domains).forEach(function (d) {
+      var roles = Object.keys(domains[d]);
+      box.appendChild(colorRow(d, pal[d], function (v) { setDomainColor(d, v); }));
+      box.appendChild(el('div', 'ed-tok-desc', 'Domain colour “' + d + '” — here: ' +
+        roles.slice(0, 3).join(', ') + '. Same in day and night, on every stylesheet.'));
+    });
+  }
 
   /* ---------- emoji picker ----------
      Suggestions come from the selected target's own vocabulary: a project's
@@ -1567,6 +2425,19 @@
   function note(msg) {
     var n = document.getElementById('ed-media-note');
     if (n) n.textContent = msg;
+    /* That box sits inside one section and is invisible from every other
+       tab, so also show the message in the footer, which is always in view. */
+    var f = document.getElementById('ed-flash');
+    if (!f) {
+      var ft = document.querySelector('.ed-dock-ft');
+      if (!ft) return;
+      f = el('div', 'ed-note ed-flash'); f.id = 'ed-flash';
+      ft.insertBefore(f, ft.firstChild);
+    }
+    f.textContent = msg;
+    f.style.display = '';
+    clearTimeout(note._t);
+    note._t = setTimeout(function () { f.style.display = 'none'; }, 7000);
   }
 
   /* Switch the page theme and re-read every colour, so the panel always
@@ -1597,24 +2468,11 @@
      current theme (they exist only in state.config) and repaint the panel
      so the swatches show the set actually being edited. */
   function syncEditorToTheme() {
-    var t = theme();
-    var colors = ((state.config || {}).colors || {});
-    /* Unsaved edits from the other theme leave inline variables the page's
-       own switch can't know about (it only clears keys in the SAVED
-       config). Clear every key of the other set, then apply this set —
-       keys present in both come straight back with this theme's value. */
-    var stale = colors[t === 'dark' ? 'light' : 'dark'] || {};
-    Object.keys(stale).forEach(function (k) {
-      if (k.charAt(0) === '_') return;
-      document.documentElement.style.removeProperty('--' + k);
-    });
-    var themed = colors[t] || {};
-    Object.keys(themed).forEach(function (k) {
-      if (k.charAt(0) === '_') return;
-      document.documentElement.style.setProperty('--' + k, themed[k]);
-    });
+    reapplyColours();
     paintColors();
+    paintColourSummary();
     paintThemeState();
+    if (typeof renderItemColours === 'function') renderItemColours();
   }
 
   function paintThemeState() {
@@ -1623,7 +2481,8 @@
     if (n) {
       var cfg = state.config || {};
       var setFor = function (k) {
-        var o = ((cfg.colors || {})[k]) || {};
+        var t = (((cfg.colors || {}).themes || {})[activeThemeId()]) || {};
+        var o = t[k] || {};
         return Object.keys(o).filter(function (x) { return x.charAt(0) !== '_'; }).length;
       };
       n.textContent = 'Editing ' + (cur === 'dark' ? 'night' : 'day') +
@@ -1674,9 +2533,16 @@
       if (terms[normTerm(l.n)]) return true;
       return (l.match || []).some(function (m) { return terms[normTerm(m)]; });
     }).map(function (l) {
-      return { n: l.n, t: l.t, c: l.c, d: l.d, match: l.match };
+      /* Copy the whole entry: listing fields here dropped any not named
+         (it lost `tile`, which turned the JavaScript tile olive). */
+      return JSON.parse(JSON.stringify(l));
     });
 
+    if (((ensure().media || {}).skillIcons) !== 'brand') {
+      if (out) out.textContent = 'Skill icons are set to symbols, so no logos are ' +
+        'written to site-config.json. Switch Skill icons to brand logos to use them.';
+      return;
+    }
     ensure().logos = picked;
     markDirty();
     var bytes = JSON.stringify(picked).length;
@@ -1779,6 +2645,9 @@
     Object.keys(m.hiddenCards || {}).forEach(function (n) {
       if (m.hiddenCards[n]) rows.push({ name: n, kind: 'card' });
     });
+    Object.keys(m.hiddenCourses || {}).forEach(function (n) {
+      if (m.hiddenCourses[n]) rows.push({ name: n, kind: 'course' });
+    });
     if (!rows.length) {
       box.appendChild(el('div', 'ed-note', 'Nothing hidden.'));
       return;
@@ -1792,8 +2661,9 @@
       b.textContent = '\u21ba  ' + r.name + '  (' + r.kind + ')';
       b.addEventListener('click', function (e) {
         e.stopPropagation();
-        if (r.kind === 'entry') delete m.hiddenEntries[r.name];
-        else delete m.hiddenCards[r.name];
+        if (r.kind === 'entry')      delete m.hiddenEntries[r.name];
+        else if (r.kind === 'course') delete m.hiddenCourses[r.name];
+        else                          delete m.hiddenCards[r.name];
         markDirty();
         document.querySelectorAll('[data-entry], [data-title]').forEach(function (el2) {
           var nm = el2.getAttribute('data-entry') || el2.getAttribute('data-title');
@@ -1847,8 +2717,17 @@
     group('Projects', (d.projects || []).map(function (p) { return p.title; }));
   }
 
+  /* Redraw every place a tool mark appears, so an icon change shows at once. */
+  function refreshTechMarks() {
+    if (window.__pfRenderSkills && window.__resumeData) {
+      window.__pfRenderSkills(window.__resumeData.skills || []);
+    }
+    if (window.__pfRedraw) window.__pfRedraw();
+  }
+
   function paintLogoToggles() {
     var m = (state.config && state.config.media) || {};
+    if (panel._paintSkillIcons) panel._paintSkillIcons();
     if (panel._lgOn) {
       var on = m.showTechLogos !== false;
       panel._lgOn.style.background = on ? 'var(--accent)' : 'transparent';
@@ -1931,12 +2810,13 @@
 
   /* A full-window LaTeX editor. resume.tex generates the PDF, so the
      server refuses obviously-broken content and snapshots every save. */
-  function openTexEditor(findText) {
+  function openTexEditor(findText, kind) {
     openSourceEditor({
       url: 'assets/resume.tex',
       label: 'assets/resume.tex',
       save: '/__save-tex',
-      find: findText
+      find: findText,
+      kind: kind
     });
   }
 
@@ -1952,6 +2832,79 @@
   /* One editor for both source files. `find` scrolls to and selects the
      first occurrence of that text, which is what makes "edit this item"
      land somewhere useful instead of at line 1 of a 700-line file. */
+
+  /* ---------- locating an entry in a source file ----------
+     Two things went wrong before. Search compared the parsed name ("Citestat
+     \u2013 Academic", "k-NN & Task") against raw LaTeX ("Citestat --",
+     "k-NN \\& Task"), missed, and fell back to the first two words — which
+     can match anywhere. And scroll position was line number x 17px, which
+     drifts badly because long LaTeX lines wrap into several visual rows.
+
+     So: compare on a normalised form with a map back to raw offsets, prefer
+     the structural marker for each kind of entry, and scroll by measuring
+     rather than estimating. */
+  function normaliseWithMap(s) {
+    var out = '', map = [], i = 0;
+    while (i < s.length) {
+      var ch = s.charAt(i);
+      if (s.substr(i, 3) === '---' || s.substr(i, 2) === '--') {
+        var len = s.substr(i, 3) === '---' ? 3 : 2;
+        out += '-'; map.push(i); i += len; continue;
+      }
+      if (ch === '\u2013' || ch === '\u2014') { out += '-'; map.push(i); i++; continue; }
+      if (ch === '\\' && s.charAt(i + 1) === '&') { out += '&'; map.push(i); i += 2; continue; }
+      if (ch === '{' || ch === '}' || ch === '\\') { i++; continue; }
+      if (/\s/.test(ch)) {
+        if (out.charAt(out.length - 1) !== ' ') { out += ' '; map.push(i); }
+        i++; continue;
+      }
+      out += ch.toLowerCase(); map.push(i); i++;
+    }
+    return { text: out, map: map };
+  }
+
+  function locateInSource(raw, find, kind) {
+    var N = normaliseWithMap(raw);
+    var want = normaliseWithMap(String(find)).text.trim();
+    if (!want) return null;
+
+    /* Prefer a structural anchor so a name that appears in several places
+       resolves to its definition, not the first mention. */
+    var anchors = [];
+    if (kind === 'project')   anchors.push('subsection* ' + want, 'subsection*' + want);
+    if (kind === 'course')    anchors.push(want + ':');
+    if (kind === 'education' || kind === 'internship') anchors.push(want);
+    anchors.push(want);
+
+    for (var a = 0; a < anchors.length; a++) {
+      var at = N.text.indexOf(anchors[a]);
+      if (at < 0) continue;
+      var nameAt = N.text.indexOf(want, at);
+      var s = N.map[nameAt >= 0 ? nameAt : at];
+      var eIdx = (nameAt >= 0 ? nameAt : at) + want.length - 1;
+      var e = (N.map[Math.min(eIdx, N.map.length - 1)] || s) + 1;
+      return { start: s, end: e,
+               line: raw.slice(0, s).split('\n').length,
+               how: a === anchors.length - 1 && anchors.length > 1 ? 'name match' : '' };
+    }
+    return null;
+  }
+
+  /* Exact scrolling. With wrap off, one source line is one visual row, so
+     the measured line height gives the real offset. */
+  function scrollTextareaTo(ta, raw, start, end) {
+    ta.setAttribute('wrap', 'off');
+    ta.style.whiteSpace = 'pre';
+    ta.style.overflowX = 'auto';
+    ta.focus();
+    ta.setSelectionRange(start, end);
+    var lh = parseFloat(getComputedStyle(ta).lineHeight);
+    if (!lh || isNaN(lh)) lh = parseFloat(getComputedStyle(ta).fontSize) * 1.5 || 17;
+    var line = raw.slice(0, start).split('\n').length - 1;
+    ta.scrollTop = Math.max(0, line * lh - ta.clientHeight / 3);
+    ta.scrollLeft = 0;
+  }
+
   var docwin = null;
 
   /* Source editing gets its own window so it can sit beside the preview
@@ -1973,8 +2926,7 @@
       docwin.appendChild(dbody);
       docwin.addEventListener('click', function (e) { e.stopPropagation(); });
       docwin.addEventListener('contextmenu', function (e) { e.stopPropagation(); });
-      document.body.appendChild(docwin);
-      makeDraggable(docwin, dbar);
+      (dock.panes.source || document.body).appendChild(docwin);
     }
     var body = document.getElementById('ed-doc-body');
     var label = document.getElementById('ed-doc-name');
@@ -2018,28 +2970,231 @@
       .then(function (t) {
         ta.value = t;
         if (!opts.find) return;
-        /* Scroll to the entry. Try the whole string, then progressively
-           shorter prefixes — a title in the LaTeX often carries markup the
-           parsed name doesn't have. */
-        var probes = [opts.find, opts.find.split(' ').slice(0, 4).join(' '),
-                      opts.find.split(' ').slice(0, 2).join(' ')];
-        for (var i = 0; i < probes.length; i++) {
-          var at = t.indexOf(probes[i]);
-          if (at < 0) continue;
-          ta.focus();
-          ta.setSelectionRange(at, at + probes[i].length);
-          /* Approximate the scroll position from the line number. */
-          var line = t.slice(0, at).split('\n').length;
-          ta.scrollTop = Math.max(0, (line - 6) * 17);
-          stat.textContent = 'jumped to line ' + line;
+        var hit = locateInSource(t, opts.find, opts.kind);
+        if (!hit) {
+          stat.textContent = 'could not locate "' + opts.find + '" in this file';
           return;
         }
-        stat.textContent = 'could not locate "' + opts.find + '" in this file';
+        scrollTextareaTo(ta, t, hit.start, hit.end);
+        stat.textContent = 'line ' + hit.line + (hit.how ? ' \u2014 ' + hit.how : '');
       })
       .catch(function () { ta.value = '(could not load ' + opts.url + ')'; });
 
     docwin.classList.add('open');
+    show();
+    switchTab('source');
     if (!docwin.style.left) { docwin.style.left = '60px'; docwin.style.top = '120px'; }
+  }
+
+
+  /* ============================================================
+     Colour overrides, per stylesheet
+     ------------------------------------------------------------
+     Each stylesheet declares --theme-id and --theme-hash (stamped by the
+     dev server's palette generator). Overrides are stored under that id:
+       colors.themes[id] = { light: {...}, dark: {...}, hash: '...' }
+     so changing the card colour under rust-cream leaves every other
+     stylesheet on its own defaults. The hash records which version of the
+     stylesheet the overrides were made against.
+     ============================================================ */
+  function activeThemeId() {
+    var v = getComputedStyle(document.documentElement).getPropertyValue('--theme-id');
+    return (v || '').trim().replace(/^["']|["']$/g, '') || 'default';
+  }
+  function activeThemeHash() {
+    var v = getComputedStyle(document.documentElement).getPropertyValue('--theme-hash');
+    return (v || '').trim().replace(/^["']|["']$/g, '');
+  }
+  /* The override set being edited: this stylesheet, this mode. */
+  function curSet(create) {
+    var cfg = create ? ensure() : (state.config || {});
+    var c = cfg.colors || (create ? (cfg.colors = {}) : {});
+    if (!c.themes) { if (!create) return {}; c.themes = {}; }
+    var id = activeThemeId();
+    if (!c.themes[id]) { if (!create) return {}; c.themes[id] = { light: {}, dark: {} }; }
+    var t = c.themes[id];
+    if (!t[theme()]) { if (!create) return {}; t[theme()] = {}; }
+    if (create) t.hash = activeThemeHash();
+    return t[theme()];
+  }
+  function allOverrideKeys() {
+    var c = (state.config || {}).colors || {}, keys = {};
+    [c.light, c.dark].forEach(function (o) { Object.keys(o || {}).forEach(function (k) { keys[k] = 1; }); });
+    Object.keys(c.themes || {}).forEach(function (id) {
+      var t = c.themes[id] || {};
+      [t.light, t.dark].forEach(function (o) { Object.keys(o || {}).forEach(function (k) { keys[k] = 1; }); });
+    });
+    return Object.keys(keys).filter(function (k) { return k.charAt(0) !== '_'; });
+  }
+  /* Re-apply from the editor's (possibly unsaved) state: clear every key
+     any stylesheet/mode could have set, then apply the current set. */
+  function reapplyColours() {
+    var root = document.documentElement;
+    allOverrideKeys().forEach(function (k) { root.style.removeProperty('--' + k); });
+    var set = curSet(false);
+    Object.keys(set).forEach(function (k) {
+      if (k.charAt(0) === '_') return;
+      root.style.setProperty('--' + k, set[k]);
+    });
+  }
+  /* The stylesheet's own value for a token, ignoring any override. */
+  function sheetDefault(key) {
+    var root = document.documentElement;
+    var prev = root.style.getPropertyValue('--' + key);
+    if (prev) root.style.removeProperty('--' + key);
+    var v = getComputedStyle(root).getPropertyValue('--' + key).trim();
+    if (prev) root.style.setProperty('--' + key, prev);
+    return v;
+  }
+  function isOverridden(key) {
+    return Object.prototype.hasOwnProperty.call(curSet(false), key);
+  }
+  function resetVar(key) {
+    var set = curSet(true);
+    delete set[key];
+    document.documentElement.style.removeProperty('--' + key);
+    markDirty();
+    paintColors();
+    paintColourSummary();
+    if (typeof renderItemColours === 'function') renderItemColours();
+    note('"' + labelFor(key) + '" is back to the stylesheet default.');
+  }
+  function resetAllVars() {
+    var set = curSet(true);
+    Object.keys(set).forEach(function (k) {
+      delete set[k];
+      document.documentElement.style.removeProperty('--' + k);
+    });
+    markDirty(); paintColors(); paintColourSummary();
+    if (typeof renderItemColours === 'function') renderItemColours();
+  }
+  /* A config from before per-stylesheet storage had one colors.light/dark
+     applied to EVERY stylesheet. Move it to the stylesheet open right now,
+     which is the one it was being judged against. */
+  function migrateLegacyColours() {
+    var c = (state.config || {}).colors;
+    if (!c || c.themes) return '';
+    var n = Object.keys(c.light || {}).length + Object.keys(c.dark || {}).length;
+    c.themes = {};
+    if (!n) return '';
+    var id = activeThemeId();
+    c.themes[id] = { light: c.light || {}, dark: c.dark || {}, hash: activeThemeHash() };
+    c.light = {}; c.dark = {};
+    markDirty();
+    return 'Moved ' + n + ' colour override' + (n === 1 ? '' : 's') + ' to stylesheet "' + id +
+           '". Other stylesheets now use their own colours. Save to keep this.';
+  }
+
+  /* What each token is for, in words. */
+  var USAGE = {
+    'bg':          'Page background behind everything',
+    'bg-soft':     'Card fill: skill cards, project cards, panels and menus',
+    'ink':         'Main text and headings',
+    'ink-soft':    'Body paragraphs and secondary text',
+    'muted':       'Hints: labels, dates, captions, chip text',
+    'accent':      'Italic heading words, links, section markers, card edges, active buttons',
+    'accent-soft': 'Lighter accent for hover and tinted states',
+    'rule':        'Dividers and the outlines of cards and buttons',
+    'live':        'The "live demo" badge',
+    'filter-tech': 'Tech filter buttons and their connector lines'
+  };
+
+  /* ---------- where a colour is used ----------
+     Resolve the token to a real colour, then outline every element on the
+     page whose background, text or border is that colour. Computed styles
+     are the ground truth, so this finds uses no hand-written list knows
+     about. Colours mixed from a token (color-mix) aren't matched. */
+  var _probe = null;
+  function resolveColour(cssValue) {
+    if (!_probe) {
+      _probe = document.createElement('span');
+      _probe.style.cssText = 'position:absolute;left:-9999px;top:-9999px';
+      document.body.appendChild(_probe);
+    }
+    _probe.style.color = '';
+    _probe.style.color = cssValue;
+    return toHex(getComputedStyle(_probe).color);
+  }
+  function opaque(c) { return c && !/rgba\([^)]*,\s*0\)$/.test(c) && c !== 'transparent'; }
+  var PROPS = [['backgroundColor', 'fill'], ['color', 'text'],
+               ['borderTopColor', 'border'], ['borderLeftColor', 'edge']];
+  function findUses(hex) {
+    var out = [];
+    var all = document.querySelectorAll('.shell *, .shell');
+    for (var i = 0; i < all.length; i++) {
+      var e = all[i];
+      if (e.closest('.ed-panel, .ed-fab, .ed-hl-tag')) continue;
+      var cs = getComputedStyle(e);
+      if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+      var roles = [];
+      for (var j = 0; j < PROPS.length; j++) {
+        var v = cs[PROPS[j][0]];
+        if (!opaque(v) || toHex(v) !== hex) continue;
+        if (PROPS[j][1] === 'border' && parseFloat(cs.borderTopWidth) === 0) continue;
+        if (PROPS[j][1] === 'edge' && (parseFloat(cs.borderLeftWidth) === 0 ||
+            toHex(cs.borderTopColor) === hex)) continue;
+        if (PROPS[j][1] === 'text' && !/\S/.test(ownText(e))) continue;
+        roles.push(PROPS[j][1]);
+      }
+      if (roles.length) out.push({ el: e, roles: roles });
+    }
+    /* Text colour is inherited, so it appears on every descendant; keep
+       only the outermost element of each run. */
+    return out.filter(function (u) {
+      var p = u.el.parentElement;
+      while (p) {
+        for (var k = 0; k < out.length; k++) {
+          if (out[k].el === p && out[k].roles.join() === u.roles.join()) return false;
+        }
+        p = p.parentElement;
+        if (p && p.classList.contains('shell')) break;
+      }
+      return true;
+    });
+  }
+  function ownText(e) {
+    var t = '';
+    for (var n = e.firstChild; n; n = n.nextSibling) if (n.nodeType === 3) t += n.nodeValue;
+    return t;
+  }
+  function clearHighlight() {
+    document.querySelectorAll('.ed-hl').forEach(function (e) {
+      e.classList.remove('ed-hl'); e.removeAttribute('data-ed-hl');
+    });
+    var c = document.getElementById('ed-hl-count');
+    if (c) c.remove();
+    _hlKey = null;
+  }
+  var _hlKey = null;
+  /* Outline the uses of a token. Returns the count. With `scroll`, brings
+     the first use into view (for a deliberate click, not a hover). */
+  function highlightToken(key, scroll) {
+    clearHighlight();
+    var hex = resolveColour('var(--' + key + ')');
+    var uses = findUses(hex);
+    var vh = window.innerHeight, shown = 0;
+    uses.forEach(function (u) {
+      var r = u.el.getBoundingClientRect();
+      if (uses.length > 160 && (r.bottom < 0 || r.top > vh)) return;  // keep it legible
+      u.el.classList.add('ed-hl');
+      u.el.setAttribute('data-ed-hl', u.roles.join(' + '));
+      shown++;
+    });
+    _hlKey = key;
+    var onScreen = uses.some(function (u) {
+      var r = u.el.getBoundingClientRect();
+      return r.width > 0 && r.bottom > 0 && r.top < vh;
+    });
+    if (scroll && !onScreen) {         /* only move if nothing is in view */
+      var first = uses.filter(function (u) {
+        var r = u.el.getBoundingClientRect(); return r.width > 0 && r.height > 0;
+      })[0];
+      if (first) {
+        var r = first.el.getBoundingClientRect();
+        if (r.top < 0 || r.bottom > vh) first.el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+    }
+    return { total: uses.length, shown: shown };
   }
 
   /* ---------- mutations ---------- */
@@ -2053,7 +3208,6 @@
     }
     if (!state.config.colors) state.config.colors = { light: {}, dark: {}, recent: [], domains: {} };
     if (!state.config.colors.domains) state.config.colors.domains = {};
-    if (!state.config.colors[theme()]) state.config.colors[theme()] = {};
     if (!state.config.sizes)    state.config.sizes = {};
     if (!state.config.logos)    state.config.logos = [];
     if (!state.config.text)     state.config.text = {};
@@ -2065,10 +3219,12 @@
      the non-colour ones like line opacity. */
   function setVar(key, value) {
     var cfg = ensure();
-    cfg.colors[theme()][key] = value;
+    curSet(true)[key] = value;
     document.documentElement.style.setProperty('--' + key, value);
     if (/^#/.test(value)) pushRecent(value);
     markDirty();
+    paintRowState(key);
+    paintColourSummary();
   }
 
   /* Domain colours live outside the light/dark split: a domain's hue should
@@ -2144,8 +3300,22 @@
     if (target) target.style.setProperty('--text-scale', String(val));
     markDirty();
   }
+  /* The page renders from the config it loaded at startup (window
+     .__siteConfig); the editor edits its own copy. Without this, a live
+     redraw after an edit used the old values, so changes only appeared after
+     Save + reload. Point the page at the editor's sections so every redraw
+     sees unsaved edits. Colours are applied separately as CSS variables. */
+  function mirrorToPage() {
+    var page = window.__siteConfig, cfg = state.config;
+    if (!page || !cfg || page === cfg) return;
+    ['media', 'sections', 'filters', 'courses', 'text', 'logos', 'sizes', 'symbols'].forEach(function (k) {
+      if (cfg[k] !== undefined) page[k] = cfg[k];
+    });
+  }
+
   function markDirty() {
     state.dirty = true;
+    mirrorToPage();
     if (statusEl) {
       statusEl.className = 'ed-note ed-dirty';
       statusEl.textContent = 'Unsaved changes — Save writes site-config.json.';
@@ -2167,6 +3337,11 @@
       }
       try { localStorage.removeItem('rs-style'); } catch (e) {}
       link.href = 'style.css';
+    };
+    link.onload = function () {
+      reapplyColours();
+      paintColors(); paintColourSummary(); paintThemeState();
+      if (typeof renderItemColours === 'function') renderItemColours();
     };
     link.href = href;
 
@@ -2212,6 +3387,73 @@
     return disk;
   }
 
+  /* site-config.json is downloaded by every visitor, so it carries only what
+     the page shows. The brand-logo catalogue (about 10 KB compressed) is
+     written only while Skill icons is set to brand logos - the full catalogue
+     always stays here in the editor - and picked symbols nobody uses any more
+     are dropped. */
+  function slimForVisitors(body) {
+    var m = body.media || {};
+    if (m.skillIcons !== 'brand') body.logos = [];
+    if (m.symbolDefs) delete m.symbolDefs;
+    var built = buildSymbols(body);
+    if (built) body.symbols = built;
+    return body;
+  }
+
+  /* The symbols a visitor needs: one map entry per tool the resume names
+     (skills, project keywords, AI tools) and one drawing per symbol those
+     use, plus any picked by hand on a card. Keys are sorted so the file
+     only changes when the content does. */
+  function buildSymbols(cfg) {
+    var cat = window.ICON_CATALOG || {};
+    var all = cat.symbols || {}, rule = cat.symbolFor || {};
+    var data = window.__resumeData;
+    if (!data) return null;
+    var terms = {};
+    function add(t) { if (t) terms[normTerm(t)] = true; }
+    (data.projects || []).forEach(function (p) { (p.stack || []).forEach(add); });
+    (data.internships || []).forEach(function (p) { (p.stack || []).forEach(add); });
+    (data.skills || []).forEach(function (s) { (s.items || []).forEach(add); });
+    (data.aiTools || []).forEach(function (g) { add(g.category); (g.items || []).forEach(add); });
+    var map = {}, want = {}, badge = false;
+    function use(v) {
+      if (!v) return;
+      if (v.slice(0, 4) === 'ext:') { badge = true; return; }
+      if (all[v]) want[v] = true;
+    }
+    Object.keys(terms).sort().forEach(function (t) {
+      if (rule[t]) { map[t] = rule[t]; use(rule[t]); }
+    });
+    var picks = (cfg.media || {}).cardSymbols || {};
+    Object.keys(picks).forEach(function (k) { use(picks[k]); });
+    if (badge) want['file-code'] = true;   /* a badge's stand-in on small chips */
+    var defs = {};
+    Object.keys(want).sort().forEach(function (k) { defs[k] = all[k]; });
+    return { map: map, defs: defs };
+  }
+  /* True when the config's copy was out of date and has been replaced. */
+  function syncSymbols() {
+    var cfg = ensure();
+    var built = buildSymbols(cfg);
+    if (!built || JSON.stringify(cfg.symbols) === JSON.stringify(built)) return false;
+    cfg.symbols = built;
+    mirrorToPage();
+    return true;
+  }
+  /* After load: if the resume gained or lost a tool since the last save,
+     refresh the copy and say so, so the next Save publishes it. */
+  (function waitForResume(n) {
+    if (window.__resumeData && state.fromDisk) {
+      if (syncSymbols()) {
+        markDirty(); refreshTechMarks();
+        note('Skill symbols updated to match the resume. Save to publish them.');
+      }
+      return;
+    }
+    if (n < 80) setTimeout(function () { waitForResume(n + 1); }, 250);
+  })(0);
+
   function saveConfig() {
     var cfg = ensure();
     /* Re-read the file first so edits land on what's there NOW, not on
@@ -2223,6 +3465,7 @@
         var body = (disk && state.baseline)
           ? mergeEdits(disk, state.baseline, cfg)
           : cfg;
+        slimForVisitors(body);
         return fetch('/__save-config', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -2263,16 +3506,17 @@
         /* Snapshot for diff-on-save: keys that don't differ from this
            baseline are left alone on disk (see mergeEdits). */
         state.baseline = JSON.parse(JSON.stringify(j));
+        state.fromDisk = true;   /* the real file, not ensure()'s skeleton */
         state.recent = (j.colors && j.colors.recent) || [];
         paintRecent();
 
         /* Re-apply saved colour overrides for the active theme so the panel
            and the page agree on what's currently set. */
-        var themed = (j.colors && j.colors[theme()]) || {};
-        Object.keys(themed).forEach(function (k) {
-          if (k.charAt(0) === '_') return;
-          document.documentElement.style.setProperty('--' + k, themed[k]);
-        });
+        var moved = migrateLegacyColours();
+        reapplyColours();
+        var themed = curSet(false);
+        paintColors(); paintColourSummary();
+        if (moved) setTimeout(function () { note(moved); }, 400);
         var sh = (j.media || {}).logoShadow;
         var shEl = document.getElementById('ed-logo-shadow');
         if (shEl && sh !== undefined && sh !== null) {
@@ -2296,6 +3540,12 @@
         paintThemeState();
         paintLogoToggles();
         paintMiscToggles();
+        if (panel._paintLabelStyle) panel._paintLabelStyle();
+        if (panel._paintDs) panel._paintDs();
+        var fms = document.getElementById('ed-fm');
+        if (fms) fms.value = (j.media && j.media.featuredMedia) || 'image';
+        var dps = document.getElementById('ed-dg-place');
+        if (dps) dps.value = (j.media && j.media.diagramPlacement) || 'wide';
         paintEntryToggles();
         paintHiddenList();
         paintNavList();
@@ -2366,6 +3616,19 @@
         if (m === 'Title' || m === 'Tagline' || m === 'About' ||
             m === 'Meta lines' || m === 'Availability') {
           return { name: m, kind: 'intro' };
+        }
+        /* Courses render two ways: as .course-line when the category is
+           collapsed, and as .course-card when it's open. Matching only the
+           card meant right-clicking a collapsed line fell through to the
+           generic "project" branch and pointed at the wrong source. */
+        for (var cc = el; cc && cc !== document.body; cc = cc.parentNode) {
+          if (!cc.classList) continue;
+          if (cc.classList.contains('course-card') ||
+              cc.classList.contains('course-line') ||
+              cc.classList.contains('course-online-item')) {
+            return { name: m, kind: 'course' };
+          }
+          if (cc.id === 'courses') return { name: m, kind: 'course' };
         }
         /* A tools-card span also carries data-entry; treat it as its own
            kind so the panel offers card-specific controls. */
@@ -2441,6 +3704,7 @@
      same classes the page uses, so it inherits the same CSS and shows the
      tile in its true position rather than an approximation. */
   function renderPreviewWindow(name, kind) {
+    if (renderClonePreview()) return;
     if (!pvwin) return;
     var body = document.getElementById('ed-pvwin-body');
     var label = document.getElementById('ed-pvwin-name');
@@ -2632,7 +3896,7 @@
     var openTex = el('button', 'ed-pick', 'find in resume.tex');
     openTex.style.width = 'auto'; openTex.style.padding = '3px 9px';
     openTex.addEventListener('click', function (e) {
-      e.stopPropagation(); openTexEditor(domain);
+      e.stopPropagation(); openTexEditor(domain, 'domain');
     });
     srcRow.appendChild(openTex);
     box.appendChild(srcRow);
@@ -2653,7 +3917,7 @@
 
     var KIND = { project: 'project', education: 'education',
                  internship: 'internship', section: 'section',
-                 card: 'tool card', intro: 'page text' };
+                 card: 'tool card', course: 'course', intro: 'page text' };
     var hd = el('div', 'ed-item-hd');
     hd.appendChild(el('span', 'ed-item-kind', KIND[kind] || 'item'));
     hd.appendChild(el('span', null, 'Edit this item'));
@@ -2928,15 +4192,266 @@
       box.appendChild(introNote);
     }
 
+    /* Courses: one switch, since the text itself lives in resume.tex. */
+    if (kind === 'course') {
+      var mc = mediaStore();
+      if (!mc.hiddenCourses) mc.hiddenCourses = {};
+      var cRow = el('div', 'ed-row');
+      cRow.appendChild(el('label', null, 'Show course'));
+      var cBtn = el('button', 'ed-pick', '');
+      cBtn.style.width = 'auto'; cBtn.style.padding = '3px 12px';
+      function paintCourse() {
+        var off = mc.hiddenCourses[name] === true;
+        cBtn.textContent = off ? 'hidden' : 'shown';
+        cBtn.style.background = off ? 'transparent' : 'var(--accent)';
+        cBtn.style.color = off ? 'inherit' : '#fff';
+      }
+      cBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        mc.hiddenCourses[name] = !mc.hiddenCourses[name];
+        if (!mc.hiddenCourses[name]) delete mc.hiddenCourses[name];
+        markDirty(); paintCourse(); paintHiddenList();
+        document.querySelectorAll('.course-card').forEach(function (c) {
+          if (c.getAttribute('data-entry') === name) {
+            c.style.display = mc.hiddenCourses[name] ? 'none' : '';
+          }
+        });
+      });
+      paintCourse();
+      cRow.appendChild(cBtn);
+      box.appendChild(cRow);
+    }
+
+    /* Diagram on/off for anything that has one. */
+    if (kind === 'project' || kind === 'internship') {
+      var md = mediaStore();
+      if (!md.hiddenDiagrams) md.hiddenDiagrams = {};
+      var dRow = el('div', 'ed-row');
+      dRow.appendChild(el('label', null, 'Diagram'));
+      var dBtn = el('button', 'ed-pick', '');
+      dBtn.style.width = 'auto'; dBtn.style.padding = '3px 12px';
+      function paintDiagram() {
+        var off = md.hiddenDiagrams[name] === true;
+        dBtn.textContent = off ? 'hidden' : 'shown';
+        dBtn.style.background = off ? 'transparent' : 'var(--accent)';
+        dBtn.style.color = off ? 'inherit' : '#fff';
+      }
+      dBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        md.hiddenDiagrams[name] = !md.hiddenDiagrams[name];
+        if (!md.hiddenDiagrams[name]) delete md.hiddenDiagrams[name];
+        markDirty(); paintDiagram();
+        document.querySelectorAll('[data-entry], [data-title]').forEach(function (row) {
+          var n = row.getAttribute('data-entry') || row.getAttribute('data-title');
+          if (n !== name) return;
+          var f = row.querySelector('.proj-diagram');
+          if (f) f.style.display = md.hiddenDiagrams[name] ? 'none' : '';
+        });
+      });
+      paintDiagram();
+      dRow.appendChild(dBtn);
+      box.appendChild(dRow);
+
+      var mmRow = el('div', 'ed-row');
+      mmRow.appendChild(el('label', null, 'Media'));
+      var mmSel = el('select');
+      mmSel.style.cssText = 'font:inherit;font-size:11px;padding:3px 6px;border-radius:5px;' +
+        'border:1px solid var(--rule,#ccc);background:transparent;color:inherit;';
+      [['', 'site default'], ['image', 'image only'], ['gif', 'GIF only'], ['both', 'image + GIF']]
+        .forEach(function (o) { var op = el('option', null, o[1]); op.value = o[0]; mmSel.appendChild(op); });
+      if (!md.mediaMode) md.mediaMode = {};
+      mmSel.value = md.mediaMode[name] || '';
+      mmSel.addEventListener('click', function (e) { e.stopPropagation(); });
+      mmSel.addEventListener('change', function () {
+        if (mmSel.value) md.mediaMode[name] = mmSel.value; else delete md.mediaMode[name];
+        markDirty();
+        if (window.__pfRenderWork) window.__pfRenderWork();
+      });
+      mmRow.appendChild(mmSel);
+      box.appendChild(mmRow);
+
+      var gRow = el('div', 'ed-row');
+      gRow.appendChild(el('label', null, 'GIF file'));
+      var gIn = el('input'); gIn.type = 'text'; gIn.style.width = '150px';
+      gIn.placeholder = 'nids.gif or nids.mp4';
+      if (!md.gifs) md.gifs = {};
+      gIn.value = md.gifs[name] || '';
+      gIn.addEventListener('click', function (e) { e.stopPropagation(); });
+      gIn.addEventListener('change', function () {
+        var v = gIn.value.trim();
+        if (v) md.gifs[name] = v; else delete md.gifs[name];
+        markDirty();
+        if (window.__pfRenderWork) window.__pfRenderWork();
+        note(v ? 'GIF set for "' + name + '". It shows when Media is GIF or image + GIF.'
+               : 'GIF removed for "' + name + '".');
+      });
+      gRow.appendChild(gIn);
+      box.appendChild(gRow);
+      box.appendChild(el('div', 'ed-note',
+        'Put the file in your image folder. .mp4 or .webm play like a GIF at a ' +
+        'fraction of the size.'));
+    }
+
     /* Tools cards: choose which mark this card shows. Accepts a catalogue
        logo name, a literal emoji, or blank to suppress it entirely. */
     if (kind === 'card') {
       var m2 = mediaStore();
       if (!m2.cardLogos) m2.cardLogos = {};
+
+      /* Explicit choice of what the card shows. "icon" uses the matched or
+         generated mark; "text" shows the name alone. Stored as cardLogos:
+         absent = icon, "" = text, anything else = a chosen override. */
+      var modeRow = el('div', 'ed-row');
+      modeRow.appendChild(el('label', null, 'Show as'));
+      var bIcon = el('button', 'ed-pick', 'icon');
+      var bText = el('button', 'ed-pick', 'text');
+      [bIcon, bText].forEach(function (b) { b.style.width = 'auto'; b.style.padding = '3px 12px'; });
+      bIcon.title = 'Show the icon for this skill';
+      bText.title = 'Show only the name, no icon';
+      function paintMode() {
+        var isText = m2.cardLogos[name] === '';
+        bIcon.style.background = isText ? 'transparent' : 'var(--accent)';
+        bIcon.style.color = isText ? 'inherit' : '#fff';
+        bText.style.background = isText ? 'var(--accent)' : 'transparent';
+        bText.style.color = isText ? '#fff' : 'inherit';
+      }
+      function rerender() {
+        if (window.__pfRenderSkills && window.__resumeData) {
+          window.__pfRenderSkills(window.__resumeData.skills || []);
+        }
+      }
+      bIcon.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (m2.cardLogos[name] === '') delete m2.cardLogos[name];
+        markDirty(); paintMode(); rerender();
+        note('"' + name + '" shows its icon. Save to keep it.');
+      });
+      bText.addEventListener('click', function (e) {
+        e.stopPropagation();
+        m2.cardLogos[name] = '';
+        markDirty(); paintMode(); rerender();
+        note('"' + name + '" shows as text only. Save to keep it.');
+      });
+      paintMode();
+      modeRow.appendChild(bIcon); modeRow.appendChild(bText);
+      box.appendChild(modeRow);
+
+      /* Which symbol this card shows. "auto" is the built-in choice for the
+         tool; any other pick is stored in media.cardSymbols. A language can
+         carry a file badge instead: type its extension. */
+      if (!m2.cardSymbols) m2.cardSymbols = {};
+      var symAll = (window.ICON_CATALOG || {}).symbols || {};
+      var symNames = Object.keys(symAll);
+      if (symNames.length) {
+        var symHead = el('div', 'ed-row');
+        symHead.appendChild(el('label', null, 'Symbol'));
+        var symAuto = el('button', 'ed-pick', 'auto');
+        symAuto.style.width = 'auto'; symAuto.style.padding = '3px 12px';
+        symAuto.title = 'Use the built-in symbol for this tool';
+        var extIn = el('input'); extIn.type = 'text'; extIn.style.width = '64px';
+        extIn.maxLength = 5; extIn.placeholder = 'py, rs...';
+        extIn.title = 'File badge: type a file extension (up to 5 characters)';
+        symHead.appendChild(symAuto);
+        symHead.appendChild(el('span', 'ed-tok-def', 'badge'));
+        symHead.appendChild(extIn);
+        box.appendChild(symHead);
+        var symGrid = el('div', 'ed-symgrid');
+        var symBtns = {};
+        function paintSym() {
+          var v = m2.cardSymbols[name];
+          symAuto.style.background = v === undefined ? 'var(--accent)' : 'transparent';
+          symAuto.style.color = v === undefined ? '#fff' : 'inherit';
+          extIn.value = (v && v.slice(0, 4) === 'ext:') ? v.slice(4) : '';
+          symNames.forEach(function (k) {
+            symBtns[k].className = 'ed-sym' + (v === k ? ' is-on' : '');
+          });
+        }
+        function setSym(v) {
+          if (v === undefined) delete m2.cardSymbols[name]; else m2.cardSymbols[name] = v;
+          syncSymbols();   /* the page needs the picked drawing to show it */
+          if (m2.cardLogos[name] === '') delete m2.cardLogos[name];
+          markDirty(); paintSym(); paintMode(); refreshTechMarks();
+        }
+        symNames.forEach(function (k) {
+          var b = el('button', 'ed-sym', '');
+          b.title = k;
+          b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+            'stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">' + symAll[k] + '</svg>';
+          b.addEventListener('click', function (e) {
+            e.stopPropagation(); setSym(k);
+            note('"' + name + '" uses the "' + k + '" symbol. Save to keep it.');
+          });
+          symBtns[k] = b;
+          symGrid.appendChild(b);
+        });
+        symAuto.addEventListener('click', function (e) {
+          e.stopPropagation(); setSym(undefined);
+          note('"' + name + '" is back to its built-in symbol.');
+        });
+        extIn.addEventListener('click', function (e) { e.stopPropagation(); });
+        extIn.addEventListener('change', function () {
+          var v = extIn.value.replace(/[^A-Za-z0-9+#.]/g, '').slice(0, 5);
+          setSym(v ? 'ext:' + v : undefined);
+          note(v ? '"' + name + '" shows a file badge reading "' + v + '".'
+                 : '"' + name + '" is back to its built-in symbol.');
+        });
+        paintSym();
+        box.appendChild(symGrid);
+        if (m2.skillIcons === 'brand') {
+          box.appendChild(el('div', 'ed-note',
+            'Skill icons are set to brand logos, so this symbol is not shown. ' +
+            'Switch to symbols under Look.'));
+        }
+      }
+
+      /* Official icon file(s). A brand's own published mark beats any drawn
+         copy; many projects publish one version for light backgrounds and one
+         for dark, so night mode can have its own. */
+      if (!m2.iconFiles) m2.iconFiles = {};
+      var iconSpec = m2.iconFiles[name];   /* not `cur`: that's the item's settings, function-wide */
+      var curL = typeof iconSpec === 'string' ? iconSpec : ((iconSpec || {}).light || '');
+      var curD = typeof iconSpec === 'string' ? '' : ((iconSpec || {}).dark || '');
+      function fileRow(label, val, which) {
+        var r = el('div', 'ed-row');
+        r.appendChild(el('label', null, label));
+        var inp = el('input'); inp.type = 'text'; inp.style.width = '150px';
+        inp.placeholder = which === 'light' ? 'icons/linux.svg' : 'optional';
+        inp.value = val;
+        var st = el('span', 'ed-tok-def', '');
+        function check(v) {
+          if (!v) { st.textContent = ''; return; }
+          var src = /^(https?:|\/|data:)/.test(v) ? v : ((m2.imageDir || 'assets/') + v);
+          var im = new Image();
+          im.onload = function () { st.textContent = '✓ found'; st.style.color = '#2e9d5b'; };
+          im.onerror = function () { st.textContent = 'not found: ' + src; st.style.color = '#d14b4b'; };
+          im.src = src;
+        }
+        inp.addEventListener('click', function (e) { e.stopPropagation(); });
+        inp.addEventListener('change', function () {
+          var v = inp.value.trim();
+          var o = m2.iconFiles[name];
+          o = typeof o === 'string' ? { light: o } : (o || {});
+          if (v) o[which] = v; else delete o[which];
+          if (!o.light && !o.dark) delete m2.iconFiles[name];
+          else m2.iconFiles[name] = (o.light && !o.dark) ? o.light : o;
+          markDirty(); check(v); rerender();
+        });
+        check(val);
+        r.appendChild(inp);
+        box.appendChild(r);
+        box.appendChild(st);
+      }
+      fileRow('Icon file', curL, 'light');
+      fileRow('Night file', curD, 'dark');
+      box.appendChild(el('div', 'ed-note',
+        'Use the project’s official logo file (SVG preferred) from its own brand or press page. ' +
+        'Put it in your image folder and type its name. It’s shown exactly as published — ' +
+        'not recoloured. Add a night file if the project publishes a version for dark backgrounds.'));
+
       var clRow = el('div', 'ed-row');
       clRow.appendChild(el('label', null, 'Card mark'));
       var clIn = el('input'); clIn.type = 'text'; clIn.style.width = '104px';
-      clIn.placeholder = 'logo name or emoji';
+      clIn.placeholder = 'emoji';
       clIn.value = m2.cardLogos[name] !== undefined ? m2.cardLogos[name] : '';
       clIn.addEventListener('click', function (e) { e.stopPropagation(); });
       clIn.addEventListener('input', function () {
@@ -2947,9 +4462,8 @@
       box.appendChild(clRow);
 
       var clHint = el('div', 'ed-note',
-        'Try a catalogue name (Python, Docker, Claude…), an emoji, or leave ' +
-        'blank to hide the mark. Clear the field and press reset to fall back ' +
-        'to automatic matching.');
+        'An emoji here replaces the symbol. With Skill icons set to brand logos, ' +
+        'a catalogue name (Python, Docker...) also works.');
       box.appendChild(clHint);
 
       /* Hide a single tool without editing resume.tex — useful for
@@ -3033,6 +4547,9 @@
     var SRC = {
       intro:      { file: 'resume.tex', where: 'top comment block (tagline: / about:)' },
       card:       { file: 'resume.tex', where: '\\section*{Skills} item list' },
+      course:     { file: 'resume.tex',
+                    where: '\\section*{Courses} — the \\item list, or the ' +
+                           'courses: comment block below it' },
       education:  { file: 'resume.tex', where: '\\section*{Education}' },
       internship: { file: 'resume.tex', where: '\\section*{Internships}' },
       project:    { file: 'resume.tex', where: '\\subsection*{' + name + '}' },
@@ -3057,10 +4574,15 @@
       e.stopPropagation();
       /* Search for the structural marker where one exists, since the bare
          name may appear in several places. */
-      var probe = kind === 'project' ? '\\subsection*{' + name
-                : kind === 'intro'   ? (name === 'About' ? 'about:' : 'tagline:')
-                : name;
-      openTexEditor(probe);
+      /* Courses appear in two blocks; search for the name followed by a
+         colon so the hit is the definition line, not a stray mention. */
+      /* Pass the bare name plus its kind; the locator picks the right
+         structural anchor and normalises LaTeX differences itself. */
+      if (kind === 'intro') {
+        openTexEditor(name === 'About' ? 'about:' : 'tagline:', 'intro');
+      } else {
+        openTexEditor(name, kind);
+      }
     });
     srcRow.appendChild(openTex);
     var openHtml = el('button', 'ed-pick', 'edit index.html');
@@ -3304,18 +4826,19 @@
   }
 
   /* ---------- show / hide ---------- */
-  function show(x, y) {
+  function show() {
     panel.classList.add('open');
-    /* Once dragged, stay where the user put it rather than jumping back to
-       the cursor on every right-click. */
-    if (!panel.dataset.moved) {
-      var w = 290, h = Math.min(panel.scrollHeight, window.innerHeight * 0.82);
-      panel.style.left = Math.min(x, window.innerWidth  - w - 12) + 'px';
-      panel.style.top  = Math.min(y, window.innerHeight - h  - 12) + 'px';
-    }
+    document.documentElement.classList.add('ed-docked');
     syncFromComputed();
+    relayoutPage();
   }
-  function hide() { panel.classList.remove('open'); }
+  function hide() {
+    panel.classList.remove('open');
+    document.documentElement.classList.remove('ed-docked');
+    if (dock.selEl) { dock.selEl.classList.remove('ed-selected'); dock.selEl = null; }
+    _pinned = null; clearHighlight();
+    relayoutPage();
+  }
 
   function init() {
     build();
@@ -3359,7 +4882,9 @@
     document.addEventListener('contextmenu', function (e) {
       e.preventDefault();
       var hit = targetNameFromEvent(e.target);
-      show(e.clientX, e.clientY);
+      show();
+      selectArea(e.target);
+      switchTab('inspect');
       if (hit && hit.kind === 'filter') {
         openFilterPanel(hit.ftype, hit.name);
       } else if (hit && hit.kind === 'nav') {
@@ -3372,8 +4897,13 @@
         var box = document.getElementById('ed-item');
         if (box) box.classList.remove('open');
       }
+      /* Always preview the area, even when it has no editable item of its
+         own (a section heading, the contact block). */
+      setTimeout(function () { renderClonePreview(); renderItemColours(); }, 0);
     });
-    document.addEventListener('click', hide);
+    /* Clicking the page no longer closes the editor: with the panel docked
+       beside the page it isn't in the way, and closing on every click made
+       it impossible to use the page while editing. Esc or x closes it. */
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') hide();
     });
