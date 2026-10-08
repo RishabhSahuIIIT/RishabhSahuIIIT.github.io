@@ -2751,8 +2751,36 @@
      blue and yellow at equal HSL lightness differ hugely in perceived
      brightness, which left some categories indistinguishable from the page. */
   let _courseCols = null;
+  /* What the course colours were last worked out from, so a theme switch can
+     repaint them in place (keeping open lines open) instead of re-rendering. */
+  let _courseRender = null;
+  function recolourCourses() {
+    const r = _courseRender;
+    if (!r) return;
+    if (r.domains.length) {
+      const C = courseColors(r.domains);
+      document.querySelectorAll('#courses-list [data-cat]').forEach(e => {
+        const d = e.getAttribute('data-cat');
+        if (!C.vivid[d]) return;
+        if (e.classList.contains('is-text')) e.style.color = C.vivid[d];
+        else if (e.classList.contains('is-outline')) e.style.borderColor = C.vivid[d];
+        else { e.style.background = C.vivid[d]; e.style.color = C.ink[d]; }
+      });
+    }
+    if (r.feat.length) {
+      const F = courseColors(r.feat, r.mode);
+      document.querySelectorAll('#courses-featured .course-card.is-filled').forEach(e => {
+        const n = e.getAttribute('data-entry');
+        if (!F.vivid[n]) return;
+        e.style.setProperty('--cat', F.vivid[n]);
+        e.style.setProperty('--cat-ink', F.ink[n]);
+      });
+    }
+  }
   function courseColors(domains, fill) {
-    const key = (fill ? 'f|' : '') + domains.join('|');
+    const bg = _pageBg();
+    const dark = _relLum(bg) < 0.5;
+    const key = (fill || 0) + (dark ? 'd|' : 'l|') + domains.join('|');
     if (_courseCols && _courseCols.key === key) return _courseCols;
     const toHex = (r, g, b) =>
       '#' + [r, g, b].map(v => ('0' + Math.round(v * 255).toString(16)).slice(-2)).join('');
@@ -2768,45 +2796,83 @@
       };
       return [f(h + 1/3), f(h), f(h - 1/3)];
     };
-    const out = { key: key, vivid: {}, ink: {} };
-    const bg = _pageBg();
-    const dark = _relLum(bg) < 0.5;
-    domains.forEach((d, i) => {
-      /* Hues are spread evenly, but not over the whole wheel. Yellow and
-         yellow-green only look like themselves when they are very bright;
-         at the brightness these boxes need they turn olive, khaki and
-         mustard, the one dull stretch of the spectrum. So that arc is left
-         out and the colours are spaced over the rest, starting from blue.
-         Outlines skip the browns as well (from 30 degrees); filled cards
-         keep orange and amber, at their own brightness (see below).
-         fill: 0 outlines, 1 bright cards with dark text, 2 deep cards with
-         white text. A deep orange is rust and a deep lime is moss, so deep
-         cards run from green round to red and leave out everything between. */
-      const deep = fill === 2;
-      const SKIP_FROM = deep ? 10 : fill ? 46 : 30, SKIP_TO = deep ? 110 : 100,
-            span = 360 - (SKIP_TO - SKIP_FROM);
-      const deg = (SKIP_TO + (209 - SKIP_TO + i * span / domains.length) % span) % 360;
-      const h = deg / 360;
-      /* An orange darkened to match the others is brown. On a filled card
-         it is kept at least as light as the pure hue instead: the card is
-         a block of colour, so it does not need the page contrast a thin
-         outline does, and its text is dark either way. */
-      const floor = fill === 1 && deg > 12 && deg < 50 ? 0.52 : 0;
-      /* Solve for a luminance that clears the page by a wide margin either
-         way, so a filled label is unmissable in both themes. */
-      /* Deep cards: dark enough that white text reads at about 6:1 on a
-         light page. On a dark page the same colours sit closer to the
-         background and their saturation glares, so there they are a step
-         lighter and a little calmer (white text still about 5:1). */
-      const target = deep ? (dark ? 0.16 : 0.125)
-        : dark ? Math.max(0.32, _relLum(bg) * 9) : Math.min(0.30, _relLum(bg) / 3);
+    /* fill: 0 outlines, 1 bright cards with dark text, 2 deep cards with
+       white text.
+       Not the whole wheel is used. Yellow and yellow-green only look like
+       themselves when they are very bright; at the brightness these need
+       they turn olive, khaki and mustard, the one dull stretch of the
+       spectrum, so that arc is left out. Outlines skip the browns as well
+       (from 30 degrees); bright cards keep orange and amber, at their own
+       brightness (see floor); a deep orange is rust and a deep lime is
+       moss, so deep cards run from green round to red and nothing between. */
+    const deep = fill === 2;
+    const SKIP_FROM = deep ? 10 : fill ? 46 : 30, SKIP_TO = deep ? 110 : 100;
+    /* Deep cards: dark enough that white text reads at about 6:1 on a light
+       page. On a dark page the same colours sit closer to the background
+       and their saturation glares, so there they are a step lighter and a
+       little calmer (white text still about 5:1). Outlines and bright cards
+       solve for a luminance that clears the page by a wide margin. */
+    const target = deep ? (dark ? 0.16 : 0.125)
+      : dark ? Math.max(0.32, _relLum(bg) * 9) : Math.min(0.30, _relLum(bg) / 3);
+    const sat = deep && !dark ? 0.78 : 0.70;
+    const colourAt = deg => {
+      const h = (deg % 360) / 360;
       let lo = 0, hi = 1, c = '#888';
-      for (let k = 0; k < 30; k++) {
+      for (let k = 0; k < 26; k++) {
         const mid = (lo + hi) / 2;
-        c = toHex.apply(null, hls(h, mid, deep && !dark ? 0.78 : 0.70));
+        c = toHex.apply(null, hls(h, mid, sat));
         if (_relLum(c) < target) lo = mid; else hi = mid;
       }
-      if (lo < floor) c = toHex.apply(null, hls(h, floor, 0.82));
+      /* An orange darkened to match the others is brown. On a bright card
+         it is kept at least as light as the pure hue instead: the card is a
+         block of colour, so it does not need the page contrast a thin
+         outline does, and its text is dark either way. */
+      const d = deg % 360;
+      if (fill === 1 && d > 12 && d < 50 && lo < 0.52) c = toHex.apply(null, hls(h, 0.52, 0.82));
+      return c;
+    };
+    /* Spacing by how different the colours look, not by angle. Equal steps
+       of hue are not equal steps to the eye: dark greens and teals differ
+       far less than blues and purples, so even angles put near-twins side
+       by side there. The arc is walked in small steps, the visible change
+       measured along it (distance in OKLab, a space built to match
+       perceived difference), and the colours placed at equal shares of
+       that total, so neighbours all differ by about the same amount. */
+    const lab = c => {
+      const v = [1, 3, 5].map(i => {
+        const x = parseInt(c.substr(i, 2), 16) / 255;
+        return x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+      });
+      const l = Math.cbrt(0.4122214708 * v[0] + 0.5363355889 * v[1] + 0.0514459929 * v[2]),
+            m = Math.cbrt(0.2119034982 * v[0] + 0.6806995451 * v[1] + 0.1073969566 * v[2]),
+            s = Math.cbrt(0.0883024619 * v[0] + 0.2817188376 * v[1] + 0.6299787005 * v[2]);
+      return [0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
+              1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
+              0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s];
+    };
+    const degs = [], cum = [0];
+    for (let d = SKIP_TO; d <= SKIP_FROM + 360; d += 3) degs.push(d);
+    let prev = lab(colourAt(degs[0]));
+    for (let j = 1; j < degs.length; j++) {
+      const cur = lab(colourAt(degs[j]));
+      cum.push(cum[j - 1] + Math.hypot(cur[0] - prev[0], cur[1] - prev[1], cur[2] - prev[2]));
+      prev = cur;
+    }
+    const n = domains.length, total = cum[cum.length - 1], pts = [];
+    for (let k = 0, j = 1; k < n; k++) {
+      const t = (k + 0.5) * total / n;
+      while (j < cum.length - 1 && cum[j] < t) j++;
+      const f = (t - cum[j - 1]) / ((cum[j] - cum[j - 1]) || 1);
+      pts.push(degs[j - 1] + f * (degs[j] - degs[j - 1]));
+    }
+    /* The sequence starts from the colour nearest blue and runs round. */
+    let k0 = 0;
+    const gap = d => Math.abs(((d - 209) % 360 + 540) % 360 - 180);
+    pts.forEach((d, k) => { if (gap(d) < gap(pts[k0])) k0 = k; });
+
+    const out = { key: key, vivid: {}, ink: {} };
+    domains.forEach((d, i) => {
+      const c = colourAt(pts[(k0 + i) % n]);
       out.vivid[d] = c;
       /* Pick whichever ink actually contrasts more. A fixed brightness
          cut-off put white text on mid-tone boxes in light mode, which read
@@ -2879,11 +2945,19 @@
             (isPage ? ' referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"' : '') +
             '></iframe>') +
       '</div>' +
-      (isPage ? '<div class="cert-note">Blank? This site doesn\u2019t allow being shown inside another page. ' +
+      (isPage ? '<div class="cert-note">Not showing? Some sites won\u2019t load inside another page. ' +
                 '<a href="' + escapeHTML(url) + '" target="_blank" rel="noopener">Open it in a new tab \u2197</a></div>' : '');
     dlg.showModal();
   }
 
+  /* Wording the page writes itself (not from resume.tex or index.html),
+     e.g. "Selected coursework". text.labels[original] in site-config.json
+     replaces it; the element keeps the original in data-ui so the editor
+     can find and rename it. */
+  function uiLabel(s) {
+    const l = (SITE_CONFIG.text || {}).labels || {};
+    return escapeHTML(l[s] || s);
+  }
   function renderCourses(courses) {
     window.__pfRenderCourses = renderCourses;   // let the editor re-render live
     const el = document.getElementById('courses-list');
@@ -2919,10 +2993,12 @@
     visible.forEach(c => { (groups[c.domain || 'Other'] = groups[c.domain || 'Other'] || []).push(c); });
     const domains = Object.keys(groups).sort((a, b) => rank(a) - rank(b));
     const COLS = courseColors(domains);
+    _courseRender = { domains: domains, feat: [], mode: 2 };
 
     /* Featured stays its own block above; the list below carries no extra
        emphasis for those courses, since that job is already done. */
-    const isOnline = c => /educative|nptel|coursera|udemy|edx|online/i.test(c.source || '');
+    const isOnline = c =>
+      /educative|nptel|coursera|udemy|edx|hackerrank|udacity|datacamp|online/i.test(c.source || '');
     const featured = visible.filter(c => c.featured);
     if (featEl) {
       if (featured.length && media.showFeaturedCourses !== false) {
@@ -2935,7 +3011,9 @@
            around the wheel, in the order shown, so no two cards match and
            the block runs through the whole spectrum. */
         const fUni = featured.filter(c => !isOnline(c)), fSelf = featured.filter(isOnline);
-        const FC = featColour ? courseColors(fUni.concat(fSelf).map(c => c.name), cfg.featuredInk === 'dark' ? 1 : 2) : null;
+        const fNames = fUni.concat(fSelf).map(c => c.name), fMode = cfg.featuredInk === 'dark' ? 1 : 2;
+        const FC = featColour ? courseColors(fNames, fMode) : null;
+        _courseRender = { domains: domains, feat: featColour ? fNames : [], mode: fMode };
         const fCard = c =>
           '<article class="course-card is-featured' + (featColour ? ' is-filled' : '') +
             '" data-entry="' + escapeHTML(c.name) + '"' +
@@ -2947,11 +3025,11 @@
           '</article>';
         const col = (cls, lab, items) =>
           '<div class="course-feat-col ' + cls + '">' +
-            (fSelf.length && fUni.length ? '<div class="course-feat-lab">' + lab + '</div>' : '') +
+            (fSelf.length && fUni.length ? '<div class="course-feat-lab" data-ui="' + lab + '">' + uiLabel(lab) + '</div>' : '') +
             '<div class="course-items is-open">' + items.map(fCard).join('') + '</div>' +
           '</div>';
         featEl.innerHTML =
-          '<h4 class="course-featured-head">Selected coursework' +
+          '<h4 class="course-featured-head" data-ui="Selected coursework">' + uiLabel('Selected coursework') +
             '<span class="course-count">' + featured.length + '</span></h4>' +
           '<div class="course-feat-split' + (fSelf.length && fUni.length ? ' has-self' : '') + '">' +
             (fUni.length ? col('is-uni', 'University', fUni) : '') +
@@ -2980,7 +3058,7 @@
       const text = secondary ? altName(d) : d;
       if (style === 'text') {
         return '<div class="course-lab is-text' + (secondary ? ' is-b' : '') + '"' +
-               (secondary ? '' : ' style="color:' + COLS.vivid[d] + '"') + '>' +
+               (secondary ? '' : ' data-cat="' + escapeHTML(d) + '" style="color:' + COLS.vivid[d] + '"') + '>' +
                escapeHTML(text) +
                '<span class="course-count">' + n + '</span></div>';
       }
@@ -2989,6 +3067,7 @@
          second tone to keep track of. */
       return '<div class="course-lab"><span class="lab-box' + (secondary ? ' is-b' : '') +
                (!secondary && style === 'outline' ? ' is-outline' : '') + '"' +
+             (secondary ? '' : ' data-cat="' + escapeHTML(d) + '"') +
              (secondary ? ''
                : style === 'outline' ? ' style="border-color:' + COLS.vivid[d] + '"'
                : ' style="background:' + COLS.vivid[d] + ';color:' + COLS.ink[d] + '"') + '>' +
@@ -3007,7 +3086,7 @@
           '" data-entry="' + escapeHTML(c.name) + '"' +
           (more ? ' role="button" tabindex="0" aria-expanded="false"' : '') + '>' +
         escapeHTML(c.name) +
-        (c.source && /educative|nptel|coursera|udemy/i.test(c.source)
+        (isOnline(c)
           ? '<span class="course-ext"> \u2197</span>' : '') +
         (c.brief ? '<span class="course-gloss">' + escapeHTML(c.brief) + '</span>' : '') +
         (more
@@ -3059,8 +3138,9 @@
       online.forEach(c => { (providers[c.source] = providers[c.source] || []).push(c); });
       onlineHTML =
         '<div class="course-online">' +
-          '<h4 class="course-online-head">Self-directed' +
-            '<span class="course-online-sub">courses taken outside the degree</span>' +
+          '<h4 class="course-online-head" data-ui="Self-directed">' + uiLabel('Self-directed') +
+            '<span class="course-online-sub" data-ui="courses taken outside the degree">' +
+              uiLabel('courses taken outside the degree') + '</span>' +
             '<span class="course-count">' + online.length + '</span></h4>' +
           '<div class="course-online-list">' +
             Object.keys(providers).map(p =>
@@ -3680,6 +3760,8 @@
       typeof sizes.maxWidth === 'number' ? sizes.maxWidth + 'px' : sizes.maxWidth);
 
     applyColourOverrides(cfg);
+    _bgCache = null;
+    recolourCourses();
   }
 
   /* Per-section size overrides + icon rendering. Called after render so
@@ -3798,12 +3880,44 @@
         'Availability');
   }
 
+  /* Section titles. index.html carries each <h2>; site-config.json can
+     override its wording (text.sectionTitles[key]) and the small numbered
+     label above it (text.sectionLabels[key]). In an override, *word* sets
+     the italic word, as the headings in index.html do with <em>. A heading
+     without a data-section-title gets one from its section's id, so every
+     title can be overridden and picked out in the editor. Clearing an
+     override puts back exactly what index.html had. */
+  const _titleOrig = new WeakMap();
+  function titleHTML(s) {
+    return escapeHTML(String(s)).replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  }
   function applySectionTitles(cfg) {
-    const titles = ((cfg || SITE_CONFIG).text || {}).sectionTitles || {};
+    const text = (cfg || SITE_CONFIG).text || {};
+    const titles = text.sectionTitles || {}, labels = text.sectionLabels || {};
+    document.querySelectorAll('section[id] h2:not([data-section-title])').forEach(h => {
+      const id = h.closest('section').id;
+      h.setAttribute('data-section-title',
+        id.charAt(0).toUpperCase() + id.slice(1).replace(/-(\w)/g, (m, c) => ' ' + c.toUpperCase()));
+    });
     document.querySelectorAll('[data-section-title]').forEach(h => {
       const key = h.getAttribute('data-section-title');
-      const val = titles[key];
-      if (val) h.textContent = val;
+      /* A section icon (.sec-icon) sits inside the heading; it is not part
+         of the wording, so it is kept aside and put back in front. */
+      const icon = h.querySelector(':scope > .sec-icon');
+      if (!_titleOrig.has(h)) {
+        const c = h.cloneNode(true);
+        const ci = c.querySelector(':scope > .sec-icon');
+        if (ci) ci.remove();
+        _titleOrig.set(h, c.innerHTML);
+      }
+      h.innerHTML = titles[key] ? titleHTML(titles[key]) : _titleOrig.get(h);
+      if (icon) h.insertBefore(icon, h.firstChild);
+      const sec = h.closest('section');
+      const lab = sec && sec.querySelector('.col-label');
+      if (lab) {
+        if (!_titleOrig.has(lab)) _titleOrig.set(lab, lab.textContent);
+        lab.textContent = labels[key] || _titleOrig.get(lab);
+      }
     });
   }
 
@@ -4021,6 +4135,10 @@
         });
 
         applySectionConfig(SITE_CONFIG, data.sectionMeta);
+        /* Both were defined but never called, so title overrides and hidden
+           entries saved from the editor vanished on reload. */
+        applySectionTitles(SITE_CONFIG);
+        applyEntryToggles(SITE_CONFIG);
         /* Tag first: applyTextConfig now finds its targets via data-entry,
            so tagging has to happen before it runs or the overrides miss. */
         tagIntroRegions();
@@ -4055,8 +4173,11 @@
            these hooks; the logic for that lives in editor.js, not here.) */
         window.__pfApplyText = function () {
           applySectionConfig(SITE_CONFIG, data.sectionMeta);
+          applySectionTitles(SITE_CONFIG);
           applyTextConfig(SITE_CONFIG, data.intro);
         };
+        /* ...and redraw titles from the config the editor is working on. */
+        window.__pfApplyTitles = cfg => applySectionTitles(cfg || SITE_CONFIG);
         window.__renderedProjects = projects;
         console.log('[Portfolio] Render complete.');
       })

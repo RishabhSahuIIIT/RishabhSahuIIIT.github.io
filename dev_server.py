@@ -18,9 +18,20 @@ Commands typed into the terminal while the server is running:
     style default       reset - serve the actual style.css again
     list                show built-in style-*.css files in this folder
     preview             print the device-preview URL
+    compare [folder]    print the stylesheet-comparison URL
     devices             list device sizes offered by the preview page
     help                show command help
     quit  (or exit, q)  stop the server
+
+Comparing stylesheets
+---------------------
+Open http://localhost:<port>/compare to see the site drawn with several
+stylesheets at once, side by side. Add every .css file in a folder of the
+site (altStyles/, say), or pick files or a whole folder from anywhere on
+the computer. Each view renders at a real device width and is scaled to
+fit; scrolling one scrolls the others to the same content. Click a sheet's
+name to focus on it alone (arrow keys step through the others at the same
+spot); Esc goes back to the grid.
 
 Device preview
 --------------
@@ -46,14 +57,17 @@ what the SERVER returns for /style.css - so it affects every tab
 that loads /style.css without an explicit ?style= override.
 """
 import glob
+import html as _html
 import math
 import http.server
 import json
 import os
 import shlex
+import re
 import socketserver
 import sys
 import threading
+import urllib.parse
 
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
 ROOT = os.path.abspath(os.getcwd())
@@ -458,6 +472,757 @@ def build_preview_page():
             .replace("__BUTTONS__", buttons)
             .replace("__DEVICES__", devices)
             .replace("__SERVER__", server))
+
+
+# ============================================================
+# Stylesheet comparison  (/compare)
+# ------------------------------------------------------------
+# Several copies of the site side by side, each drawn with a different
+# stylesheet. Sheets come from a folder inside the site (listed by the
+# server), or from anywhere on the computer through the browser's file or
+# folder picker; picked files are sent here and kept in memory only, so
+# the server never reads outside the site folder.
+#
+# Each view is index.html served at /__compare-view with its stylesheet
+# link pointed at /__compare-sheet.css. Both live at the site root so that
+# relative addresses inside a sheet (fonts/...) resolve exactly as they do
+# for style.css. The link is moved below theme-init.js, which would
+# otherwise swap it for a saved ?style= preference, and the editor is left
+# out.
+# ============================================================
+
+COMPARE_UPLOADS = {}                          # id -> {'name', 'css', 'size'}
+COMPARE_UPLOAD_MAX = 5 * 1024 * 1024          # one sheet
+COMPARE_UPLOAD_TOTAL = 40 * 1024 * 1024       # all picked sheets together
+_COMPARE_SKIP_DIRS = {'node_modules', '__pycache__', 'fonts'}
+
+
+def _css_identity(text):
+    """(fingerprint, palette) for a stylesheet's text.
+
+    fingerprint: identical files get the same one, whatever their line
+    endings or trailing spaces. palette: "<theme-id>:<theme-hash>" from the
+    identity line the palette generator writes, so two copies of the same
+    palette match even when one is an older build; None when absent."""
+    import hashlib
+    norm = '\n'.join(l.rstrip() for l in text.replace('\r\n', '\n').split('\n')).strip()
+    fp = hashlib.sha1(norm.encode('utf-8')).hexdigest()[:12]
+    m = re.search(r'--theme-id:\s*"([^"]+)";\s*--theme-hash:\s*"([^"]+)"', text[:2000])
+    return fp, (m.group(1) + ':' + m.group(2)) if m else None
+
+
+def compare_dirs():
+    """Folders inside the site that hold .css files, with a count each."""
+    out = []
+    for dirpath, dirnames, filenames in os.walk(ROOT):
+        dirnames[:] = sorted(d for d in dirnames
+                             if not d.startswith('.') and d not in _COMPARE_SKIP_DIRS)
+        rel = os.path.relpath(dirpath, ROOT)
+        if rel != '.' and rel.count(os.sep) >= 3:
+            dirnames[:] = []
+        n = sum(1 for f in filenames if f.lower().endswith('.css'))
+        if n:
+            out.append({'dir': '' if rel == '.' else rel.replace(os.sep, '/'), 'count': n})
+    return out
+
+
+def compare_sheets(rel):
+    """The .css files in one folder of the site, style.css first."""
+    ok, full = _safe_path(rel or '.')
+    if not ok or not os.path.isdir(full):
+        return None
+    out = []
+    for f in os.listdir(full):
+        p = os.path.join(full, f)
+        if f.lower().endswith('.css') and os.path.isfile(p):
+            try:
+                fp, pal = _css_identity(open(p, encoding='utf-8', errors='replace').read())
+            except OSError:
+                continue
+            out.append({'path': os.path.relpath(p, ROOT).replace(os.sep, '/'),
+                        'name': f, 'bytes': os.path.getsize(p),
+                        'hash': fp, 'palette': pal,
+                        'mtime': int(os.path.getmtime(p))})
+    out.sort(key=lambda x: (x['name'] != 'style.css', x['name'].lower()))
+    return out
+
+
+def compare_sheet_path(rel):
+    """Absolute path of a .css file inside the site, or None."""
+    ok, full = _safe_path(rel or '')
+    if ok and full.lower().endswith('.css') and os.path.isfile(full):
+        return full
+    return None
+
+
+def compare_store(name, css):
+    """Keep a picked sheet in memory; return (id, palette). The id is the
+    sheet's fingerprint, so a picked copy of a site file matches it."""
+    data = css.encode('utf-8')
+    if len(data) > COMPARE_UPLOAD_MAX:
+        raise ValueError(f'{name} is over {COMPARE_UPLOAD_MAX // (1024 * 1024)} MB')
+    uid, pal = _css_identity(css)
+    COMPARE_UPLOADS.pop(uid, None)
+    COMPARE_UPLOADS[uid] = {'name': name, 'css': css, 'size': len(data)}
+    while (sum(v['size'] for v in COMPARE_UPLOADS.values()) > COMPARE_UPLOAD_TOTAL
+           and len(COMPARE_UPLOADS) > 1):
+        COMPARE_UPLOADS.pop(next(iter(COMPARE_UPLOADS)))      # oldest first
+    return uid, pal
+
+
+def build_compare_view(query):
+    """index.html drawn with one chosen sheet, or None if the sheet is unknown."""
+    q = urllib.parse.parse_qs(query)
+    f = (q.get('f') or [''])[0]
+    u = (q.get('u') or [''])[0]
+    if f and compare_sheet_path(f):
+        href = '/__compare-sheet.css?f=' + urllib.parse.quote(f)
+    elif u and u in COMPARE_UPLOADS:
+        href = '/__compare-sheet.css?u=' + urllib.parse.quote(u)
+    else:
+        return None
+    idx = os.path.join(ROOT, 'index.html')
+    if not os.path.exists(idx):
+        return None
+    page = open(idx, encoding='utf-8').read()
+    page = page.replace("s.src = 'editor.js';", "return;")
+    link = (re.search(r'<link\b[^>]*\bid=["\']main-style["\'][^>]*>', page) or
+            re.search(r'<link\b[^>]*\brel=["\']stylesheet["\'][^>]*>', page))
+    if link:
+        page = page[:link.start()] + page[link.end():]
+    tag = '<link id="main-style" rel="stylesheet" href="%s">' % _html.escape(href, quote=True)
+    init = re.search(r'<script\b[^>]*theme-init\.js[^>]*>\s*</script>', page)
+    if init:
+        page = page[:init.end()] + '\n  ' + tag + page[init.end():]
+    else:
+        page = page.replace('</head>', '  ' + tag + '\n</head>', 1)
+    return page
+
+
+COMPARE_HTML = r"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compare stylesheets — portfolio</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#2a2620;color:#efe7d8;
+       font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  header{position:sticky;top:0;z-index:20;background:#191510;
+         border-bottom:1px solid #3a3226;padding:8px 14px;
+         display:flex;flex-direction:column;gap:7px;}
+  .row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+  .row b{font-size:11px;letter-spacing:.08em;color:#a99a80;margin:0 2px 0 10px;}
+  .row b:first-child{margin-left:0;}
+  button,select{font:inherit;font-size:11px;padding:5px 11px;border-radius:20px;
+         border:1px solid #4a4032;background:transparent;color:#d8ccb4;cursor:pointer;}
+  select{border-radius:6px;background:#191510;padding:4px 6px;}
+  button.on{background:#efe7d8;color:#191510;border-color:#efe7d8;}
+  button:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid #d9a441;outline-offset:2px;}
+  button:disabled{opacity:.4;cursor:default;}
+  .sp{flex:1;}
+  .note{font-size:11px;color:#a99a80;}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+  .chip{display:inline-flex;align-items:center;border-radius:20px;border:1px solid #4a4032;}
+  .chip button{border:0;border-radius:20px;}
+  .chip .nm{padding:4px 4px 4px 11px;color:#efe7d8;}
+  .chip .nm small{color:#a99a80;}
+  .chip.off{border-style:dashed;}
+  .chip.off .nm{color:#7d715e;text-decoration:line-through;}
+  .chip .x{padding:4px 9px 4px 5px;color:#a99a80;}
+  .chip .cp{font-size:10px;color:#a99a80;border:1px solid #4a4032;border-radius:10px;padding:0 6px;margin-left:2px;cursor:help;}
+  .chip.dup{border-style:dotted;}
+  .focusbar{display:none;}
+  body.focusing .focusbar{display:flex;}
+  body.focusing .gridonly{display:none;}
+  .focusbar .cur{color:#efe7d8;font-size:12px;margin:0 6px;}
+  main{padding:12px 14px 40px;}
+  #grid{display:grid;gap:14px;align-items:start;}
+  #grid.focus{display:block;}
+  #grid.focus .pane:not(.is-focus){display:none;}
+  .pane{background:#141009;border:1px solid #3a3226;border-radius:8px;overflow:hidden;min-width:0;}
+  #grid.focus .pane{margin:0 auto;}
+  .pane-hd{display:flex;align-items:center;gap:4px;padding:5px 6px 5px 4px;border-bottom:1px solid #3a3226;}
+  .pane-hd .nm{flex:1;min-width:0;text-align:left;border:0;border-radius:6px;padding:3px 8px;
+         white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#efe7d8;font-size:12px;}
+  .pane-hd .nm small{color:#a99a80;font-size:11px;}
+  .pane-hd .nm:hover{background:#221d16;}
+  .pane-hd a,.pane-hd button.sm{font-size:11px;color:#d8ccb4;text-decoration:none;
+         border:1px solid #4a4032;border-radius:20px;padding:3px 9px;white-space:nowrap;}
+  .pane-bd{position:relative;overflow:hidden;background:#141009;}
+  .pane-bd iframe{position:absolute;top:0;left:0;border:0;display:block;
+         transform-origin:0 0;background:#fff;}
+  .pane-st{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+         background:#141009;color:#a99a80;font-size:11px;text-align:center;padding:10px;}
+  .pane.ready .pane-st{display:none;}
+  .empty{color:#a99a80;line-height:1.8;max-width:72ch;padding:30px 4px;}
+  .empty b{color:#efe7d8;}
+  .drop{outline:2px dashed #d9a441;outline-offset:-8px;}
+</style>
+</head>
+<body>
+  <header>
+    <div class="row gridonly">
+      <b>SHEETS</b>
+      <select id="dir" title="Folders inside the site that hold .css files"></select>
+      <button id="addDir" title="Add every .css file in the chosen folder">add folder</button>
+      <button id="pickFiles" title="Choose .css files from anywhere on this computer">pick files…</button>
+      <button id="pickDir" title="Choose a folder on this computer; every .css file in it is added">pick a folder…</button>
+      <button id="clear">clear</button>
+      <button id="copies" hidden title="Sheets that are the same file, or the same palette, as one already shown">copies</button>
+      <span class="sp"></span>
+      <span class="note" id="count"></span>
+      <input type="file" id="fp" accept=".css,text/css" multiple hidden>
+      <input type="file" id="dp" webkitdirectory multiple hidden>
+    </div>
+    <div class="row">
+      <b>WIDTH</b>
+      <span id="widths"></span>
+      <b class="gridonly">COLUMNS</b>
+      <span id="cols" class="gridonly"></span>
+      <b>THEME</b>
+      <button data-theme="light">light</button>
+      <button data-theme="dark">dark</button>
+      <b>GO TO</b>
+      <select id="section"><option value="">section…</option></select>
+      <button id="sync" title="Scrolling one view scrolls the others to the same place">sync scroll</button>
+      <button id="reload" title="Reload every view (picks up edits to the sheets)">reload</button>
+    </div>
+    <div class="row focusbar">
+      <b>FOCUS</b>
+      <button id="prev" title="Previous sheet (←)">‹ prev</button>
+      <span class="cur" id="cur"></span>
+      <button id="next" title="Next sheet (→)">next ›</button>
+      <span class="sp"></span>
+      <button id="back" title="Back to the side-by-side grid (Esc)">back to grid</button>
+    </div>
+    <div class="chips gridonly" id="chips"></div>
+  </header>
+
+  <main>
+    <div id="grid"></div>
+    <div class="empty" id="empty" hidden>
+      No stylesheets yet. Choose a folder above and press <b>add folder</b>,
+      <b>pick files…</b> from anywhere on this computer, or drop .css files
+      onto this page. Each sheet opens as its own copy of the site, side by side.
+      Click a sheet's name to focus on it alone; <b>Esc</b> comes back.
+    </div>
+  </main>
+
+<script>
+(function () {
+  'use strict';
+  var DEV = {
+    desktop: { w: 1440, h: 900,  label: 'desktop 1440' },
+    laptop:  { w: 1280, h: 800,  label: 'laptop 1280' },
+    tablet:  { w: 820,  h: 1180, label: 'tablet 820' },
+    phone:   { w: 390,  h: 844,  label: 'phone 390' }
+  };
+  var KEY = 'rs-compare';
+  var S = { width: 'desktop', cols: 'auto', theme: 'light', sync: true, copies: false };
+  /* {key, name, sub, f | u, h, palette, shown, dupOf} in display order.
+     dupOf: the key of an earlier sheet that is the same file (same
+     fingerprint) or the same palette (same theme id and colour hash, e.g. a
+     generated sheet and its copy in altStyles/). Copies stay in the list
+     but are not drawn unless "copies" is switched on. */
+  var sheets = [];
+  var panes = {};           /* key -> pane */
+  var focusKey = null;
+  var anchor = null;        /* where the views are: {id, frac} or {y} */
+  var $ = function (id) { return document.getElementById(id); };
+  var grid = $('grid');
+
+  /* ---- saved settings: sizes, theme, and the sheets taken from folders
+     (picked files live in the server's memory only, so they are not kept) */
+  function save() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify({
+        S: S,
+        sheets: sheets.filter(function (s) { return s.f; })
+                      .map(function (s) { return { f: s.f, shown: s.shown }; })
+      }));
+    } catch (e) {}
+  }
+  function restore() {
+    try {
+      var o = JSON.parse(localStorage.getItem(KEY) || 'null');
+      if (o && o.S) Object.keys(S).forEach(function (k) { if (k in o.S) S[k] = o.S[k]; });
+      return o;
+    } catch (e) { return null; }
+  }
+
+  function api(url, opts) {
+    return fetch(url, opts).then(function (r) {
+      if (!r.ok) return r.text().then(function (t) { throw new Error(t || r.status); });
+      return r.json();
+    });
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function nameParts(path) {
+    var i = path.lastIndexOf('/');
+    return { name: path.slice(i + 1), sub: i >= 0 ? path.slice(0, i + 1) : '' };
+  }
+
+  /* ---- adding sheets ---- */
+  function addSheet(s) {
+    if (sheets.some(function (x) { return x.key === s.key; })) return;
+    s.shown = s.shown !== false;
+    sheets.push(s);
+  }
+  function addListed(item, shown) {
+    var p = nameParts(item.path);
+    addSheet({ key: 'f:' + item.path, f: item.path, name: p.name, sub: p.sub,
+               h: item.hash, palette: item.palette, shown: shown });
+  }
+  function addFolder(dir) {
+    return api('/__compare/sheets?dir=' + encodeURIComponent(dir)).then(function (list) {
+      list.forEach(function (s) { addListed(s); });
+      refresh();
+    }).catch(function (e) { alert('Could not read that folder: ' + e.message); });
+  }
+  /* Saved paths come back with their folder's listing, so each one has its
+     fingerprint again (and files deleted since are skipped). */
+  function restoreSheets(list) {
+    var dirs = {};
+    list.forEach(function (s) { dirs[nameParts(s.f).sub.replace(/\/$/, '')] = 1; });
+    var info = {};
+    return Promise.all(Object.keys(dirs).map(function (d) {
+      return api('/__compare/sheets?dir=' + encodeURIComponent(d)).then(function (rows) {
+        rows.forEach(function (r) { info[r.path] = r; });
+      }).catch(function () {});
+    })).then(function () {
+      list.forEach(function (s) { if (info[s.f]) addListed(info[s.f], s.shown); });
+      refresh();
+    });
+  }
+  function isDup(s) { return !!s.dupOf && !S.copies; }
+  function isVisible(s) { return s.shown && !isDup(s); }
+  function markCopies() {
+    var byHash = {}, byPal = {};
+    sheets.forEach(function (s) {
+      s.dupOf = (s.h && byHash[s.h]) || (s.palette && byPal[s.palette]) || null;
+      if (!s.dupOf) {
+        if (s.h) byHash[s.h] = s.key;
+        if (s.palette) byPal[s.palette] = s.key;
+      }
+    });
+  }
+  function addFiles(files, from) {
+    var css = Array.prototype.filter.call(files, function (f) { return /\.css$/i.test(f.name); });
+    if (!css.length) { alert('No .css files there.'); return; }
+    var jobs = css.map(function (f) {
+      return f.text().then(function (text) {
+        return api('/__compare/upload', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: f.name, css: text })
+        }).then(function (r) {
+          var rel = f.webkitRelativePath || '';
+          var sub = rel ? rel.slice(0, rel.length - f.name.length) : from;
+          addSheet({ key: 'u:' + r.id, u: r.id, name: f.name, sub: sub,
+                     h: r.hash, palette: r.palette });
+        });
+      }).catch(function (e) { alert(f.name + ': ' + e.message); });
+    });
+    Promise.all(jobs).then(refresh);
+  }
+
+  /* ---- panes ---- */
+  function viewUrl(s) {
+    return '/__compare-view?' + (s.f ? 'f=' + encodeURIComponent(s.f) : 'u=' + s.u) + '&editor=0';
+  }
+  function makePane(s) {
+    var el = document.createElement('div');
+    el.className = 'pane';
+    el.innerHTML =
+      '<div class="pane-hd">' +
+        '<button class="nm" title="' + esc(s.sub + s.name) + ': focus on this sheet alone">' + esc(s.name) +
+          (s.sub ? ' <small>' + esc(s.sub) + '</small>' : '') + '</button>' +
+        '<a href="' + viewUrl(s) + '" target="_blank" rel="noopener" title="Open this view in its own tab">open ↗</a>' +
+        '<button class="sm hide" title="Hide this sheet (it stays in the list above)">hide</button>' +
+      '</div>' +
+      '<div class="pane-bd"><div class="pane-st">loading…</div>' +
+        '<iframe title="' + esc(s.name) + '"></iframe></div>';
+    var p = { key: s.key, sheet: s, el: el, body: el.querySelector('.pane-bd'),
+              frame: el.querySelector('iframe'), ready: false, lock: 0 };
+    el.querySelector('.nm').addEventListener('click', function () {
+      focusKey === s.key ? exitFocus() : enterFocus(s.key);
+    });
+    el.querySelector('.hide').addEventListener('click', function () {
+      s.shown = false; if (focusKey === s.key) exitFocus(); refresh();
+    });
+    p.frame.addEventListener('load', function () { hook(p); });
+    p.frame.src = viewUrl(s);
+    grid.appendChild(el);
+    return p;
+  }
+  function dropPane(key) {
+    var p = panes[key];
+    if (!p) return;
+    p.el.remove();
+    delete panes[key];
+  }
+
+  /* After a view loads: theme, scroll sync, keys, and land where the
+     others are once the page has finished building itself. */
+  function hook(p) {
+    var w;
+    try { w = p.frame.contentWindow; if (!w.document.body) return; } catch (e) { return; }
+    p.ready = false;
+    var t0 = Date.now();
+    (function wait() {
+      var built = w.__resumeData || Date.now() - t0 > 6000;
+      if (!built) { setTimeout(wait, 80); return; }
+      setTimeout(function () {
+        p.ready = true;
+        p.el.classList.add('ready');
+        applyTheme(p);
+        fillSections(w.document);
+        if (anchor) placeSoon(p, anchor);
+      }, 120);
+    })();
+    var raf = 0;
+    w.addEventListener('scroll', function () {
+      if (raf) return;
+      raf = requestAnimationFrame(function () { raf = 0; onScroll(p); });
+    }, { passive: true });
+    w.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && focusKey) exitFocus();
+    });
+  }
+
+  /* ---- where a view is, by section, so sheets with different spacing
+     still line up on the same content ---- */
+  /* Layout position, ignoring transforms: sections slide up as they are
+     revealed, so their on-screen box is briefly 24px off. */
+  function absTop(el) {
+    var y = 0;
+    while (el) { y += el.offsetTop; el = el.offsetParent; }
+    return y;
+  }
+  function sectionsOf(d) {
+    return Array.prototype.slice.call(d.querySelectorAll('section[id], footer'));
+  }
+  function where(p) {
+    try {
+      var w = p.frame.contentWindow, d = w.document, y = w.scrollY, best = null;
+      sectionsOf(d).forEach(function (s) {
+        if (!s.offsetHeight) return;
+        var top = absTop(s);
+        if (top <= y + 2) best = { s: s, top: top };
+      });
+      if (!best) return { y: y };
+      return { id: best.s.id || '#footer', frac: (y - best.top) / Math.max(1, best.s.offsetHeight) };
+    } catch (e) { return null; }
+  }
+  function place(p, pos) {
+    if (!p.ready || !pos) return;
+    try {
+      var w = p.frame.contentWindow, d = w.document, y = pos.y || 0;
+      if (pos.id) {
+        var s = pos.id === '#footer' ? d.querySelector('footer') : d.getElementById(pos.id);
+        if (s) {
+          y = absTop(s) + (pos.frac || 0) * s.offsetHeight;
+          if (pos.jump) {
+            var bar = d.querySelector('.topbar');
+            if (bar && /sticky|fixed/.test(w.getComputedStyle(bar).position)) y -= bar.offsetHeight;
+          }
+        }
+      }
+      p.lock = performance.now() + 150;
+      w.scrollTo({ top: Math.max(0, y), behavior: 'instant' });
+    } catch (e) {}
+  }
+  /* A view that has just been shown or resized may still be settling
+     (its page re-lays itself out on resize), so place it again shortly. */
+  function placeSoon(p, pos) {
+    if (!pos) return;
+    requestAnimationFrame(function () { place(p, pos); });
+    setTimeout(function () { place(p, pos); }, 180);
+    setTimeout(function () { place(p, pos); }, 500);
+  }
+  function onScroll(p) {
+    if (performance.now() < p.lock) return;
+    var pos = where(p);
+    if (!pos) return;
+    anchor = pos;
+    if (!S.sync) return;
+    eachShown(function (q) { if (q !== p) place(q, pos); });
+  }
+  function eachShown(fn) {
+    sheets.forEach(function (s) {
+      var p = panes[s.key];
+      if (p && isVisible(s) && (!focusKey || s.key === focusKey)) fn(p);
+    });
+  }
+
+  /* ---- section menu, from the first view that finishes ---- */
+  var sectionsFilled = false;
+  function fillSections(d) {
+    if (sectionsFilled) return;
+    var sel = $('section');
+    sectionsOf(d).forEach(function (s) {
+      if (!s.id || !s.offsetHeight) return;
+      var t = s.querySelector('[data-section-title]');
+      var label = s.id === 'hero' ? 'top' :
+        (t ? t.getAttribute('data-section-title') : s.id.replace(/-/g, ' '));
+      var o = document.createElement('option');
+      o.value = s.id; o.textContent = label.toLowerCase();
+      sel.appendChild(o);
+    });
+    sectionsFilled = true;
+  }
+
+  /* ---- theme: press the page's own day/night buttons, so each view runs
+     its normal theme code (palette, colour overrides, course colours) ---- */
+  function applyTheme(p) {
+    try {
+      var d = p.frame.contentWindow.document;
+      var b = d.getElementById(S.theme === 'dark' ? 'btn-night' : 'btn-day');
+      if (b && !b.classList.contains('active')) b.click();
+    } catch (e) {}
+  }
+
+  /* ---- sizing: each view renders at a real device width and is scaled
+     down to fit its column, the same way a browser zooms out ---- */
+  function layout() {
+    var dv = DEV[S.width] || DEV.desktop;
+    var gw = grid.clientWidth;
+    var shown = sheets.filter(function (s) { return isVisible(s) && panes[s.key]; });
+    $('empty').hidden = sheets.length > 0;
+    if (focusKey && panes[focusKey]) {
+      var p = panes[focusKey];
+      var head = p.el.querySelector('.pane-hd').offsetHeight;
+      var avH = window.innerHeight - document.querySelector('header').offsetHeight - head - 40;
+      var sc = Math.min(1, gw / dv.w);
+      var bh = Math.max(240, avH);
+      p.el.style.width = Math.round(dv.w * sc) + 'px';
+      size(p, dv.w, bh / sc, sc, bh);
+      return;
+    }
+    var cols;
+    if (S.cols === 'auto') {
+      var minW = S.width === 'phone' ? 230 : S.width === 'tablet' ? 300 : 400;
+      cols = Math.max(1, Math.min(shown.length || 1, Math.floor((gw + 14) / (minW + 14))));
+    } else {
+      cols = +S.cols;
+    }
+    grid.style.gridTemplateColumns = 'repeat(' + cols + ', minmax(0, 1fr))';
+    /* Scale from the width the column really got, so the view fills it
+       exactly instead of leaving a sliver at the edge. */
+    var first = shown.length && panes[shown[0].key];
+    var pw = first ? first.body.clientWidth : (gw - 14 * (cols - 1)) / cols - 2;
+    var s = pw / dv.w;
+    sheets.forEach(function (sh, i) {
+      var q = panes[sh.key];
+      if (!q) return;
+      q.el.style.width = '';
+      q.el.style.order = i;
+      size(q, dv.w, dv.h, s, dv.h * s);
+    });
+  }
+  function size(p, w, h, s, bh) {
+    p.body.style.height = Math.round(bh) + 'px';
+    p.frame.style.width = w + 'px';
+    p.frame.style.height = Math.round(h) + 'px';
+    p.frame.style.transform = 'scale(' + s + ')';
+  }
+
+  /* ---- focus: one sheet fills the page, at the same spot ---- */
+  function enterFocus(key) {
+    var from = focusKey ? panes[focusKey] : panes[key];
+    var pos = (from && from.ready && where(from)) || anchor;
+    focusKey = key;
+    grid.classList.add('focus');
+    Object.keys(panes).forEach(function (k) { panes[k].el.classList.toggle('is-focus', k === key); });
+    document.body.classList.add('focusing');
+    var visible = sheets.filter(isVisible);
+    var i = visible.findIndex(function (s) { return s.key === key; });
+    var s = visible[i];
+    $('cur').textContent = s.name + '  (' + (i + 1) + ' of ' + visible.length + ')';
+    $('prev').disabled = $('next').disabled = visible.length < 2;
+    layout();
+    window.scrollTo(0, 0);
+    anchor = pos;
+    placeSoon(panes[key], pos);
+  }
+  function step(d) {
+    var visible = sheets.filter(isVisible);
+    if (visible.length < 2 || !focusKey) return;
+    var i = visible.findIndex(function (s) { return s.key === focusKey; });
+    enterFocus(visible[(i + d + visible.length) % visible.length].key);
+  }
+  function exitFocus() {
+    if (!focusKey) return;
+    var p = panes[focusKey], pos = (p && where(p)) || anchor;
+    focusKey = null;
+    grid.classList.remove('focus');
+    Object.keys(panes).forEach(function (k) { panes[k].el.classList.remove('is-focus'); });
+    document.body.classList.remove('focusing');
+    layout();
+    anchor = pos;
+    eachShown(function (q) { placeSoon(q, pos); });
+  }
+
+  /* ---- the sheet list ---- */
+  function refresh() {
+    markCopies();
+    if (focusKey && !sheets.some(function (s) { return s.key === focusKey && isVisible(s); })) exitFocus();
+    sheets.forEach(function (s) {
+      if (isVisible(s) && !panes[s.key]) panes[s.key] = makePane(s);
+      if (!isVisible(s) && panes[s.key]) dropPane(s.key);
+    });
+    Object.keys(panes).forEach(function (k) {
+      if (!sheets.some(function (s) { return s.key === k; })) dropPane(k);
+    });
+    var box = $('chips');
+    box.innerHTML = '';
+    var copiesOf = {};
+    sheets.forEach(function (s) {
+      if (s.dupOf) (copiesOf[s.dupOf] = copiesOf[s.dupOf] || []).push(s.sub + s.name);
+    });
+    sheets.forEach(function (s, i) {
+      if (isDup(s)) return;
+      var c = document.createElement('span');
+      var cp = copiesOf[s.key] || [];
+      c.className = 'chip' + (s.shown ? '' : ' off') + (s.dupOf ? ' dup' : '');
+      c.innerHTML = '<button class="nm" title="' + (s.shown ? 'Hide' : 'Show') + ' this sheet' +
+          (s.dupOf ? ' (a copy of one already listed)' : '') + '">' +
+        esc(s.name) + (s.sub ? ' <small>' + esc(s.sub) + '</small>' : '') +
+        (s.dupOf ? ' <small>copy</small>' : '') + '</button>' +
+        (cp.length && !S.copies ? '<span class="cp" title="Also here, not shown: ' + esc(cp.join(', ')) + '">+' + cp.length + '</span>' : '') +
+        '<button class="x" title="Remove from the comparison" aria-label="Remove ' + esc(s.name) + '">×</button>';
+      c.querySelector('.nm').addEventListener('click', function () { s.shown = !s.shown; refresh(); });
+      c.querySelector('.x').addEventListener('click', function () { sheets.splice(i, 1); refresh(); });
+      box.appendChild(c);
+    });
+    var unique = sheets.filter(function (s) { return !s.dupOf; });
+    var dups = sheets.length - unique.length;
+    var n = sheets.filter(isVisible).length;
+    $('count').textContent = sheets.length
+      ? n + ' shown of ' + unique.length + ' unique' + (dups ? ' · ' + dups + (dups === 1 ? ' copy' : ' copies') + (S.copies ? ' included' : ' hidden') : '')
+      : '';
+    $('copies').hidden = !dups;
+    $('copies').textContent = S.copies ? 'hide copies' : 'show copies';
+    paintControls();
+    layout();
+    save();
+  }
+
+  function paintControls() {
+    Array.prototype.forEach.call(document.querySelectorAll('#widths button'), function (b) {
+      b.classList.toggle('on', b.dataset.w === S.width);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('#cols button'), function (b) {
+      b.classList.toggle('on', b.dataset.c === String(S.cols));
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-theme]'), function (b) {
+      b.classList.toggle('on', b.dataset.theme === S.theme);
+    });
+    $('sync').classList.toggle('on', !!S.sync);
+    $('copies').classList.toggle('on', !!S.copies);
+  }
+
+  /* ---- controls ---- */
+  Object.keys(DEV).forEach(function (k) {
+    var b = document.createElement('button');
+    b.textContent = DEV[k].label; b.dataset.w = k;
+    b.addEventListener('click', function () {
+      S.width = k; paintControls(); layout(); save();
+      eachShown(function (q) { placeSoon(q, anchor); });
+    });
+    $('widths').appendChild(b);
+  });
+  ['auto', '1', '2', '3', '4', '5', '6'].forEach(function (c) {
+    var b = document.createElement('button');
+    b.textContent = c; b.dataset.c = c;
+    b.addEventListener('click', function () { S.cols = c; paintControls(); layout(); save(); });
+    $('cols').appendChild(b);
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-theme]'), function (b) {
+    b.addEventListener('click', function () {
+      S.theme = b.dataset.theme; paintControls(); save();
+      Object.keys(panes).forEach(function (k) { applyTheme(panes[k]); });
+    });
+  });
+  $('sync').addEventListener('click', function () { S.sync = !S.sync; paintControls(); save(); });
+  $('section').addEventListener('change', function () {
+    var id = this.value;
+    if (!id) return;
+    anchor = { id: id, frac: 0, jump: true };
+    eachShown(function (q) { placeSoon(q, anchor); });
+    this.value = '';
+  });
+  $('reload').addEventListener('click', function () {
+    Object.keys(panes).forEach(function (k) {
+      var p = panes[k]; p.ready = false; p.el.classList.remove('ready');
+      p.frame.src = viewUrl(p.sheet);
+    });
+  });
+  $('addDir').addEventListener('click', function () { addFolder($('dir').value); });
+  $('pickFiles').addEventListener('click', function () { $('fp').click(); });
+  $('pickDir').addEventListener('click', function () { $('dp').click(); });
+  $('fp').addEventListener('change', function () { addFiles(this.files, 'picked'); this.value = ''; });
+  $('dp').addEventListener('change', function () { addFiles(this.files, 'picked'); this.value = ''; });
+  $('clear').addEventListener('click', function () { exitFocus(); sheets = []; refresh(); });
+  $('copies').addEventListener('click', function () { S.copies = !S.copies; refresh(); });
+  $('prev').addEventListener('click', function () { step(-1); });
+  $('next').addEventListener('click', function () { step(1); });
+  $('back').addEventListener('click', exitFocus);
+  document.addEventListener('keydown', function (e) {
+    if (/^(INPUT|SELECT|TEXTAREA)$/.test((e.target || {}).tagName || '')) return;
+    if (e.key === 'Escape') exitFocus();
+    if (focusKey && e.key === 'ArrowLeft') step(-1);
+    if (focusKey && e.key === 'ArrowRight') step(1);
+  });
+  /* Drop .css files straight onto the page. */
+  document.addEventListener('dragover', function (e) { e.preventDefault(); document.body.classList.add('drop'); });
+  document.addEventListener('dragleave', function (e) { if (!e.relatedTarget) document.body.classList.remove('drop'); });
+  document.addEventListener('drop', function (e) {
+    e.preventDefault(); document.body.classList.remove('drop');
+    if (e.dataTransfer && e.dataTransfer.files.length) addFiles(e.dataTransfer.files, 'dropped');
+  });
+  var rt = 0;
+  window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(layout, 120); });
+
+  /* ---- start: ?dir=<folder> loads that folder; otherwise the last set;
+     otherwise every sheet next to index.html ---- */
+  var saved = restore();
+  var want = new URLSearchParams(location.search).get('dir');
+  api('/__compare/dirs').then(function (dirs) {
+    var sel = $('dir');
+    dirs.forEach(function (d) {
+      var o = document.createElement('option');
+      o.value = d.dir;
+      o.textContent = (d.dir || '(site folder)') + '  ·  ' + d.count + ' sheet' + (d.count === 1 ? '' : 's');
+      sel.appendChild(o);
+    });
+    if (want !== null) sel.value = want;
+    else if (dirs.some(function (d) { return d.dir === 'altStyles'; })) sel.value = 'altStyles';
+  }).catch(function () {});
+  if (want !== null) {
+    addFolder(want);
+  } else if (saved && saved.sheets && saved.sheets.length) {
+    restoreSheets(saved.sheets);
+  } else {
+    /* First visit: the sheets next to index.html, plus altStyles/ when the
+       site keeps its alternatives there. */
+    addFolder('').then(function () {
+      return api('/__compare/dirs').then(function (dirs) {
+        if (dirs.some(function (d) { return d.dir === 'altStyles'; })) return addFolder('altStyles');
+      });
+    }).catch(function () {});
+  }
+  paintControls();
+})();
+</script>
+</body>
+</html>
+"""
 
 
 
@@ -889,6 +1654,26 @@ PALETTES = {
         'light': {'bg': '#f2f2ef', 'ink': '#151515', 'accent': '#2c4bc7', 'rule': '#d3d3cd', 'muted': '#676763'},
         'dark':  {'bg': '#101113', 'ink': '#e7e7e7', 'accent': '#93a6ff', 'rule': '#2b2d32', 'muted': '#8d8f95'},
     },
+    # ---- Three that leave the cream-and-copper family behind ----------
+    # The palettes above mostly share a pale warm page and a brown or orange
+    # accent. These take hues none of them use: teal, violet with mint, and
+    # sky with berry (wine by night). Each has a tinted page in light mode
+    # and a coloured, not just darkened, page in dark mode.
+    'aqua-lagoon': {
+        'name': 'Aqua lagoon',
+        'light': {'bg': '#cdeee9', 'ink': '#06272a', 'accent': '#00827a', 'rule': '#9fd0c9', 'muted': '#4c6e6b'},
+        'dark':  {'bg': '#03302e', 'ink': '#d5f3f0', 'accent': '#3fe0cf', 'rule': '#1a4f4b', 'muted': '#7fa9a5'},
+    },
+    'ultraviolet-mint': {
+        'name': 'Ultraviolet & mint',
+        'light': {'bg': '#e9e0fd', 'ink': '#1c1240', 'accent': '#6b1fd6', 'rule': '#cfc0f3', 'muted': '#6b618e'},
+        'dark':  {'bg': '#250a35', 'ink': '#f2e8ff', 'accent': '#5ff0b9', 'rule': '#48275c', 'muted': '#a691b9'},
+    },
+    'sky-berry': {
+        'name': 'Sky & berry',
+        'light': {'bg': '#dbeafc', 'ink': '#0b1d3a', 'accent': '#a3158f', 'rule': '#b9cfea', 'muted': '#55657d'},
+        'dark':  {'bg': '#260a10', 'ink': '#fbecee', 'accent': '#8cc8ff', 'rule': '#4a222a', 'muted': '#ad8f95'},
+    },
 }
 
 RECIPES = [
@@ -910,6 +1695,12 @@ RECIPES = [
      'dl': '-4 (blush)',  'dd': '+9 (plum lift)'},
     {'id': 'graphite-cobalt', 'palette': 'graphite-cobalt', 'light': -4, 'dark': 9,
      'dl': '-4 (paper)',  'dd': '+9 (graphite lift)'},
+    {'id': 'aqua-lagoon',      'palette': 'aqua-lagoon',      'light': -2, 'dark': 3,
+     'dl': '-2 (pool water)', 'dd': '+3 (deep lagoon)'},
+    {'id': 'ultraviolet-mint', 'palette': 'ultraviolet-mint', 'light': -2, 'dark': 4,
+     'dl': '-2 (lilac)',  'dd': '+4 (deep violet)'},
+    {'id': 'sky-berry',        'palette': 'sky-berry',        'light': -2, 'dark': 4,
+     'dl': '-2 (sky)',    'dd': '+4 (wine)'},
 ]
 
 _LIGHT_GRAIN = ("""--grain-svg: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'"""
@@ -1210,6 +2001,47 @@ class DevHandler(http.server.SimpleHTTPRequestHandler):
             self._send_json(list_style_names())
             return
 
+        if path in ('/compare', '/compare/', '/compare.html'):
+            self._send_bytes(COMPARE_HTML.encode('utf-8'), 'text/html; charset=utf-8')
+            return
+
+        if path == '/__compare/dirs':
+            self._send_json(compare_dirs())
+            return
+
+        if path == '/__compare/sheets':
+            q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+            out = compare_sheets((q.get('dir') or [''])[0])
+            if out is None:
+                self.send_error(404, 'No such folder inside the site')
+            else:
+                self._send_json(out)
+            return
+
+        if path == '/__compare-view':
+            page = build_compare_view(urllib.parse.urlsplit(self.path).query)
+            if page is None:
+                self.send_error(404, 'Stylesheet not found (picked files are '
+                                     'forgotten when the server restarts)')
+            else:
+                self._send_bytes(page.encode('utf-8'), 'text/html; charset=utf-8')
+            return
+
+        if path == '/__compare-sheet.css':
+            q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+            f, u = (q.get('f') or [''])[0], (q.get('u') or [''])[0]
+            if f:
+                full = compare_sheet_path(f)
+                data = open(full, 'rb').read() if full else None
+            else:
+                rec = COMPARE_UPLOADS.get(u)
+                data = rec['css'].encode('utf-8') if rec else None
+            if data is None:
+                self.send_error(404, 'Stylesheet not found')
+            else:
+                self._send_bytes(data, 'text/css; charset=utf-8')
+            return
+
         # Inject the dev-only editor into the served HTML. The file on disk
         # is untouched, so nothing ships to production.
         if state.get('editor', True) and path in ('/', '/index.html'):
@@ -1245,6 +2077,19 @@ class DevHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_POST(self):
         path = self.path.split('?')[0]
+
+        if path == '/__compare/upload':
+            try:
+                length = int(self.headers.get('Content-Length') or 0)
+                if length > COMPARE_UPLOAD_MAX * 2:
+                    raise ValueError('too large')
+                p = json.loads(self.rfile.read(length) or b'{}')
+                uid, pal = compare_store(str(p.get('name') or 'sheet.css'), str(p.get('css') or ''))
+            except Exception as e:
+                self.send_error(400, f'Could not take that sheet: {e}')
+                return
+            self._send_json({'id': uid, 'hash': uid, 'palette': pal})
+            return
 
         if path == '/__save-config':
             try:
@@ -1430,6 +2275,13 @@ class DevHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def _send_bytes(self, data, ctype):
+        self.send_response(200)
+        self.send_header('Content-Type', ctype)
+        self.send_header('Content-Length', str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
     def end_headers(self):
         # Aggressive no-cache for everything (dev mode)
         self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
@@ -1491,6 +2343,8 @@ HELP_TEXT = """Commands:
   -- preview --
   preview          print the device-preview URL (phone/tablet/desktop frames)
   live             print the visitor-view URL (identical page, no editor)
+  compare [folder] print the compare URL: stylesheets side by side
+                    e.g.  compare altStyles
   devices          list the device sizes available in the preview page
 
   -- diagnostics --
@@ -1521,7 +2375,7 @@ COMMANDS = [
     'ls', 'dir', 'cat', 'head', 'tail', 'tree', 'find', 'pwd',
     'style', 'list', 'palettes', 'live',
     'editor', 'config', 'revert', 'revert-tex', 'revert-html',
-    'preview', 'devices', 'screen',
+    'preview', 'devices', 'screen', 'compare',
     'help', 'quit', 'exit', 'q',
 ]
 
@@ -1805,6 +2659,19 @@ def command_loop():
             log_screen(state['screen'])
             continue
 
+        if action == 'compare':
+            url = f"http://localhost:{PORT}/compare"
+            if len(parts) > 1:
+                ok, full = _safe_path(parts[1])
+                if not ok or not os.path.isdir(full):
+                    print(f"  ! not a folder inside the site: {parts[1]}")
+                    continue
+                rel = os.path.relpath(full, ROOT).replace(os.sep, '/')
+                url += '?dir=' + urllib.parse.quote('' if rel == '.' else rel)
+            print(f"  compare stylesheets: {url}")
+            print("  pick a folder or files there; click a sheet's name to focus on it.")
+            continue
+
         if action in ('live', 'visitor'):
             print(f"  visitor view: http://localhost:{PORT}/live")
             print("  identical HTML with the editor loader stripped.")
@@ -1843,8 +2710,14 @@ def command_loop():
 
 def main():
     socketserver.TCPServer.allow_reuse_address = True
+
+    class _Server(socketserver.ThreadingMixIn, socketserver.TCPServer):
+        # Threads, so a compare page with a dozen views loading at once
+        # doesn't queue every file behind every other.
+        daemon_threads = True
+
     try:
-        httpd = socketserver.TCPServer(("", PORT), DevHandler)
+        httpd = _Server(("", PORT), DevHandler)
     except OSError as e:
         print(f"! could not bind to port {PORT}: {e}")
         print(f"  try a different port:  python3 dev_server.py <port>")
@@ -1870,6 +2743,7 @@ def main():
     print(f"dev server: http://localhost:{PORT}/")
     print(f"preview:    http://localhost:{PORT}/preview   (phone / tablet / desktop frames)")
     print(f"visitor:    http://localhost:{PORT}/live      (no editor - what a real user sees)")
+    print(f"compare:    http://localhost:{PORT}/compare   (stylesheets side by side)")
     print(f"serving:    {ROOT}")
     try:
         httpd.serve_forever()

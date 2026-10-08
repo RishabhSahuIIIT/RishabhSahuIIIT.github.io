@@ -1,29 +1,29 @@
-/* theme-id: olive-sand   hash: 82a8ef50
+/* theme-id: ultraviolet-mint   hash: c21c7aaf
    site-config.json keys colour overrides by this id. */
-:root { --theme-id: "olive-sand"; --theme-hash: "82a8ef50"; }
+:root { --theme-id: "ultraviolet-mint"; --theme-hash: "c21c7aaf"; }
 
 /* ============================================================
    Rishabh Sahu — Portfolio styles
    --------------------------------------------------------------
-   Palette: Olive & sand
-     Light mode offset: -4 (sand)
-     Dark  mode offset: +9 (moss lift)
+   Palette: Ultraviolet & mint
+     Light mode offset: -2 (lilac)
+     Dark  mode offset: +4 (deep violet)
    One of several palette variants. To swap palettes,
    rename one of style-*.css to style.css.
    ============================================================ */
 
 /* ---------- 1. Tokens ---------- */
 :root {
-  /* ---- Palette: Olive & sand ---- */
-  /* Light mode (default) — bg/bg-soft/rule shifted -4% lightness */
-  --bg:         #ebe5d2;
-    --bg-soft:    #e3dcc3;
-    --ink:        #1d1f16;
-    --ink-soft:   #424633;
-    --muted:      #61604f;
-    --rule:       #cac3a7;
-    --accent:     #56651d;
-    --accent-soft:#6e7d2f;
+  /* ---- Palette: Ultraviolet & mint ---- */
+  /* Light mode (default) — bg/bg-soft/rule shifted -2% lightness */
+  --bg:         #e2d6fc;
+    --bg-soft:    #d5c3fb;
+    --ink:        #0e0921;
+    --ink-soft:   #3c2689;
+    --muted:      #585075;
+    --rule:       #c5b4f0;
+    --accent:     #6b1fd6;
+    --accent-soft:#854bd9;
 
   --grain-svg: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.05  0 0 0 0 0.04  0 0 0 0 0.02  0 0 0 0.08 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
     --grain-blend: multiply;
@@ -42,17 +42,17 @@
 
 /* Dark mode — applies when OS prefers dark UNLESS the user has
    manually picked light via the in-page toggle (which adds .theme-light).
-   bg/bg-soft/rule shifted +9% lightness. */
+   bg/bg-soft/rule shifted +4% lightness. */
 @media (prefers-color-scheme: dark) {
   :root:not(.theme-light) {
-    --bg:         #2c3120;
-    --bg-soft:    #373d29;
-    --ink:        #ffffff;
-    --ink-soft:   #cccfb5;
-    --muted:      #a6a798;
-    --rule:       #454a35;
-    --accent:     #b9c66c;
-    --accent-soft:#c8d095;
+    --bg:         #310d46;
+    --bg-soft:    #42115e;
+    --ink:        #f2e8ff;
+    --ink-soft:   #cca4ff;
+    --muted:      #a691b9;
+    --rule:       #532d6a;
+    --accent:     #5ff0b9;
+    --accent-soft:#91f1cd;
     --grain-svg: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.95  0 0 0 0 0.92  0 0 0 0 0.85  0 0 0 0.05 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
     --grain-blend: screen;
     --grain-opacity: 0.5;
@@ -63,14 +63,14 @@
 /* User-forced dark mode (toggle button in the top bar). Always wins,
    regardless of the OS preference. */
 :root.theme-dark {
-  --bg:         #2c3120;
-    --bg-soft:    #373d29;
-    --ink:        #ffffff;
-    --ink-soft:   #cccfb5;
-    --muted:      #a6a798;
-    --rule:       #454a35;
-    --accent:     #b9c66c;
-    --accent-soft:#c8d095;
+  --bg:         #310d46;
+    --bg-soft:    #42115e;
+    --ink:        #f2e8ff;
+    --ink-soft:   #cca4ff;
+    --muted:      #a691b9;
+    --rule:       #532d6a;
+    --accent:     #5ff0b9;
+    --accent-soft:#91f1cd;
   --grain-svg: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.95  0 0 0 0 0.92  0 0 0 0 0.85  0 0 0 0.05 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
     --grain-blend: screen;
     --grain-opacity: 0.5;

@@ -744,6 +744,20 @@
     '  var(--accent,#8a5a44) 4px,transparent 4px);}',
     /* inspect tab */
     '.ed-empty{opacity:.65;line-height:1.6;padding:6px 2px;}',
+    '.ed-find{margin:0 0 10px;}',
+    '.ed-find-q{width:100%;box-sizing:border-box;font:inherit;padding:6px 8px;border-radius:6px;',
+    '  border:1px solid var(--rule,#ccc);background:transparent;color:inherit;}',
+    '.ed-find-list{display:none;max-height:46vh;overflow:auto;margin-top:6px;}',
+    '.ed-find.is-open .ed-find-list{display:block;}',
+    '.ed-find-g,.ed-find-i{display:flex;width:100%;align-items:baseline;gap:8px;text-align:left;',
+    '  border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;border-radius:4px;}',
+    '.ed-find-g{font-weight:600;padding:5px 4px;margin-top:2px;}',
+    '.ed-find-g::before{content:"\\25b8";font-size:9px;opacity:.6;}',
+    '.ed-find-g.on::before{content:"\\25be";}',
+    '.ed-find-i{padding:4px 4px 4px 18px;}',
+    '.ed-find-i span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+    '.ed-find-i small{opacity:.55;font-size:10px;}',
+    '.ed-find-g:hover,.ed-find-i:hover,.ed-find-i:focus-visible{background:rgba(127,127,127,.14);}',
     '.ed-empty b{opacity:1;}',
     '.ed-dock .ed-pvwin{position:static!important;display:none;width:auto!important;max-width:none;',
     '  min-width:0;box-shadow:none;border:1px solid var(--rule,#ccc);border-radius:10px;',
@@ -799,6 +813,9 @@
       dock.tabs[k].classList.toggle('on', k === id);
     });
     dock.active = id;
+    /* the item lists are read from the page as it is now */
+    if (dock.finders && dock.finders[id] &&
+        dock.finders[id].classList.contains('is-open')) dock.finders[id]._render();
     try { localStorage.setItem('ed-dock-tab', id); } catch (e) {}
   }
 
@@ -1202,10 +1219,14 @@
     var empty = el('div', 'ed-empty');
     empty.id = 'ed-empty';
     empty.innerHTML = '<b>Right-click anything on the page</b> to inspect it here — ' +
-      'a project, a course, a skill, the title, a filter or a menu entry. ' +
+      'a project, a course, a skill, a title, a label, a filter or a menu entry — ' +
+      'or find it in the list above. ' +
       'The whole area it belongs to is outlined on the page and previewed below, ' +
       'with its settings and its source underneath.';
+    dock.finders = { inspect: buildFinder(false), source: buildFinder(true) };
+    dock.panes.inspect.appendChild(dock.finders.inspect);
     dock.panes.inspect.appendChild(empty);
+    dock.panes.source.insertBefore(dock.finders.source, dock.panes.source.firstChild);
     if (pvwin) {
       var lab = pvwin.querySelector('.ed-pvwin-bar b');
       if (lab) lab.textContent = 'Preview';
@@ -1358,6 +1379,11 @@
     sel.id = 'ed-style';
     panel.appendChild(sel);
     sel.addEventListener('change', function () { switchStyle(sel.value); });
+    /* Every sheet at once, side by side: the dev server's /compare page. */
+    var cmp = el('a', 'ed-note', 'Compare stylesheets side by side \u2197');
+    cmp.href = '/compare'; cmp.target = '_blank'; cmp.rel = 'noopener';
+    cmp.style.display = 'inline-block'; cmp.style.color = 'inherit';
+    panel.appendChild(cmp);
 
     /* colours — discovered from the active stylesheet.
        Light and dark keep separate override sets, so this switch changes
@@ -1551,8 +1577,17 @@
 
     /* ---- Section titles ------------------------------------------ */
     panel.appendChild(el('div', 'ed-h', 'Section titles'));
-    var TITLE_KEYS = ['About', 'Work', 'Featured', 'Projects', 'Courses',
-                      'Skills', 'Education', 'Accomplishments', 'Contact'];
+    /* Every heading on the page, in page order (script.js gives the ones
+       without a data-section-title a key from their section id). */
+    var TITLE_KEYS = [];
+    Array.prototype.forEach.call(document.querySelectorAll('section[id] h2, [data-section-title]'), function (h) {
+      var id = (h.closest && h.closest('section') || {}).id || '';
+      var k = h.getAttribute('data-section-title') ||
+              (id ? id.charAt(0).toUpperCase() + id.slice(1).replace(/-(\w)/g, function (m, c) { return ' ' + c.toUpperCase(); }) : '');
+      if (k && TITLE_KEYS.indexOf(k) < 0) TITLE_KEYS.push(k);
+    });
+    if (!TITLE_KEYS.length) TITLE_KEYS = ['About', 'Work', 'Featured', 'Projects', 'Courses',
+                                          'Skills', 'Education', 'Recognition', 'Contact'];
     TITLE_KEYS.forEach(function (k) {
       var row = el('div', 'ed-row');
       row.appendChild(el('label', null, k));
@@ -1566,9 +1601,7 @@
         if (inp.value.trim()) t.sectionTitles[k] = inp.value.trim();
         else delete t.sectionTitles[k];
         markDirty();
-        document.querySelectorAll('[data-section-title="' + k + '"]').forEach(function (h) {
-          h.textContent = inp.value.trim() || k;
-        });
+        if (window.__pfApplyTitles) window.__pfApplyTitles(state.config);
       });
       row.appendChild(inp);
       panel.appendChild(row);
@@ -3213,9 +3246,23 @@
     if (kind === 'education' || kind === 'internship') anchors.push(want);
     anchors.push(want);
 
+    /* A course's name can sit inside another's ("Operating Systems" in
+       "Advanced Operating Systems"), so for courses take the first match
+       that starts its line (after \item \textbf{ on the \item lines). */
+    function startsLine(idx) {
+      var r = N.map[idx];
+      if (r === undefined) return false;
+      var ls = raw.lastIndexOf('\n', r - 1) + 1;
+      return /^\s*(\\item\s*)?(\\textbf\s*\{)?\s*$/.test(raw.slice(ls, r));
+    }
     for (var a = 0; a < anchors.length; a++) {
       var at = N.text.indexOf(anchors[a]);
       if (at < 0) continue;
+      if (kind === 'course') {
+        for (var at2 = at; at2 >= 0; at2 = N.text.indexOf(anchors[a], at2 + 1)) {
+          if (startsLine(at2)) { at = at2; break; }
+        }
+      }
       var nameAt = N.text.indexOf(want, at);
       var s = N.map[nameAt >= 0 ? nameAt : at];
       var eIdx = (nameAt >= 0 ? nameAt : at) + want.length - 1;
@@ -3944,9 +3991,54 @@
 
   /* Walk up from the clicked element to whatever named entity it belongs
      to — a project card, an education row, an internship, or a section. */
+  /* Text that is not an item of its own: a sub-heading, a category label,
+     one line of Recognition, a contact entry, a menu link. Right-clicking
+     it used to find nothing (or the whole section); now it is a target of
+     kind "text", whose panel shows where those words live. */
+  var TEXT_TARGET = 'h1,h2,h3,h4,h5,h6,li,a,p,dt,dd,figcaption,label,' +
+    '.course-lab,.course-feat-lab,.lab-box,[data-ui]';
+  /* The words of a node, with a space between its pieces (a line of
+     Recognition and its year are separate elements), and the longest piece
+     on its own: that is what gets looked up in the files, since the pieces
+     usually come from different places. */
+  function textOfNode(n) {
+    var c = n.cloneNode(true);
+    Array.prototype.forEach.call(c.querySelectorAll(
+      '.course-count,.course-more,.m-more,.m-chev,.sec-icon,svg,script,style'), function (x) { x.remove(); });
+    var parts = [], w = document.createTreeWalker(c, NodeFilter.SHOW_TEXT), t;
+    while ((t = w.nextNode())) {
+      var v = t.nodeValue.replace(/\s+/g, ' ').trim();
+      if (v) parts.push(v);
+    }
+    var longest = parts.reduce(function (a, b) { return b.length > a.length ? b : a; }, '');
+    return { all: parts.join(' '), find: longest };
+  }
+  function textTargetFor(node) {
+    var t = node && node.closest ? node.closest(TEXT_TARGET) : null;
+    if (!t || (t.closest && t.closest('.ed-panel'))) return null;
+    /* the label's own element, not a bigger heading it sits in */
+    var ui = node.closest('[data-ui]');
+    if (ui && t.contains(ui)) t = ui;
+    var txt = textOfNode(t);
+    if (!txt.all || txt.all.length > 240) return null;
+    return { name: txt.all, find: txt.find, kind: 'text', el: t, ui: t.getAttribute('data-ui') || '' };
+  }
+
   function targetNameFromEvent(node) {
+    var textHit = null;
     for (var el = node; el && el !== document.body; el = el.parentNode) {
       if (!el.getAttribute) continue;
+      /* A section's heading, or the small numbered label above it, is a
+         target of its own. Before this the walk went straight past the
+         <h2> to the whole section (or, for sections with no panel, to
+         nothing), so a title could never be picked out alone. */
+      if (el.hasAttribute('data-section-title') ||
+          (el.classList && el.classList.contains('col-label'))) {
+        var hd2 = el.hasAttribute('data-section-title') ? el
+          : ((function (s) { return s ? s.querySelector('[data-section-title]') : null; })(
+              el.closest ? el.closest('section') : null));
+        if (hd2) return { name: hd2.getAttribute('data-section-title'), kind: 'title', el: hd2 };
+      }
       /* Filter buttons carry their group and value as data attributes;
          the "+ N more" expander has no data-val and falls through. */
       if (el.classList && el.classList.contains('pf-btn') &&
@@ -4000,13 +4092,17 @@
         return { name: m, kind: kind };
       }
       if (el.classList && el.classList.contains('block') && el.id) {
+        /* Words inside the section but outside any item (a group heading,
+           a category label) are their own target before the section is. */
+        textHit = textTargetFor(node);
+        if (textHit) return textHit;
         var SEC = { 'education': 'Education', 'work': 'Internships',
                     'projects-all': 'Projects', 'skills': 'Skills',
                     'accomplishments': 'Accomplishments' };
         if (SEC[el.id]) return { name: SEC[el.id], kind: 'section' };
       }
     }
-    return null;
+    return textTargetFor(node);
   }
 
   function focusMediaTarget(name) {
@@ -4256,6 +4352,347 @@
 
     box.classList.add('open');
     if (box.scrollIntoView) box.scrollIntoView({ block: 'nearest' });
+  }
+
+  /* ---- A section title on its own -------------------------------------
+     Its wording and the numbered label above it, written as overrides in
+     site-config.json (text.sectionTitles / text.sectionLabels), with
+     *word* for the italic word; or the <h2> itself in index.html. */
+  function titleToMarkup(h) {
+    var c = h.cloneNode(true);
+    Array.prototype.forEach.call(c.querySelectorAll('.sec-icon'), function (e) { e.remove(); });
+    Array.prototype.forEach.call(c.querySelectorAll('em, i'), function (e) {
+      e.replaceWith(document.createTextNode('*' + e.textContent + '*'));
+    });
+    return c.textContent.replace(/\s+/g, ' ').trim();
+  }
+  function openTitlePanel(key, h) {
+    var box = document.getElementById('ed-item');
+    if (!box || !key) return;
+    box.innerHTML = '';
+    box.dataset.name = key;
+    var t = ensureText();
+    if (!t.sectionTitles) t.sectionTitles = {};
+    if (!t.sectionLabels) t.sectionLabels = {};
+    var sec = h && h.closest ? h.closest('section') : null;
+    var lab = sec ? sec.querySelector('.col-label') : null;
+
+    var hd = el('div', 'ed-item-hd');
+    hd.appendChild(el('span', 'ed-item-kind', 'section title'));
+    hd.appendChild(el('span', null, 'Edit this title'));
+    var close = el('button', 'ed-item-close', '\u00d7');
+    close.title = 'Close';
+    close.addEventListener('click', function (e) {
+      e.stopPropagation(); box.classList.remove('open');
+    });
+    hd.appendChild(close);
+    box.appendChild(hd);
+    box.appendChild(el('div', 'ed-item-name', key + (sec ? '  \u00b7  #' + sec.id : '')));
+
+    function redraw() {
+      if (window.__pfApplyTitles) window.__pfApplyTitles(state.config);
+      /* keep the Page tab's "Section titles" fields in step */
+      Array.prototype.forEach.call(document.querySelectorAll('input[data-title-key]'), function (i) {
+        if (i.dataset.titleKey === key) i.value = t.sectionTitles[key] || '';
+      });
+    }
+    function field(label, value, place, onInput) {
+      var row = el('div', 'ed-row');
+      row.style.display = 'block';
+      row.appendChild(el('label', null, label));
+      var inp = el('input'); inp.type = 'text'; inp.value = value || '';
+      inp.placeholder = place || '';
+      inp.style.cssText = 'width:100%;margin-top:4px;';
+      inp.addEventListener('click', function (e) { e.stopPropagation(); });
+      inp.addEventListener('input', function () { onInput(inp.value.trim()); });
+      row.appendChild(inp);
+      box.appendChild(row);
+      return inp;
+    }
+    var shown = h ? titleToMarkup(h) : '';
+    var tIn = field('Title', t.sectionTitles[key] || shown, shown, function (v) {
+      if (v) t.sectionTitles[key] = v; else delete t.sectionTitles[key];
+      markDirty(); redraw();
+    });
+    if (lab) {
+      var labShown = lab.textContent.trim();
+      field('Label above it', t.sectionLabels[key] || labShown, labShown, function (v) {
+        if (v) t.sectionLabels[key] = v; else delete t.sectionLabels[key];
+        markDirty(); redraw();
+      });
+    }
+    box.appendChild(el('div', 'ed-note',
+      'Put the italic word between asterisks: Projects in *depth*. ' +
+      'Saved as an override in site-config.json; clear a field to go back to ' +
+      'what index.html says.'));
+
+    var resetRow = el('div', 'ed-row');
+    var reset = el('button', 'ed-pick', 'use index.html wording');
+    reset.style.width = 'auto'; reset.style.padding = '3px 9px';
+    reset.title = 'Remove the overrides for this title and its label';
+    reset.addEventListener('click', function (e) {
+      e.stopPropagation();
+      delete t.sectionTitles[key]; delete t.sectionLabels[key];
+      markDirty(); redraw();
+      openTitlePanel(key, h);
+    });
+    resetRow.appendChild(reset);
+    box.appendChild(resetRow);
+
+    /* The source: this <h2> in index.html. Searching for its attribute
+       lands on the right line even when the words appear elsewhere too. */
+    box.appendChild(el('div', 'ed-note',
+      'Source: index.html \u2014 the <h2> in <section id="' + (sec ? sec.id : '?') + '">' +
+      (lab ? ', with the label just above it' : '') + '.'));
+    var srcRow = el('div', 'ed-row');
+    var openHtml = el('button', 'ed-pick', 'edit in index.html');
+    openHtml.style.width = 'auto'; openHtml.style.padding = '3px 9px';
+    openHtml.title = 'Open index.html at this heading';
+    openHtml.addEventListener('click', function (e) {
+      e.stopPropagation();
+      openHtmlEditor(sec ? 'id="' + sec.id + '"' : key);
+    });
+    srcRow.appendChild(openHtml);
+    box.appendChild(srcRow);
+
+    box.classList.add('open');
+    if (box.scrollIntoView) box.scrollIntoView({ block: 'nearest' });
+  }
+
+  /* ---- Words that are not an item: where they come from ----------------
+     Looks the text up in every file that puts words on the page and offers
+     each place it was found, opened at that line. Wording the page writes
+     itself (data-ui) can also be renamed here, as text.labels in
+     site-config.json. */
+  var TEXT_SOURCES = [
+    { path: 'assets/resume.tex', save: '/__save-tex',    what: 'resume content' },
+    { path: 'index.html',        save: '/__save-html',   what: 'page markup' },
+    { path: 'site-config.json',  save: '/__save-source', what: 'settings and overrides', asSource: true },
+    { path: 'projects.js',       save: '/__save-source', what: 'per-project settings', asSource: true }
+  ];
+  /* Files are re-read at most every few seconds, so stepping through
+     several labels doesn't download script.js again for each one. */
+  var _srcCache = {};
+  function readSourceCached(path) {
+    var c = _srcCache[path];
+    if (c && Date.now() - c.at < 4000) return c.p;
+    var p = fetch(path, { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; });
+    _srcCache[path] = { at: Date.now(), p: p };
+    return p;
+  }
+  function openTextPanel(hit) {
+    var box = document.getElementById('ed-item');
+    if (!box) return;
+    box.innerHTML = '';
+    box.dataset.name = hit.name;
+    var hd = el('div', 'ed-item-hd');
+    hd.appendChild(el('span', 'ed-item-kind', hit.ui ? 'label' : 'text'));
+    hd.appendChild(el('span', null, hit.ui ? 'Rename this label' : 'Where these words come from'));
+    var close = el('button', 'ed-item-close', '\u00d7');
+    close.title = 'Close';
+    close.addEventListener('click', function (e) { e.stopPropagation(); box.classList.remove('open'); });
+    hd.appendChild(close);
+    box.appendChild(hd);
+    box.appendChild(el('div', 'ed-item-name', '\u201c' + hit.name + '\u201d'));
+
+    if (hit.ui) {
+      var t = ensureText();
+      if (!t.labels) t.labels = {};
+      var row = el('div', 'ed-row'); row.style.display = 'block';
+      row.appendChild(el('label', null, 'Shown as'));
+      var inp = el('input'); inp.type = 'text';
+      inp.value = t.labels[hit.ui] || '';
+      inp.placeholder = hit.ui;
+      inp.style.cssText = 'width:100%;margin-top:4px;';
+      inp.addEventListener('click', function (e) { e.stopPropagation(); });
+      inp.addEventListener('input', function () {
+        var v = inp.value.trim();
+        if (v && v !== hit.ui) t.labels[hit.ui] = v; else delete t.labels[hit.ui];
+        markDirty();
+        if (window.__pfRenderCourses && window.__resumeData) {
+          window.__pfRenderCourses(window.__resumeData.courses || []);
+        }
+      });
+      row.appendChild(inp);
+      box.appendChild(row);
+      box.appendChild(el('div', 'ed-note',
+        'The page writes this wording itself (originally \u201c' + hit.ui + '\u201d). ' +
+        'Saved as text.labels in site-config.json; clear the field to go back.'));
+      box.classList.add('open');
+      return;
+    }
+
+    var res = el('div', 'ed-note', 'Looking for these words in the site\u2019s files\u2026');
+    box.appendChild(res);
+    box.classList.add('open');
+    var found = 0;
+    /* The page sometimes rearranges a line (a year pulled out to the
+       margin, say), so when the whole line isn't found anywhere, its
+       opening words are tried instead. */
+    var words = String(hit.find || hit.name).split(' ');
+    var tries = [words.join(' ')];
+    [8, 5, 3].forEach(function (n) {
+      var w = words.slice(0, n).join(' ');
+      if (words.length > n && w.length >= 10) tries.push(w);
+    });
+    Promise.all(TEXT_SOURCES.map(function (src) {
+      return readSourceCached(src.path).then(function (raw) { return { src: src, raw: raw }; })
+        .catch(function () { return { src: src, raw: '' }; });
+    })).then(function (files) {
+      var rows = [], used = tries[0];
+      for (var k = 0; k < tries.length && !rows.some(function (r) { return r.hit; }); k++) {
+        used = tries[k];
+        rows = files.map(function (f) {
+          return { src: f.src, hit: f.raw ? locateInSource(f.raw, used, 'text') : null };
+        });
+      }
+      hit.find = used;
+      return rows;
+    }).then(function (rows) {
+      if (box.dataset.name !== hit.name) return;          // another item was picked meanwhile
+      rows.forEach(function (r) {
+        if (!r.hit) return;
+        found++;
+        var row = el('div', 'ed-row');
+        if (r.src.save) {
+          var b = el('button', 'ed-pick', 'edit in ' + r.src.path.replace('assets/', '') + ' \u00b7 line ' + r.hit.line);
+          b.style.width = 'auto'; b.style.padding = '3px 9px';
+          b.title = 'Open ' + r.src.path + ' at these words (' + r.src.what + ')';
+          b.addEventListener('click', function (e) {
+            e.stopPropagation();
+            openSourceEditor({ url: r.src.path, label: r.src.path, save: r.src.save,
+                               asSource: r.src.asSource ? r.src.path : null,
+                               find: hit.find || hit.name, kind: 'text' });
+          });
+          row.appendChild(b);
+        } else {
+          row.appendChild(el('span', 'ed-note',
+            r.src.path + ', line ' + r.hit.line + ' \u2014 ' + r.src.what + ' (not editable here)'));
+        }
+        box.appendChild(row);
+      });
+      res.textContent = found
+        ? 'Found in ' + found + (found === 1 ? ' file' : ' files') + ':'
+        : 'These exact words are not in any one file: the page puts them together from ' +
+          'several parts (a name and a count, say). Right-click a smaller piece of it.';
+    });
+  }
+
+  /* ---- Finding an item without right-clicking ------------------------
+     Right-click needs the thing on screen, and some are easy to miss (a
+     section title, one course in a closed category, a line of
+     Recognition). The finder lists everything the editor can target,
+     grouped by section, and picking one does exactly what right-clicking
+     it would; in the Source tab it goes straight to the source. */
+  var FINDER_NODES = '[data-section-title],[data-entry],[data-title],[data-ui],' +
+    '.course-lab,.project-group-head,#skills h4,#recognition li,#contact h5,' +
+    '.topbar nav a,.nav-sub-link';
+  var FINDER_KIND = { title: 'title', project: 'project', course: 'course', card: 'skill',
+    education: 'education', internship: 'experience', intro: 'intro', nav: 'menu',
+    filter: 'filter', section: 'section', text: 'text' };
+  function finderTargets() {
+    var out = [], seen = {};
+    Array.prototype.forEach.call(document.querySelectorAll(FINDER_NODES), function (n) {
+      if (n.closest && n.closest('.ed-panel, .ed-doc, .ed-pvwin')) return;
+      var hit = targetNameFromEvent(n);
+      if (!hit || !hit.name || hit.kind === 'section') return;
+      var key = hit.kind + '|' + (hit.ftype || '') + '|' + hit.name;
+      if (seen[key]) return;
+      seen[key] = 1;
+      var label = hit.kind === 'title' && hit.el ? titleToMarkup(hit.el).replace(/\*/g, '') : hit.name;
+      /* the page section it is in: course rows sit in <section>s of their
+         own inside Courses, so go up to the one that has the heading */
+      var sec = n.closest ? n.closest('section') : null;
+      while (sec && !sec.querySelector('[data-section-title]')) {
+        sec = sec.parentElement ? sec.parentElement.closest('section') : null;
+      }
+      var head = sec && sec.querySelector('[data-section-title]');
+      var group = hit.kind === 'title' ? 'Section titles'
+        : hit.kind === 'intro' ? 'Intro'
+        : (n.closest && n.closest('.topbar')) ? 'Top-bar menu'
+        : head ? titleToMarkup(head).replace(/\*/g, '').replace(/\.$/, '')
+        : (sec && sec.id) || 'Other';
+      out.push({ node: n, hit: hit, label: label, group: group });
+    });
+    return out;
+  }
+  function pickTarget(t, toSource) {
+    var vis = t.node;
+    while (vis && vis !== document.body && !vis.getClientRects().length) vis = vis.parentNode;
+    if (vis && vis !== document.body && vis.scrollIntoView) vis.scrollIntoView({ block: 'center' });
+    inspectNode(t.node);
+    if (!toSource) return;
+    /* the same "edit in …" button the panel offers, pressed for you */
+    var tries = 0;
+    (function press() {
+      var box = document.getElementById('ed-item');
+      var b = box && Array.prototype.filter.call(box.querySelectorAll('button'), function (x) {
+        return /^edit (in )?(resume\.tex|index\.html|site-config|projects)/.test(x.textContent.trim());
+      })[0];
+      if (b) b.click();
+      else if (tries++ < 20) setTimeout(press, 100);      // the text panel searches first
+    })();
+  }
+  function buildFinder(toSource) {
+    var wrap = el('div', 'ed-find' + (toSource ? ' is-open' : ''));
+    var q = el('input', 'ed-find-q'); q.type = 'search';
+    q.placeholder = toSource ? 'Go to the source of\u2026 a title, project, course, skill'
+                             : 'Find an item\u2026 a title, project, course, skill';
+    var list = el('div', 'ed-find-list');
+    wrap.appendChild(q); wrap.appendChild(list);
+    var opened = {};
+    function render() {
+      var term = q.value.trim().toLowerCase();
+      var groups = [], by = {};
+      finderTargets().forEach(function (t) {
+        var hay = (t.label + ' ' + t.group + ' ' + (FINDER_KIND[t.hit.kind] || '')).toLowerCase();
+        if (term && hay.indexOf(term) < 0) return;
+        if (!by[t.group]) { by[t.group] = []; groups.push(t.group); }
+        by[t.group].push(t);
+      });
+      /* titles and the intro first, then the sections in page order, the
+         top-bar menu and anything unplaced last */
+      var rank = function (g) {
+        return g === 'Section titles' ? 0 : g === 'Intro' ? 1 : g === 'Top-bar menu' ? 3 : g === 'Other' ? 4 : 2;
+      };
+      groups = groups.map(function (g, i) { return [g, i]; })
+        .sort(function (a, b) { return rank(a[0]) - rank(b[0]) || a[1] - b[1]; })
+        .map(function (p) { return p[0]; });
+      list.innerHTML = '';
+      if (!groups.length) {
+        list.appendChild(el('div', 'ed-note', term ? 'Nothing matches \u201c' + q.value + '\u201d.' : 'Nothing on the page yet.'));
+        return;
+      }
+      groups.forEach(function (g) {
+        var isOpen = term ? true : (g in opened ? opened[g] : g === 'Section titles');
+        var gh = el('button', 'ed-find-g' + (isOpen ? ' on' : ''), g + '  ' + by[g].length);
+        gh.addEventListener('click', function (e) { e.stopPropagation(); opened[g] = !isOpen; render(); });
+        list.appendChild(gh);
+        if (!isOpen) return;
+        by[g].forEach(function (t) {
+          var b = el('button', 'ed-find-i');
+          b.appendChild(el('span', null, t.label));
+          b.appendChild(el('small', null, FINDER_KIND[t.hit.kind] || t.hit.kind));
+          b.title = toSource ? 'Open the source at this item' : 'Inspect this item (the same as right-clicking it)';
+          b.addEventListener('click', function (e) {
+            e.stopPropagation();
+            pickTarget(t, toSource);
+            if (!toSource) { q.value = ''; q.blur(); wrap.classList.remove('is-open'); }
+          });
+          list.appendChild(b);
+        });
+      });
+    }
+    q.addEventListener('click', function (e) { e.stopPropagation(); });
+    q.addEventListener('focus', function () { wrap.classList.add('is-open'); render(); });
+    q.addEventListener('input', render);
+    q.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { q.value = ''; q.blur(); if (!toSource) wrap.classList.remove('is-open'); return; }
+      e.stopPropagation();
+      if (e.key === 'Enter') { var f = list.querySelector('.ed-find-i'); if (f) f.click(); }
+    });
+    wrap._render = render;
+    return wrap;
   }
 
   function openItemPanel(name, kind) {
@@ -5375,14 +5812,22 @@
   /* Right-click on the page, or inside the phone view's copy of it. */
   function onPageContext(e) {
       e.preventDefault();
-      var hit = targetNameFromEvent(e.target);
+      inspectNode(e.target);
+  }
+  /* What a right-click does, for any node: also used by the finder. */
+  function inspectNode(node) {
+      var hit = targetNameFromEvent(node);
       show();
-      selectArea(e.target);
+      selectArea(node);
       switchTab('inspect');
-      if (hit && hit.kind === 'filter') {
+      if (hit && hit.kind === 'text') {
+        openTextPanel(hit);
+      } else if (hit && hit.kind === 'filter') {
         openFilterPanel(hit.ftype, hit.name);
       } else if (hit && hit.kind === 'nav') {
         openNavPanel(hit.name);
+      } else if (hit && hit.kind === 'title') {
+        openTitlePanel(hit.name, hit.el);
       } else if (hit) {
         focusMediaTarget(hit.name);
         openItemPanel(hit.name, hit.kind);

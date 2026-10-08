@@ -1,3 +1,7 @@
+/* theme-id: nordic-frost   hash: fc4efcc3
+   site-config.json keys colour overrides by this id. */
+:root { --theme-id: "nordic-frost"; --theme-hash: "fc4efcc3"; }
+
 /* ============================================================
    Rishabh Sahu — Portfolio styles
    --------------------------------------------------------------
@@ -2448,8 +2452,8 @@ body { font-size: calc(1rem * var(--text-scale)); }
 .proj-diagram {
   margin: 0;
   padding: 10px;
-  background: #0e0f1d;
-  border: 1px solid #474a70;
+  background: var(--dg-box, #0e0f1d);
+  border: 1px solid var(--dg-border, #474a70);
   border-radius: 14px;
   /* The dark ground sits close to a dark page, so separate it with an edge
      and a soft lift rather than relying on the fill alone. */
@@ -2460,41 +2464,41 @@ body { font-size: calc(1rem * var(--text-scale)); }
 .proj-diagram .dg-intro{color:var(--t3);font-size:13.5px;max-width:76ch;margin:0 0 30px}
 .proj-diagram .dg-k{font:10px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase}
 .proj-diagram .dg-why{font-size:12px;color:var(--t3)}
-.proj-diagram .dg-nt{font:600 12px ui-sans-serif,system-ui,sans-serif;fill:#f2f0ff}
-.proj-diagram .dg-ns{font:10px ui-monospace,monospace;fill:#9aa0bd}
-.proj-diagram .dg-cmd{font:11px ui-monospace,monospace;fill:#9ad09a}
-.proj-diagram .dg-out{font:11px ui-monospace,monospace;fill:#8489a6}
-.proj-diagram .dg-warn{font:11px ui-monospace,monospace;fill:#e6c069}
-.proj-diagram .dg-ok{font:11px ui-monospace,monospace;fill:#9ad09a}
-.proj-diagram .dg-lab{font:10px ui-monospace,monospace;fill:#9aa0bd}
-.proj-diagram .dg-url{font:9px ui-monospace,monospace;fill:#6e7194}
-.proj-diagram .dg-sn{font:700 10px ui-sans-serif,system-ui,sans-serif;fill:#0b0c17}
-.proj-diagram .dg-ph{font:11px ui-sans-serif,system-ui,sans-serif;fill:#6e7194}
-.proj-diagram .dg-btn{font:600 11px ui-sans-serif,system-ui,sans-serif;fill:#0b0c17}
+.proj-diagram .dg-nt{font:600 12px ui-sans-serif,system-ui,sans-serif;fill:var(--dg-t1,#f2f0ff)}
+.proj-diagram .dg-ns{font:10px ui-monospace,monospace;fill:var(--dg-t3,#9aa0bd)}
+.proj-diagram .dg-cmd{font:11px ui-monospace,monospace;fill:var(--dg-txt-ok,#9ad09a)}
+.proj-diagram .dg-out{font:11px ui-monospace,monospace;fill:var(--dg-t4,#8489a6)}
+.proj-diagram .dg-warn{font:11px ui-monospace,monospace;fill:var(--dg-txt-warn,#e6c069)}
+.proj-diagram .dg-ok{font:11px ui-monospace,monospace;fill:var(--dg-txt-ok,#9ad09a)}
+.proj-diagram .dg-lab{font:10px ui-monospace,monospace;fill:var(--dg-t3,#9aa0bd)}
+.proj-diagram .dg-url{font:9px ui-monospace,monospace;fill:var(--dg-t5,#6e7194)}
+.proj-diagram .dg-sn{font:700 10px ui-sans-serif,system-ui,sans-serif;fill:var(--dg-on,#0b0c17)}
+.proj-diagram .dg-ph{font:11px ui-sans-serif,system-ui,sans-serif;fill:var(--dg-t5,#6e7194)}
+.proj-diagram .dg-btn{font:600 11px ui-sans-serif,system-ui,sans-serif;fill:var(--dg-on,#0b0c17)}
 .proj-diagram .dg-metric{font:500 30px ui-serif,Georgia,serif}
-.proj-diagram .dg-typed{font:15px ui-monospace,monospace;fill:#f2f0ff}
-.proj-diagram .dg-ok2{font:10.5px ui-monospace,monospace;fill:#9ad09a}
+.proj-diagram .dg-typed{font:15px ui-monospace,monospace;fill:var(--dg-t1,#f2f0ff)}
+.proj-diagram .dg-ok2{font:10.5px ui-monospace,monospace;fill:var(--dg-txt-ok,#9ad09a)}
 .proj-diagram .dg-dev{font:600 9.5px ui-monospace,monospace;fill:#8489a6;letter-spacing:.08em}
-.proj-diagram .dg-pt{font:600 9px ui-monospace,monospace;fill:#c3c7e0}
+.proj-diagram .dg-pt{font:600 9px ui-monospace,monospace;fill:var(--dg-t2,#c3c7e0)}
 .proj-diagram .dg-bd{font:700 8.5px ui-monospace,monospace;fill:#0b0c17;letter-spacing:.05em}
 .proj-diagram .dg-cm{font:700 8px ui-monospace,monospace}
-.proj-diagram .dg-ct{font:600 10px ui-sans-serif,system-ui,sans-serif;fill:#f2f0ff}
-.proj-diagram .dg-cs{font:9px ui-monospace,monospace;fill:#9aa0bd}
-.proj-diagram .dg-cap{font:9.5px ui-monospace,monospace;fill:#9aa0bd}
-.proj-diagram .dg-pk{font:8px ui-monospace,monospace;fill:#e6c069}
-.proj-diagram .dg-pkd{font:8px ui-monospace,monospace;fill:#6e7194}
-.proj-diagram .dg-al{font:8.5px ui-monospace,monospace;fill:#c3c7e0}
-.proj-diagram .dg-rule{font:700 9.5px ui-monospace,monospace;fill:#f2f0ff}
-.proj-diagram .dg-okc{font:8.5px ui-monospace,monospace;fill:#9ad09a}
-.proj-diagram .dg-bad{font:8.5px ui-monospace,monospace;fill:#e08b8b}
-.proj-diagram .dg-nt2{font:8.5px ui-monospace,monospace;fill:#c3c7e0}
-.proj-diagram .dg-off{font:600 8px ui-monospace,monospace;fill:#e6c069}
+.proj-diagram .dg-ct{font:600 10px ui-sans-serif,system-ui,sans-serif;fill:var(--dg-t1,#f2f0ff)}
+.proj-diagram .dg-cs{font:9px ui-monospace,monospace;fill:var(--dg-t3,#9aa0bd)}
+.proj-diagram .dg-cap{font:9.5px ui-monospace,monospace;fill:var(--dg-t3,#9aa0bd)}
+.proj-diagram .dg-pk{font:8px ui-monospace,monospace;fill:var(--dg-txt-warn,#e6c069)}
+.proj-diagram .dg-pkd{font:8px ui-monospace,monospace;fill:var(--dg-t5,#6e7194)}
+.proj-diagram .dg-al{font:8.5px ui-monospace,monospace;fill:var(--dg-t2,#c3c7e0)}
+.proj-diagram .dg-rule{font:700 9.5px ui-monospace,monospace;fill:var(--dg-t1,#f2f0ff)}
+.proj-diagram .dg-okc{font:8.5px ui-monospace,monospace;fill:var(--dg-txt-ok,#9ad09a)}
+.proj-diagram .dg-bad{font:8.5px ui-monospace,monospace;fill:var(--dg-txt-bad,#e08b8b)}
+.proj-diagram .dg-nt2{font:8.5px ui-monospace,monospace;fill:var(--dg-t2,#c3c7e0)}
+.proj-diagram .dg-off{font:600 8px ui-monospace,monospace;fill:var(--dg-txt-warn,#e6c069)}
 .proj-diagram .dg-devA{font:700 10.5px ui-monospace,monospace;letter-spacing:.08em}
-.proj-diagram .dg-fl{font:8px ui-sans-serif,system-ui,sans-serif;fill:#9aa0bd}
-.proj-diagram .dg-fv{font:8.5px ui-monospace,monospace;fill:#c3c7e0}
-.proj-diagram .dg-ab{font:700 9.5px ui-sans-serif,system-ui,sans-serif;fill:#0b0c17}
-.proj-diagram .dg-js{font:8px ui-monospace,monospace;fill:#e6c069}
-.proj-diagram .dg-cv{font:8px ui-monospace,monospace;fill:#9aa0bd}
+.proj-diagram .dg-fl{font:8px ui-sans-serif,system-ui,sans-serif;fill:var(--dg-t3,#9aa0bd)}
+.proj-diagram .dg-fv{font:8.5px ui-monospace,monospace;fill:var(--dg-t2,#c3c7e0)}
+.proj-diagram .dg-ab{font:700 9.5px ui-sans-serif,system-ui,sans-serif;fill:var(--dg-on,#0b0c17)}
+.proj-diagram .dg-js{font:8px ui-monospace,monospace;fill:var(--dg-txt-warn,#e6c069)}
+.proj-diagram .dg-cv{font:8px ui-monospace,monospace;fill:var(--dg-t3,#9aa0bd)}
 
 
 /* ---- Terminal: the same small lift in both themes --------------------
@@ -2502,50 +2506,178 @@ body { font-size: calc(1rem * var(--text-scale)); }
    on the light one. It now sits 1.14:1 above its ground in BOTH themes —
    the same amount, in the same direction — so it reads as one consistent
    kind of panel whichever theme is active. */
-.proj-diagram [fill="#0a0b16"]{fill:#1a1c36}
-.proj-diagram [fill="#15162a"]{fill:#212445}
-.proj-diagram [stroke="#2e3151"]{stroke:#34375c}
-.proj-diagram [fill="#393c5b"]{fill:#454873}
+.proj-diagram [fill="#0a0b16"]{fill:var(--dg-term,#1a1c36)}
+.proj-diagram [fill="#15162a"]{fill:var(--dg-term2,#212445)}
+.proj-diagram [fill="#393c5b"]{fill:var(--dg-term-edge,#454873)}
+
+/* ---- Diagram colours follow the active stylesheet ---------------------
+   The drawings were made for one palette: a navy ground by night and warm
+   paper by day. On a teal, violet or wine page that looked pasted in. So
+   every neutral in them (ground, panels, lines, edges, text) is now worked
+   out from the page's own --bg and --ink, in the same proportions the
+   original colours had against the default palette, and follows whichever
+   stylesheet and theme are active, including colour overrides from the
+   editor. The coloured parts (one hue per project, plus ok / warning /
+   error) keep their own colours.
+   Browsers without color-mix() keep the original fixed colours: the
+   variables are only defined inside @supports, and every use names the
+   original colour as its fallback. */
+@supports (color: color-mix(in oklab, red, blue)) {
+  .proj-diagram {
+    --dg-box:       color-mix(in oklab, var(--bg), #000 8%);
+    --dg-border:    color-mix(in oklab, var(--bg), var(--ink) 31%);
+    --dg-ground:    color-mix(in oklab, var(--bg), #000 8%);
+    --dg-panel:     color-mix(in oklab, var(--bg), var(--ink) 2%);
+    --dg-sunk:      color-mix(in oklab, var(--bg), var(--ink) 3%);
+    --dg-panel2:    color-mix(in oklab, var(--bg), var(--ink) 6%);
+    --dg-sunk2:     color-mix(in oklab, var(--bg), var(--ink) 12%);
+    --dg-cutout:    color-mix(in oklab, var(--bg), #000 17%);
+    --dg-line:      color-mix(in oklab, var(--bg), var(--ink) 19%);
+    --dg-edge:      color-mix(in oklab, var(--bg), var(--ink) 24%);
+    --dg-term:      color-mix(in oklab, var(--bg), var(--ink) 6.5%);
+    --dg-term2:     color-mix(in oklab, var(--bg), var(--ink) 11.5%);
+    --dg-term-line: color-mix(in oklab, var(--bg), var(--ink) 22%);
+    --dg-term-edge: color-mix(in oklab, var(--bg), var(--ink) 31%);
+    --dg-tint-ok:   color-mix(in oklab, var(--dg-panel), #4cae4c 20%);
+    --dg-tint-warn: color-mix(in oklab, var(--dg-panel), #c9a23c 18%);
+    --dg-hi:        color-mix(in oklab, var(--bg), var(--ink) 88%);
+    --dg-white:     var(--ink);
+    --dg-t1:        var(--ink);
+    --dg-t2:        color-mix(in oklab, var(--bg), var(--ink) 88%);
+    --dg-t3:        color-mix(in oklab, var(--bg), var(--ink) 71%);
+    --dg-t4:        color-mix(in oklab, var(--bg), var(--ink) 61%);
+    --dg-t5:        color-mix(in oklab, var(--bg), var(--ink) 53%);
+    --dg-on:        color-mix(in oklab, var(--bg), #000 17%);
+  }
+  [data-theme="light"] .proj-diagram {
+    --dg-box:       color-mix(in oklab, var(--bg), var(--ink) 4.5%);
+    --dg-border:    color-mix(in oklab, var(--bg), var(--ink) 14%);
+    --dg-ground:    color-mix(in oklab, var(--bg), var(--ink) 2%);
+    --dg-panel:     color-mix(in oklab, var(--bg), #fff 16%);
+    --dg-panel2:    color-mix(in oklab, var(--bg), var(--ink) 1.2%);
+    --dg-sunk:      color-mix(in oklab, var(--bg), var(--ink) 9%);
+    --dg-sunk2:     color-mix(in oklab, var(--bg), var(--ink) 14.5%);
+    --dg-cutout:    color-mix(in oklab, var(--bg), #fff 50%);
+    --dg-line:      color-mix(in oklab, var(--bg), var(--ink) 16.5%);
+    --dg-edge:      color-mix(in oklab, var(--bg), var(--ink) 34%);
+    --dg-term:      color-mix(in oklab, var(--bg), #fff 21%);
+    --dg-term2:     color-mix(in oklab, var(--bg), var(--ink) 7%);
+    --dg-term-line: var(--dg-line);
+    --dg-term-edge: var(--dg-edge);
+    --dg-tint-ok:   color-mix(in oklab, var(--dg-panel), #3d823d 16%);
+    --dg-tint-warn: color-mix(in oklab, var(--dg-panel), #b08a2e 18%);
+    --dg-hi:        color-mix(in oklab, var(--bg), var(--ink) 59%);
+    --dg-white:     var(--ink);
+    --dg-t1:        var(--ink);
+    --dg-t2:        color-mix(in oklab, var(--bg), var(--ink) 81%);
+    --dg-t3:        color-mix(in oklab, var(--bg), var(--ink) 64%);
+    --dg-t4:        color-mix(in oklab, var(--bg), var(--ink) 58%);
+    --dg-t5:        color-mix(in oklab, var(--bg), var(--ink) 47%);
+    --dg-on:        #fff;
+    /* Coloured text (ok / warning / error) drawn on the panels. Pulled a
+       little toward the page's ink, so it keeps 4.5:1 on the darker
+       day pages too (Day & Night's amber, Rust's tan). */
+    --dg-ok-t:      color-mix(in oklab, #397a39, var(--ink) 30%);
+    --dg-warn-t:    color-mix(in oklab, #856827, var(--ink) 30%);
+    --dg-bad-t:     color-mix(in oklab, #a64a4a, var(--ink) 25%);
+    --dg-oq-t:      color-mix(in oklab, #86600f, var(--ink) 25%);
+  }
+}
+.proj-diagram [fill="#0e0f1d"]{fill:var(--dg-ground,#0e0f1d)}
+.proj-diagram [fill="#141528"]{fill:var(--dg-panel,#141528)}
+.proj-diagram [fill="#1b1c31"]{fill:var(--dg-panel2,#1b1c31)}
+.proj-diagram [fill="#16172a"]{fill:var(--dg-sunk,#16172a)}
+.proj-diagram [fill="#24263f"]{fill:var(--dg-sunk2,#24263f)}
+.proj-diagram [fill="#0b0c17"]{fill:var(--dg-cutout,#0b0c17)}
+.proj-diagram [stroke="#0b0c17"]{stroke:var(--dg-cutout,#0b0c17)}
+.proj-diagram [fill="#2f3252"]{fill:var(--dg-line,#2f3252)}
+.proj-diagram [stroke="#2f3252"]{stroke:var(--dg-line,#2f3252)}
+.proj-diagram [fill="#3a3d5c"]{fill:var(--dg-edge,#3a3d5c)}
+.proj-diagram [stroke="#3a3d5c"]{stroke:var(--dg-edge,#3a3d5c)}
+.proj-diagram [fill="#12301c"]{fill:var(--dg-tint-ok,#12301c)}
+.proj-diagram [fill="#2a2210"]{fill:var(--dg-tint-warn,#2a2210)}
+.proj-diagram [fill="#c3c7e0"]{fill:var(--dg-hi,#c3c7e0)}
+.proj-diagram [fill="#f2f0ff"]{fill:var(--dg-white,#f2f0ff)}
+
+/* ---- Coloured text keeps its contrast on every page --------------------
+   Green "ok", gold warnings, red errors and the per-project hues are also
+   used for text. Their brightness is set from the panel behind them rather
+   than fixed: at least as far from it as on the default palette, and never
+   dimmer (by night) or lighter (by day) than the original colour. That
+   keeps them readable on the mid-tone day pages (Day & Night's amber,
+   Rust's tan) and the lifted night pages, while the hue stays the same.
+   Needs relative colour syntax; elsewhere the colours above apply. */
+@supports (color: oklch(from red l c h)) {
+  .proj-diagram {
+    --dg-txt-ok:     oklch(from var(--dg-panel2) max(calc(l + 0.55), 0.806) 0.094 144.6);
+    --dg-txt-warn:   oklch(from var(--dg-panel2) max(calc(l + 0.55), 0.823) 0.115 86.2);
+    --dg-txt-bad:    oklch(from var(--dg-panel2) max(calc(l + 0.55), 0.725) 0.104 19.9);
+    --dg-txt-green:  oklch(from var(--dg-panel2) max(calc(l + 0.55), 0.741) 0.158 138.4);
+    --dg-txt-pink:   oklch(from var(--dg-panel2) max(calc(l + 0.55), 0.719) 0.123 1.5);
+    --dg-txt-cyan:   oklch(from var(--dg-panel2) max(calc(l + 0.55), 0.740) 0.100 222.1);
+    --dg-txt-purple: oklch(from var(--dg-panel2) max(calc(l + 0.55), 0.721) 0.137 317.5);
+  }
+  [data-theme="light"] .proj-diagram {
+    --dg-txt-ok:     oklch(from var(--dg-sunk) min(calc(l - 0.40), 0.520) 0.118 143.6);
+    --dg-txt-warn:   oklch(from var(--dg-sunk) min(calc(l - 0.40), 0.533) 0.090 84.4);
+    --dg-txt-bad:    oklch(from var(--dg-sunk) min(calc(l - 0.40), 0.528) 0.122 22.1);
+    --dg-txt-oq:     oklch(from var(--dg-sunk) min(calc(l - 0.40), 0.516) 0.102 80.0);
+    --dg-txt-green:  oklch(from var(--dg-sunk) min(calc(l - 0.40), 0.550) 0.122 138.7);
+    --dg-txt-pink:   oklch(from var(--dg-sunk) min(calc(l - 0.40), 0.578) 0.129 3.1);
+    --dg-txt-cyan:   oklch(from var(--dg-sunk) min(calc(l - 0.40), 0.554) 0.072 222.6);
+    --dg-txt-purple: oklch(from var(--dg-sunk) min(calc(l - 0.40), 0.579) 0.159 317.1);
+  }
+}
+.proj-diagram text[fill="#75c25b"]{fill:var(--dg-txt-green,#75c25b)}
+[data-theme="light"] .proj-diagram text[fill="#75c25b"]{fill:var(--dg-txt-green,#4a8238)}
+.proj-diagram text[fill="#e3829f"]{fill:var(--dg-txt-pink,#e3829f)}
+[data-theme="light"] .proj-diagram text[fill="#e3829f"]{fill:var(--dg-txt-pink,#b65572)}
+.proj-diagram text[fill="#5ab9d8"]{fill:var(--dg-txt-cyan,#5ab9d8)}
+[data-theme="light"] .proj-diagram text[fill="#5ab9d8"]{fill:var(--dg-txt-cyan,#3e7c91)}
+.proj-diagram text[fill="#c888dd"],.proj-diagram tspan[fill="#c888dd"]{fill:var(--dg-txt-purple,#c888dd)}
+[data-theme="light"] .proj-diagram text[fill="#c888dd"],[data-theme="light"] .proj-diagram tspan[fill="#c888dd"]{fill:var(--dg-txt-purple,#9f57b7)}
+.proj-diagram text[fill="#e6c069"],.proj-diagram tspan[fill="#e6c069"]{fill:var(--dg-txt-warn,#e6c069)}
+[data-theme="light"] .proj-diagram text[fill="#e6c069"],[data-theme="light"] .proj-diagram tspan[fill="#e6c069"]{fill:var(--dg-txt-warn,#8a723b)}
 
 /* ---- Light mode -------------------------------------------------------
    Warm neutrals rather than near-white, so the diagram sits on the page
    instead of glaring off it. Hues are muted — saturation capped at 0.40 —
    and each still carries white badge text at 4.6:1 or better. */
 [data-theme="light"] .proj-diagram {
-  background: #e7e2d8;
-  border-color: #d2cbbd;
+  background: var(--dg-box, #e7e2d8);
+  border-color: var(--dg-border, #d2cbbd);
   box-shadow: 0 1px 2px rgba(40,30,15,.05), 0 6px 18px rgba(40,30,15,.07);
 }
-[data-theme="light"] .proj-diagram [fill="#0e0f1d"]{fill:#ece8e0}
-[data-theme="light"] .proj-diagram [stroke="#0e0f1d"]{stroke:#ece8e0}
-[data-theme="light"] .proj-diagram [fill="#141528"]{fill:#f3f0ea}
-[data-theme="light"] .proj-diagram [stroke="#141528"]{stroke:#f3f0ea}
-[data-theme="light"] .proj-diagram [fill="#1b1c31"]{fill:#eeeae3}
-[data-theme="light"] .proj-diagram [stroke="#1b1c31"]{stroke:#eeeae3}
-[data-theme="light"] .proj-diagram [fill="#16172a"]{fill:#ddd7cb}
-[data-theme="light"] .proj-diagram [stroke="#16172a"]{stroke:#ddd7cb}
-[data-theme="light"] .proj-diagram [fill="#24263f"]{fill:#d0c9bb}
-[data-theme="light"] .proj-diagram [stroke="#24263f"]{stroke:#d0c9bb}
-[data-theme="light"] .proj-diagram [fill="#0b0c17"]{fill:#f8f6f2}
-[data-theme="light"] .proj-diagram [stroke="#0b0c17"]{stroke:#f8f6f2}
-[data-theme="light"] .proj-diagram [fill="#2f3252"]{fill:#cbc4b4}
-[data-theme="light"] .proj-diagram [stroke="#2f3252"]{stroke:#cbc4b4}
-[data-theme="light"] .proj-diagram [fill="#3a3d5c"]{fill:#a39b88}
-[data-theme="light"] .proj-diagram [stroke="#3a3d5c"]{stroke:#a39b88}
-[data-theme="light"] .proj-diagram [fill="#12301c"]{fill:#dce9da}
-[data-theme="light"] .proj-diagram [stroke="#12301c"]{stroke:#dce9da}
-[data-theme="light"] .proj-diagram [fill="#2a2210"]{fill:#efe2c3}
-[data-theme="light"] .proj-diagram [stroke="#2a2210"]{stroke:#efe2c3}
-[data-theme="light"] .proj-diagram [fill="#c3c7e0"]{fill:#6a6455}
-[data-theme="light"] .proj-diagram [stroke="#c3c7e0"]{stroke:#6a6455}
-[data-theme="light"] .proj-diagram [fill="#0a0b16"]{fill:#f3f1ec}
-[data-theme="light"] .proj-diagram [stroke="#0a0b16"]{stroke:#f3f1ec}
-[data-theme="light"] .proj-diagram [fill="#15162a"]{fill:#e2dcd0}
-[data-theme="light"] .proj-diagram [stroke="#15162a"]{stroke:#e2dcd0}
-[data-theme="light"] .proj-diagram [fill="#2e3151"]{fill:#cbc4b4}
-[data-theme="light"] .proj-diagram [stroke="#2e3151"]{stroke:#cbc4b4}
-[data-theme="light"] .proj-diagram [fill="#393c5b"]{fill:#a39b88}
-[data-theme="light"] .proj-diagram [stroke="#393c5b"]{stroke:#a39b88}
+[data-theme="light"] .proj-diagram [fill="#0e0f1d"]{fill:var(--dg-ground,#ece8e0)}
+[data-theme="light"] .proj-diagram [stroke="#0e0f1d"]{stroke:var(--dg-ground,#ece8e0)}
+[data-theme="light"] .proj-diagram [fill="#141528"]{fill:var(--dg-panel,#f3f0ea)}
+[data-theme="light"] .proj-diagram [stroke="#141528"]{stroke:var(--dg-panel,#f3f0ea)}
+[data-theme="light"] .proj-diagram [fill="#1b1c31"]{fill:var(--dg-panel2,#eeeae3)}
+[data-theme="light"] .proj-diagram [stroke="#1b1c31"]{stroke:var(--dg-panel2,#eeeae3)}
+[data-theme="light"] .proj-diagram [fill="#16172a"]{fill:var(--dg-sunk,#ddd7cb)}
+[data-theme="light"] .proj-diagram [stroke="#16172a"]{stroke:var(--dg-sunk,#ddd7cb)}
+[data-theme="light"] .proj-diagram [fill="#24263f"]{fill:var(--dg-sunk2,#d0c9bb)}
+[data-theme="light"] .proj-diagram [stroke="#24263f"]{stroke:var(--dg-sunk2,#d0c9bb)}
+[data-theme="light"] .proj-diagram [fill="#0b0c17"]{fill:var(--dg-cutout,#f8f6f2)}
+[data-theme="light"] .proj-diagram [stroke="#0b0c17"]{stroke:var(--dg-cutout,#f8f6f2)}
+[data-theme="light"] .proj-diagram [fill="#2f3252"]{fill:var(--dg-line,#cbc4b4)}
+[data-theme="light"] .proj-diagram [stroke="#2f3252"]{stroke:var(--dg-line,#cbc4b4)}
+[data-theme="light"] .proj-diagram [fill="#3a3d5c"]{fill:var(--dg-edge,#a39b88)}
+[data-theme="light"] .proj-diagram [stroke="#3a3d5c"]{stroke:var(--dg-edge,#a39b88)}
+[data-theme="light"] .proj-diagram [fill="#12301c"]{fill:var(--dg-tint-ok,#dce9da)}
+[data-theme="light"] .proj-diagram [stroke="#12301c"]{stroke:var(--dg-tint-ok,#dce9da)}
+[data-theme="light"] .proj-diagram [fill="#2a2210"]{fill:var(--dg-tint-warn,#efe2c3)}
+[data-theme="light"] .proj-diagram [stroke="#2a2210"]{stroke:var(--dg-tint-warn,#efe2c3)}
+[data-theme="light"] .proj-diagram [fill="#c3c7e0"]{fill:var(--dg-hi,#6a6455)}
+[data-theme="light"] .proj-diagram [stroke="#c3c7e0"]{stroke:var(--dg-hi,#6a6455)}
+[data-theme="light"] .proj-diagram [fill="#0a0b16"]{fill:var(--dg-term,#f3f1ec)}
+[data-theme="light"] .proj-diagram [stroke="#0a0b16"]{stroke:var(--dg-term,#f3f1ec)}
+[data-theme="light"] .proj-diagram [fill="#15162a"]{fill:var(--dg-term2,#e2dcd0)}
+[data-theme="light"] .proj-diagram [stroke="#15162a"]{stroke:var(--dg-term2,#e2dcd0)}
+[data-theme="light"] .proj-diagram [fill="#2e3151"]{fill:var(--dg-term-line,#cbc4b4)}
+[data-theme="light"] .proj-diagram [stroke="#2e3151"]{stroke:var(--dg-term-line,#cbc4b4)}
+[data-theme="light"] .proj-diagram [fill="#393c5b"]{fill:var(--dg-term-edge,#a39b88)}
+[data-theme="light"] .proj-diagram [stroke="#393c5b"]{stroke:var(--dg-term-edge,#a39b88)}
 [data-theme="light"] .proj-diagram [fill="#da8062"]{fill:#a96149}
 [data-theme="light"] .proj-diagram [stroke="#da8062"]{stroke:#a96149}
 [data-theme="light"] .proj-diagram [fill="#75c25b"]{fill:#4a8238}
@@ -2562,42 +2694,42 @@ body { font-size: calc(1rem * var(--text-scale)); }
 [data-theme="light"] .proj-diagram [stroke="#9ad09a"]{stroke:#3d823d}
 [data-theme="light"] .proj-diagram [fill="#e08b8b"]{fill:#b75858}
 [data-theme="light"] .proj-diagram [stroke="#e08b8b"]{stroke:#b75858}
-[data-theme="light"] .proj-diagram .dg-nt{fill:#1d1a15}
-[data-theme="light"] .proj-diagram .dg-ns{fill:#5e584c}
-[data-theme="light"] .proj-diagram .dg-lab{fill:#5e584c}
-[data-theme="light"] .proj-diagram .dg-cap{fill:#5e584c}
-[data-theme="light"] .proj-diagram .dg-url{fill:#6b6455}
-[data-theme="light"] .proj-diagram .dg-dev{fill:#6b6455}
-[data-theme="light"] .proj-diagram .dg-typed{fill:#1d1a15}
-[data-theme="light"] .proj-diagram .dg-ok2{fill:#397a39}
-[data-theme="light"] .proj-diagram .dg-okc{fill:#397a39}
-[data-theme="light"] .proj-diagram .dg-bad{fill:#a64a4a}
-[data-theme="light"] .proj-diagram .dg-js{fill:#856827}
-[data-theme="light"] .proj-diagram .dg-pk{fill:#856827}
-[data-theme="light"] .proj-diagram .dg-pkd{fill:#8a8373}
-[data-theme="light"] .proj-diagram .dg-al{fill:#3b362d}
-[data-theme="light"] .proj-diagram .dg-rule{fill:#1d1a15}
-[data-theme="light"] .proj-diagram .dg-nt2{fill:#3b362d}
-[data-theme="light"] .proj-diagram .dg-fl{fill:#5e584c}
-[data-theme="light"] .proj-diagram .dg-fv{fill:#3b362d}
-[data-theme="light"] .proj-diagram .dg-ph{fill:#8a8373}
-[data-theme="light"] .proj-diagram .dg-cv{fill:#5e584c}
-[data-theme="light"] .proj-diagram .dg-pt{fill:#3b362d}
-[data-theme="light"] .proj-diagram .dg-ct{fill:#1d1a15}
-[data-theme="light"] .proj-diagram .dg-cs{fill:#5e584c}
-[data-theme="light"] .proj-diagram .dg-off{fill:#856827}
-[data-theme="light"] .proj-diagram .dg-sn{fill:#ffffff}
-[data-theme="light"] .proj-diagram .dg-bd{fill:#ffffff}
-[data-theme="light"] .proj-diagram .dg-ab{fill:#ffffff}
-[data-theme="light"] .proj-diagram .dg-btn{fill:#ffffff}
-[data-theme="light"] .proj-diagram .dg-cmd{fill:#397a39}
-[data-theme="light"] .proj-diagram .dg-ok{fill:#397a39}
-[data-theme="light"] .proj-diagram .dg-warn{fill:#856827}
-[data-theme="light"] .proj-diagram .dg-out{fill:#6b6455}
+[data-theme="light"] .proj-diagram .dg-nt{fill:var(--dg-t1,#1d1a15)}
+[data-theme="light"] .proj-diagram .dg-ns{fill:var(--dg-t3,#5e584c)}
+[data-theme="light"] .proj-diagram .dg-lab{fill:var(--dg-t3,#5e584c)}
+[data-theme="light"] .proj-diagram .dg-cap{fill:var(--dg-t3,#5e584c)}
+[data-theme="light"] .proj-diagram .dg-url{fill:var(--dg-t4,#6b6455)}
+[data-theme="light"] .proj-diagram .dg-dev{fill:var(--dg-t4,#6b6455)}
+[data-theme="light"] .proj-diagram .dg-typed{fill:var(--dg-t1,#1d1a15)}
+[data-theme="light"] .proj-diagram .dg-ok2{fill:var(--dg-txt-ok,var(--dg-ok-t,#397a39))}
+[data-theme="light"] .proj-diagram .dg-okc{fill:var(--dg-txt-ok,var(--dg-ok-t,#397a39))}
+[data-theme="light"] .proj-diagram .dg-bad{fill:var(--dg-txt-bad,var(--dg-bad-t,#a64a4a))}
+[data-theme="light"] .proj-diagram .dg-js{fill:var(--dg-txt-warn,var(--dg-warn-t,#856827))}
+[data-theme="light"] .proj-diagram .dg-pk{fill:var(--dg-txt-warn,var(--dg-warn-t,#856827))}
+[data-theme="light"] .proj-diagram .dg-pkd{fill:var(--dg-t5,#8a8373)}
+[data-theme="light"] .proj-diagram .dg-al{fill:var(--dg-t2,#3b362d)}
+[data-theme="light"] .proj-diagram .dg-rule{fill:var(--dg-t1,#1d1a15)}
+[data-theme="light"] .proj-diagram .dg-nt2{fill:var(--dg-t2,#3b362d)}
+[data-theme="light"] .proj-diagram .dg-fl{fill:var(--dg-t3,#5e584c)}
+[data-theme="light"] .proj-diagram .dg-fv{fill:var(--dg-t2,#3b362d)}
+[data-theme="light"] .proj-diagram .dg-ph{fill:var(--dg-t5,#8a8373)}
+[data-theme="light"] .proj-diagram .dg-cv{fill:var(--dg-t3,#5e584c)}
+[data-theme="light"] .proj-diagram .dg-pt{fill:var(--dg-t2,#3b362d)}
+[data-theme="light"] .proj-diagram .dg-ct{fill:var(--dg-t1,#1d1a15)}
+[data-theme="light"] .proj-diagram .dg-cs{fill:var(--dg-t3,#5e584c)}
+[data-theme="light"] .proj-diagram .dg-off{fill:var(--dg-txt-warn,var(--dg-warn-t,#856827))}
+[data-theme="light"] .proj-diagram .dg-sn{fill:var(--dg-on,#ffffff)}
+[data-theme="light"] .proj-diagram .dg-bd{fill:var(--dg-on,#ffffff)}
+[data-theme="light"] .proj-diagram .dg-ab{fill:var(--dg-on,#ffffff)}
+[data-theme="light"] .proj-diagram .dg-btn{fill:var(--dg-on,#ffffff)}
+[data-theme="light"] .proj-diagram .dg-cmd{fill:var(--dg-txt-ok,var(--dg-ok-t,#397a39))}
+[data-theme="light"] .proj-diagram .dg-ok{fill:var(--dg-txt-ok,var(--dg-ok-t,#397a39))}
+[data-theme="light"] .proj-diagram .dg-warn{fill:var(--dg-txt-warn,var(--dg-warn-t,#856827))}
+[data-theme="light"] .proj-diagram .dg-out{fill:var(--dg-t4,#6b6455)}
 /* A white arrow vanishes on a light ground; real cursors are dark with a
    light outline there, so flip it (and the tap point). */
-[data-theme="light"] .proj-diagram [fill="#f2f0ff"]{fill:#1d1a15}
-[data-theme="light"] .proj-diagram [stroke="#0b0c17"]{stroke:#ffffff}
+[data-theme="light"] .proj-diagram [fill="#f2f0ff"]{fill:var(--dg-white,#1d1a15)}
+[data-theme="light"] .proj-diagram [stroke="#0b0c17"]{stroke:var(--dg-cutout,#ffffff)}
 
 /* ---- Phone-width diagrams ---------------------------------------------
    Each diagram ships twice: the wide left-to-right version and a version
@@ -2689,44 +2821,44 @@ body { font-size: calc(1rem * var(--text-scale)); }
    ============================================================ */
 
 /* ---- Phone diagrams: their own type scale ------------------------- */
-.proj-diagram .dg-mt{font:600 13px ui-sans-serif,system-ui,sans-serif;fill:#f2f0ff}
-.proj-diagram .dg-mb{font:12px ui-monospace,monospace;fill:#c3c7e0}
-.proj-diagram .dg-mbw{font:12px ui-monospace,monospace;fill:#e6c069}
-.proj-diagram .dg-mbd{font:12px ui-monospace,monospace;fill:#6e7194}
-.proj-diagram .dg-mok{font:12px ui-monospace,monospace;fill:#9ad09a}
-.proj-diagram .dg-mbad{font:12px ui-monospace,monospace;fill:#e08b8b}
-.proj-diagram .dg-mcap{font:11px ui-monospace,monospace;fill:#9aa0bd}
+.proj-diagram .dg-mt{font:600 13px ui-sans-serif,system-ui,sans-serif;fill:var(--dg-t1,#f2f0ff)}
+.proj-diagram .dg-mb{font:12px ui-monospace,monospace;fill:var(--dg-t2,#c3c7e0)}
+.proj-diagram .dg-mbw{font:12px ui-monospace,monospace;fill:var(--dg-txt-warn,#e6c069)}
+.proj-diagram .dg-mbd{font:12px ui-monospace,monospace;fill:var(--dg-t5,#6e7194)}
+.proj-diagram .dg-mok{font:12px ui-monospace,monospace;fill:var(--dg-txt-ok,#9ad09a)}
+.proj-diagram .dg-mbad{font:12px ui-monospace,monospace;fill:var(--dg-txt-bad,#e08b8b)}
+.proj-diagram .dg-mcap{font:11px ui-monospace,monospace;fill:var(--dg-t3,#9aa0bd)}
 .proj-diagram .dg-mhd{font:700 10.5px ui-monospace,monospace;fill:#0b0c17;letter-spacing:.05em}
-.proj-diagram .dg-mct{font:600 12.5px ui-sans-serif,system-ui,sans-serif;fill:#f2f0ff}
-.proj-diagram .dg-mcs{font:10.5px ui-monospace,monospace;fill:#9aa0bd}
-.proj-diagram .dg-mtc{font:12px ui-monospace,monospace;fill:#9ad09a}
-.proj-diagram .dg-mtw{font:12px ui-monospace,monospace;fill:#e6c069}
+.proj-diagram .dg-mct{font:600 12.5px ui-sans-serif,system-ui,sans-serif;fill:var(--dg-t1,#f2f0ff)}
+.proj-diagram .dg-mcs{font:10.5px ui-monospace,monospace;fill:var(--dg-t3,#9aa0bd)}
+.proj-diagram .dg-mtc{font:12px ui-monospace,monospace;fill:var(--dg-txt-ok,#9ad09a)}
+.proj-diagram .dg-mtw{font:12px ui-monospace,monospace;fill:var(--dg-txt-warn,#e6c069)}
 .proj-diagram .dg-mbig{font:500 34px ui-serif,Georgia,serif}
-.proj-diagram .dg-mtyp{font:13px ui-monospace,monospace;fill:#f2f0ff}
-.proj-diagram .dg-moff{font:600 9.5px ui-monospace,monospace;fill:#e6c069}
+.proj-diagram .dg-mtyp{font:13px ui-monospace,monospace;fill:var(--dg-t1,#f2f0ff)}
+.proj-diagram .dg-moff{font:600 9.5px ui-monospace,monospace;fill:var(--dg-txt-warn,#e6c069)}
 .proj-diagram .dg-mdev{font:700 10.5px ui-monospace,monospace;letter-spacing:.07em}
-.proj-diagram .dg-mfl{font:10.5px ui-sans-serif,system-ui,sans-serif;fill:#9aa0bd}
-.proj-diagram .dg-mfv{font:11px ui-monospace,monospace;fill:#c3c7e0}
-.proj-diagram .dg-mab{font:700 12px ui-sans-serif,system-ui,sans-serif;fill:#0b0c17}
-.proj-diagram .dg-msn{font:700 11px ui-sans-serif,system-ui,sans-serif;fill:#0b0c17}
-[data-theme="light"] .proj-diagram .dg-mt{fill:#1d1a15}
-[data-theme="light"] .proj-diagram .dg-mb{fill:#3b362d}
-[data-theme="light"] .proj-diagram .dg-mbw{fill:#856827}
-[data-theme="light"] .proj-diagram .dg-mbd{fill:#8a8373}
-[data-theme="light"] .proj-diagram .dg-mok{fill:#397a39}
-[data-theme="light"] .proj-diagram .dg-mbad{fill:#a64a4a}
-[data-theme="light"] .proj-diagram .dg-mcap{fill:#5e584c}
-[data-theme="light"] .proj-diagram .dg-mhd{fill:#ffffff}
-[data-theme="light"] .proj-diagram .dg-mct{fill:#1d1a15}
-[data-theme="light"] .proj-diagram .dg-mcs{fill:#5e584c}
-[data-theme="light"] .proj-diagram .dg-mtc{fill:#397a39}
-[data-theme="light"] .proj-diagram .dg-mtw{fill:#856827}
-[data-theme="light"] .proj-diagram .dg-mtyp{fill:#1d1a15}
-[data-theme="light"] .proj-diagram .dg-moff{fill:#856827}
-[data-theme="light"] .proj-diagram .dg-mfl{fill:#5e584c}
-[data-theme="light"] .proj-diagram .dg-mfv{fill:#3b362d}
-[data-theme="light"] .proj-diagram .dg-mab{fill:#ffffff}
-[data-theme="light"] .proj-diagram .dg-msn{fill:#ffffff}
+.proj-diagram .dg-mfl{font:10.5px ui-sans-serif,system-ui,sans-serif;fill:var(--dg-t3,#9aa0bd)}
+.proj-diagram .dg-mfv{font:11px ui-monospace,monospace;fill:var(--dg-t2,#c3c7e0)}
+.proj-diagram .dg-mab{font:700 12px ui-sans-serif,system-ui,sans-serif;fill:var(--dg-on,#0b0c17)}
+.proj-diagram .dg-msn{font:700 11px ui-sans-serif,system-ui,sans-serif;fill:var(--dg-on,#0b0c17)}
+[data-theme="light"] .proj-diagram .dg-mt{fill:var(--dg-t1,#1d1a15)}
+[data-theme="light"] .proj-diagram .dg-mb{fill:var(--dg-t2,#3b362d)}
+[data-theme="light"] .proj-diagram .dg-mbw{fill:var(--dg-txt-warn,var(--dg-warn-t,#856827))}
+[data-theme="light"] .proj-diagram .dg-mbd{fill:var(--dg-t5,#8a8373)}
+[data-theme="light"] .proj-diagram .dg-mok{fill:var(--dg-txt-ok,var(--dg-ok-t,#397a39))}
+[data-theme="light"] .proj-diagram .dg-mbad{fill:var(--dg-txt-bad,var(--dg-bad-t,#a64a4a))}
+[data-theme="light"] .proj-diagram .dg-mcap{fill:var(--dg-t3,#5e584c)}
+[data-theme="light"] .proj-diagram .dg-mhd{fill:var(--dg-on,#ffffff)}
+[data-theme="light"] .proj-diagram .dg-mct{fill:var(--dg-t1,#1d1a15)}
+[data-theme="light"] .proj-diagram .dg-mcs{fill:var(--dg-t3,#5e584c)}
+[data-theme="light"] .proj-diagram .dg-mtc{fill:var(--dg-txt-ok,var(--dg-ok-t,#397a39))}
+[data-theme="light"] .proj-diagram .dg-mtw{fill:var(--dg-txt-warn,var(--dg-warn-t,#856827))}
+[data-theme="light"] .proj-diagram .dg-mtyp{fill:var(--dg-t1,#1d1a15)}
+[data-theme="light"] .proj-diagram .dg-moff{fill:var(--dg-txt-warn,var(--dg-warn-t,#856827))}
+[data-theme="light"] .proj-diagram .dg-mfl{fill:var(--dg-t3,#5e584c)}
+[data-theme="light"] .proj-diagram .dg-mfv{fill:var(--dg-t2,#3b362d)}
+[data-theme="light"] .proj-diagram .dg-mab{fill:var(--dg-on,#ffffff)}
+[data-theme="light"] .proj-diagram .dg-msn{fill:var(--dg-on,#ffffff)}
 
 /* ---- Featured projects: no colour wash ----------------------------
    Each card used to take its own hue as a tinted background, border and
@@ -3411,27 +3543,27 @@ body { font-size: calc(1rem * var(--text-scale)); }
    Titles reserve two lines, so every card is the same height.
    ============================================================ */
 .proj-diagram .dg-thumb { display: none; }
-[data-theme="light"] .proj-diagram .dg-tp{fill:#ffffff}
-[data-theme="light"] .proj-diagram .dg-dt{fill:#1d1a15}
+[data-theme="light"] .proj-diagram .dg-tp{fill:var(--dg-on,#ffffff)}
+[data-theme="light"] .proj-diagram .dg-dt{fill:var(--dg-t1,#1d1a15)}
 .proj-diagram .dg-tp{font:800 8.5px ui-sans-serif,system-ui,sans-serif;fill:#0b0c17;letter-spacing:.04em}
-.proj-diagram .dg-dt{font:15px ui-monospace,monospace;fill:#f2f0ff}
-.proj-diagram .dg-tl{font:600 15px ui-sans-serif,system-ui,sans-serif;fill:#f2f0ff}
+.proj-diagram .dg-dt{font:15px ui-monospace,monospace;fill:var(--dg-t1,#f2f0ff)}
+.proj-diagram .dg-tl{font:600 15px ui-sans-serif,system-ui,sans-serif;fill:var(--dg-t1,#f2f0ff)}
 .proj-diagram .dg-to{font:700 14px ui-monospace,monospace;fill:#0b0c17;letter-spacing:.08em}
-.proj-diagram .dg-ob{font:700 21px ui-sans-serif,system-ui,sans-serif;fill:#f2f0ff}
-.proj-diagram .dg-obig{font:500 50px ui-serif,Georgia,serif;fill:#f2f0ff}
-.proj-diagram .dg-od{font:16px ui-monospace,monospace;fill:#c3c7e0}
-.proj-diagram .dg-om{font:17px ui-monospace,monospace;fill:#f2f0ff}
-.proj-diagram .dg-og{font:16px ui-monospace,monospace;fill:#9ad09a}
+.proj-diagram .dg-ob{font:700 21px ui-sans-serif,system-ui,sans-serif;fill:var(--dg-t1,#f2f0ff)}
+.proj-diagram .dg-obig{font:500 50px ui-serif,Georgia,serif;fill:var(--dg-t1,#f2f0ff)}
+.proj-diagram .dg-od{font:16px ui-monospace,monospace;fill:var(--dg-t2,#c3c7e0)}
+.proj-diagram .dg-om{font:17px ui-monospace,monospace;fill:var(--dg-t1,#f2f0ff)}
+.proj-diagram .dg-og{font:16px ui-monospace,monospace;fill:var(--dg-txt-ok,#9ad09a)}
 .proj-diagram .dg-oc{font:700 14.5px ui-monospace,monospace}
-.proj-diagram .dg-oq{font:600 14px ui-monospace,monospace;fill:#e6c069}
-[data-theme="light"] .proj-diagram .dg-tl{fill:#1d1a15}
-[data-theme="light"] .proj-diagram .dg-to{fill:#ffffff}
-[data-theme="light"] .proj-diagram .dg-ob{fill:#1d1a15}
-[data-theme="light"] .proj-diagram .dg-obig{fill:#1d1a15}
-[data-theme="light"] .proj-diagram .dg-od{fill:#3b362d}
-[data-theme="light"] .proj-diagram .dg-om{fill:#1d1a15}
-[data-theme="light"] .proj-diagram .dg-og{fill:#397a39}
-[data-theme="light"] .proj-diagram .dg-oq{fill:#86600f}
+.proj-diagram .dg-oq{font:600 14px ui-monospace,monospace;fill:var(--dg-txt-warn,#e6c069)}
+[data-theme="light"] .proj-diagram .dg-tl{fill:var(--dg-t1,#1d1a15)}
+[data-theme="light"] .proj-diagram .dg-to{fill:var(--dg-on,#ffffff)}
+[data-theme="light"] .proj-diagram .dg-ob{fill:var(--dg-t1,#1d1a15)}
+[data-theme="light"] .proj-diagram .dg-obig{fill:var(--dg-t1,#1d1a15)}
+[data-theme="light"] .proj-diagram .dg-od{fill:var(--dg-t2,#3b362d)}
+[data-theme="light"] .proj-diagram .dg-om{fill:var(--dg-t1,#1d1a15)}
+[data-theme="light"] .proj-diagram .dg-og{fill:var(--dg-txt-ok,var(--dg-ok-t,#397a39))}
+[data-theme="light"] .proj-diagram .dg-oq{fill:var(--dg-txt-oq,var(--dg-oq-t,#86600f))}
 
 @media (max-width: 640px) {
   #featured-projects .work-item.feature.m-collapsible:not(.is-open) .proj-diagram {
@@ -3594,4 +3726,406 @@ body { font-size: calc(1rem * var(--text-scale)); }
   }
   .m-menu a:last-child { border-bottom: 0; }
   .m-menu a:active { color: var(--accent); }
+}
+
+/* Official icon files on skill cards: same footprint as the drawn marks,
+   shown as-is (no filter, no plate). */
+.skills-cluster .tags span.has-logo .pc-logo-img {
+  width: 44px !important;
+  height: 44px !important;
+  padding: 0 !important;
+  object-fit: contain;
+  background: none !important;
+  border: 0 !important;
+  filter: none !important;
+}
+@media (max-width: 640px) {
+  .skills-cluster .tags span.has-logo .pc-logo-img { width: 38px !important; height: 38px !important; }
+}
+
+/* ---- Skill symbols -------------------------------------------------
+   Outline symbols (and the file badges for languages) all take the theme's
+   accent, so the grid reads as one family in either mode. `is-plain` is the
+   "text colour" setting. The badge lettering is real text, set in the mono
+   face so "py" and "java" sit on the same baseline. */
+.pc-sym { color: var(--accent); overflow: visible; }
+.pc-sym.is-plain { color: currentColor; }
+.pc-sym .pc-ext {
+  font-family: var(--mono);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.skills-cluster .tags span.has-logo .pc-sym { padding: 1px !important; }
+/* In a one-line chip the symbol is a quiet marker beside the word. */
+.pc-tech .pc-sym, .ai-card-head .pc-sym { opacity: .9; }
+
+/* ============================================================
+   Courses: a line opens its own description
+   ------------------------------------------------------------
+   A collapsed category lists each course with the lead of its
+   description. Where there is more, the line is the control:
+   click or tap it and the full description opens beneath, in
+   place. On phones this is the only route to the description.
+   ============================================================ */
+.course-line.has-more { cursor: pointer; }
+.course-line.has-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+.course-more::after {
+  content: "+";
+  display: inline-block;
+  margin-left: 7px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1;
+  color: var(--accent);
+}
+.course-line.is-open .course-more::after { content: "\2212"; }
+.course-full {
+  display: none;
+  margin: 4px 0 7px;
+  padding-left: 10px;
+  border-left: 2px solid var(--rule);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  max-width: 78ch;
+}
+.course-full-src {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.course-line.is-open .course-full { display: block; }
+.course-line.is-open .course-gloss { display: none; }
+.course-line.is-open { color: var(--ink); }
+@media (max-width: 640px) {
+  .course-line { padding: 6px 0; }           /* a tap target, not a text line */
+  .course-line.has-more { display: block; }
+  .course-full { font-size: 13px; }
+}
+
+/* ============================================================
+   Featured projects: the summary line or the bullets, not both
+   ------------------------------------------------------------
+   They say the same thing at two lengths. The line shows by
+   default; "Details" swaps it for the bullets. On phones the
+   collapsed card shows the line and the opened card the bullets.
+   ============================================================ */
+.feat-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 16px;
+  padding: 5px 13px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: 100px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.feat-more:hover { color: var(--feat, var(--accent)); border-color: var(--feat, var(--accent)); }
+.feat-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.feat-more-c { font-size: 9px; transition: transform 0.2s ease; }
+.work-item.is-detail .feat-more-c { transform: rotate(180deg); }
+.work-item.feature.has-detail:not(.is-detail) .feat-body > ul { display: none; }
+.work-item.feature.has-detail.is-detail .feat-lede { display: none; }
+.work-item.feature.has-detail.is-detail .feat-body > ul { margin-bottom: 14px; }
+.work-item.feature.has-detail .feat-lede { margin-bottom: 12px; }
+
+@media (max-width: 640px) {
+  /* Phones use the card's own open/close instead of the Details button. */
+  .work-item.feature.has-detail.m-collapsible .feat-more { display: none; }
+  .work-item.feature.has-detail.m-collapsible.is-open .feat-body > ul { display: flex; }
+  .work-item.feature.has-detail.m-collapsible.is-open .feat-lede { display: none !important; }
+
+  /* Collapsed card: thumbnail, title, then the summary line. Two lines of
+     it on tall phones; one on short ones, where the thumbnails also give up
+     a little height so all four cards still fit one screen. */
+  #featured-projects .work-item.feature.m-collapsible:not(.is-open) .feat-lede {
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    order: 2;
+    margin: -3px 0 0;
+    max-width: none;
+    font-size: 12px;
+    line-height: 1.35;
+    color: var(--muted);
+  }
+  #featured-projects .work-item.feature.m-collapsible:not(.is-open) .proj-diagram .dg-thumb {
+    height: min(calc((100vw - 24px) / 3), calc((100vh - 318px) / 4)) !important;
+    height: min(calc((100vw - 24px) / 3), calc((100svh - 318px) / 4)) !important;
+  }
+}
+@media (max-width: 640px) and (max-height: 760px) {
+  #featured-projects .work-item.feature.m-collapsible:not(.is-open) .feat-lede { -webkit-line-clamp: 1; }
+  #featured-projects .work-item.feature.m-collapsible:not(.is-open) .proj-diagram .dg-thumb {
+    height: min(calc((100vw - 24px) / 3), calc((100vh - 254px) / 4)) !important;
+    height: min(calc((100vw - 24px) / 3), calc((100svh - 254px) / 4)) !important;
+  }
+}
+
+/* ============================================================
+   Project filters that know what is already selected
+   ------------------------------------------------------------
+   Once any filter is on, every other filter shows the number of
+   projects that adding it would give. A filter that would give
+   none has its text faded (its box and border are untouched) -
+   still clickable, but you can see beforehand that the
+   combination is empty.
+   ============================================================ */
+.pf-btn.is-empty > span,
+.pf-dd-panel .pf-opt.is-empty > span:not(.pf-tick) {
+  opacity: 0.38;                       /* the words only: box and border keep full strength */
+}
+.pf-btn.is-empty:hover > span,
+.pf-btn.is-empty:focus-visible > span,
+.pf-dd-panel .pf-opt.is-empty:hover > span:not(.pf-tick) { opacity: 0.8; }
+.pf-btn .pf-n { min-width: 1.2em; text-align: right; font-variant-numeric: tabular-nums; }
+.pf-dd-note {
+  padding: 2px 4px 8px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+@media (max-width: 640px) and (max-height: 760px) {
+  /* Short phones: tighter gaps pay for the summary line, so the thumbnails
+     keep nearly all their height and four cards still fit one screen. */
+  #featured-projects { gap: 11px; }
+  #featured-projects .work-item.feature.m-collapsible:not(.is-open) { gap: 4px; }
+  #featured-projects .work-item.feature.m-collapsible:not(.is-open) .feat-lede { margin-top: -1px; }
+  #featured-projects .work-item.feature.m-collapsible:not(.is-open) .proj-diagram .dg-thumb {
+    height: min(calc((100vw - 24px) / 3), calc((100vh - 262px) / 4)) !important;
+    height: min(calc((100vw - 24px) / 3), calc((100svh - 262px) / 4)) !important;
+  }
+}
+
+/* ============================================================
+   Selected coursework: university | self-directed
+   ------------------------------------------------------------
+   When a self-directed course is featured, the block splits in
+   two with a vertical rule between: university courses on the
+   left, self-directed on the right, each under a small label.
+   On phones the two stack, the rule turning horizontal.
+   ============================================================ */
+.course-feat-split.has-self {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(200px, 1fr);
+  gap: 0 24px;
+  align-items: start;
+}
+.course-feat-split.has-self .course-feat-col.is-self {
+  border-left: 1px solid var(--rule);
+  padding-left: 24px;
+  align-self: stretch;
+}
+.course-feat-split.has-self .is-self .course-items { grid-template-columns: 1fr; }
+.course-feat-lab {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 9px;
+}
+.course-feat-col.is-self .course-card.is-featured { border-left-color: var(--rule); border-style: dashed; border-left-style: solid; }
+@media (max-width: 860px) {
+  .course-feat-split.has-self { display: block; }
+  .course-feat-split.has-self .course-feat-col.is-self {
+    border-left: 0;
+    padding-left: 0;
+    border-top: 1px solid var(--rule);
+    margin-top: 14px;
+    padding-top: 12px;
+  }
+}
+@media (max-width: 640px) {
+  .course-feat-lab { margin-bottom: 7px; }
+  #courses-featured:not(.m-open) .course-feat-col.is-self { margin-top: 10px; padding-top: 9px; }
+}
+
+/* ---- A course's link and certificate button ---- */
+.course-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+  margin-top: 8px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.03em;
+}
+.course-cert,
+.course-link {
+  font: inherit;
+  letter-spacing: inherit;
+  color: var(--accent);
+  background: none;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  padding: 0 0 1px;
+  cursor: pointer;
+  text-decoration: none;
+}
+.course-cert:hover,
+.course-link:hover { border-bottom-color: var(--accent); }
+.course-cert:focus-visible,
+.course-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.course-card .course-acts { margin: 8px 0 4px; }
+@media (max-width: 640px) {
+  #courses-featured:not(.m-open) .course-acts { display: none; }   /* names only until opened */
+  .course-acts { font-size: 11.5px; gap: 8px 16px; }
+}
+
+/* ============================================================
+   Certificate popup
+   ------------------------------------------------------------
+   A native <dialog>: the browser supplies the backdrop, focus
+   trapping and Esc-to-close. The body holds either an image or
+   a frame (PDFs, embeddable pages); nothing loads until opened.
+   ============================================================ */
+.cert-pop {
+  width: min(960px, 94vw);
+  height: min(720px, 88vh);
+  height: min(720px, 88svh);
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--ink);
+  overflow: hidden;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+}
+.cert-pop[open] { display: flex; flex-direction: column; }
+.cert-pop::backdrop { background: rgba(0, 0, 0, 0.62); }
+.cert-hd {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 9px 10px 9px 16px;
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.cert-t {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--sans);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.cert-open { color: var(--accent); text-decoration: none; white-space: nowrap; }
+.cert-open:hover { text-decoration: underline; }
+.cert-x {
+  width: 30px;
+  height: 30px;
+  font-size: 19px;
+  line-height: 1;
+  color: var(--ink-soft);
+  background: var(--bg-soft);
+  border: 1px solid var(--rule);
+  border-radius: 7px;
+  cursor: pointer;
+}
+.cert-x:hover { color: var(--accent); border-color: var(--accent); }
+.cert-bd { flex: 1; min-height: 0; display: flex; background: var(--bg-soft); }
+.cert-bd img { width: 100%; height: 100%; object-fit: contain; }
+.cert-bd iframe { width: 100%; height: 100%; border: 0; background: #fff; }
+.cert-note {
+  padding: 7px 16px;
+  border-top: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--muted);
+}
+.cert-note a { color: var(--accent); }
+@media (max-width: 640px) {
+  .cert-pop { width: 96vw; height: 84vh; height: 84svh; border-radius: 10px; }
+  .cert-hd { gap: 10px; padding-left: 12px; }
+}
+
+/* ============================================================
+   Phones: every course control shows that it opens
+   ------------------------------------------------------------
+   Category labels and the two block headings already carry a
+   chevron. The Selected-coursework names get one too (tapping a
+   name opens the block), and a course line's +/- becomes a ringed
+   mark pinned to the right edge, where a thumb expects it.
+   ============================================================ */
+@media (max-width: 640px) {
+  #courses-featured:not(.m-open) .course-card { cursor: pointer; }
+  #courses-featured:not(.m-open) .course-name::after {
+    content: "\25be";
+    margin-left: 7px;
+    font-size: 10px;
+    color: var(--accent);
+  }
+  .course-line.has-more { position: relative; padding-right: 34px; }
+  .course-line.has-more .course-more { position: absolute; right: 0; top: 4px; }
+  .course-line.has-more .course-more::after {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    margin: 0;
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+    font-size: 14px;
+  }
+  .course-line.is-open .course-more::after { border-color: var(--accent); }
+}
+
+/* ============================================================
+   Courses: colour on the featured cards, outlines on the index
+   ------------------------------------------------------------
+   The Selected coursework cards are each filled with a colour of
+   their own (the next hue round the wheel, nothing to do with
+   category), text in whichever ink reads best on it. The category
+   labels beneath are plain boxes edged in their category colours.
+   The featured block is the vivid part, the index the quiet one.
+   (courses.featuredStyle = "plain" and courses.labelStyle = "box"
+   switch each half back.)
+   ============================================================ */
+.course-card.is-featured.is-filled {
+  background: var(--cat);
+  color: var(--cat-ink);
+  border: 0;
+  border-radius: 10px;
+  padding: 15px 17px 30px;
+}
+/* Type on a colour has to work harder than type on the page: larger,
+   a step heavier, and at full strength rather than softened. */
+.course-card.is-filled .course-name { color: inherit; font-size: 15.5px; font-weight: 700; margin-bottom: 5px; }
+.course-card.is-filled .course-desc { color: inherit; font-size: 13px; font-weight: 500; line-height: 1.5; }
+.course-card.is-filled .course-origin { color: inherit; font-size: 10.5px; font-weight: 500; opacity: 0.92; left: 17px; }
+.course-card.is-filled .course-acts { font-size: 11.5px; font-weight: 500; }
+.course-card.is-filled .course-cert,
+.course-card.is-filled .course-link { color: inherit; border-bottom-color: currentColor; }
+.course-card.is-filled .course-cert:focus-visible,
+.course-card.is-filled .course-link:focus-visible { outline-color: currentColor; }
+.lab-box.is-outline {
+  background: transparent;
+  border: 2px solid;                   /* colour set inline, per category */
+  color: var(--ink);
+  padding: 5px 10px;
+}
+@media (max-width: 640px) {
+  #courses-featured:not(.m-open) .course-card.is-filled { padding: 7px 12px; border: 0; }
+  #courses-featured:not(.m-open) .course-card.is-filled .course-name::after { color: inherit; opacity: 0.8; }
 }

@@ -86,7 +86,7 @@
       "Agentic AI Research Assistant": "",
       "Citestat – Academic Citation Analytics Dashboard": "",
       "Real-Time Collaborative Text Editor using CRDT": "",
-      "Skills": "🛠",
+      "Skills": "",
       "Accomplishments": "🏆",
       "Title": ""
     },
@@ -124,7 +124,9 @@
       "Moya framework": true,
       "PyMuPDF": true
     },
-    "hiddenCourses": {},
+    "hiddenCourses": {
+      "Java (Basic) Certification": true
+    },
     "diagramPlacement": "wide",
     "showDiagrams": true,
     "hiddenDiagrams": {},
@@ -141,11 +143,18 @@
     "heroName": "",
     "lede": "",
     "about": [],
-    "sectionTitles": {},
+    "sectionTitles": {
+      "Featured": "Projects in depth.",
+      "Projects": "Everything I've \"built\""
+    },
     "meta": [],
     "corner": [
       "Interests : Software development"
-    ]
+    ],
+    "sectionLabels": {
+      "Featured": "/ 04 — Main projects",
+      "Projects": "/ 05 — all projects"
+    }
   },
   "filters": {
     "_comment": [
@@ -288,8 +297,8 @@
       "Flask — Develop Web Applications in Python": {
         "cert": "FlaskCourseEducative Certificat.png"
       },
-      "Working with Containers": {
-        "cert": "DockerEducativeCourseCertificate.png"
+      "Java (Basic) Certification": {
+        "cert": "./JavaBasicsHackerrankCertificate.png"
       }
     },
     "featuredStyle": "colour",

@@ -1,29 +1,29 @@
-/* theme-id: olive-sand   hash: 82a8ef50
+/* theme-id: aqua-lagoon   hash: 6bf93b24
    site-config.json keys colour overrides by this id. */
-:root { --theme-id: "olive-sand"; --theme-hash: "82a8ef50"; }
+:root { --theme-id: "aqua-lagoon"; --theme-hash: "6bf93b24"; }
 
 /* ============================================================
    Rishabh Sahu — Portfolio styles
    --------------------------------------------------------------
-   Palette: Olive & sand
-     Light mode offset: -4 (sand)
-     Dark  mode offset: +9 (moss lift)
+   Palette: Aqua lagoon
+     Light mode offset: -2 (pool water)
+     Dark  mode offset: +3 (deep lagoon)
    One of several palette variants. To swap palettes,
    rename one of style-*.css to style.css.
    ============================================================ */
 
 /* ---------- 1. Tokens ---------- */
 :root {
-  /* ---- Palette: Olive & sand ---- */
-  /* Light mode (default) — bg/bg-soft/rule shifted -4% lightness */
-  --bg:         #ebe5d2;
-    --bg-soft:    #e3dcc3;
-    --ink:        #1d1f16;
-    --ink-soft:   #424633;
-    --muted:      #61604f;
-    --rule:       #cac3a7;
-    --accent:     #56651d;
-    --accent-soft:#6e7d2f;
+  /* ---- Palette: Aqua lagoon ---- */
+  /* Light mode (default) — bg/bg-soft/rule shifted -2% lightness */
+  --bg:         #c5ebe6;
+    --bg-soft:    #b3e5de;
+    --ink:        #052225;
+    --ink-soft:   #0c4b50;
+    --muted:      #466562;
+    --rule:       #98cdc5;
+    --accent:     #006a63;
+    --accent-soft:#07847d;
 
   --grain-svg: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.05  0 0 0 0 0.04  0 0 0 0 0.02  0 0 0 0.08 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
     --grain-blend: multiply;
@@ -42,17 +42,17 @@
 
 /* Dark mode — applies when OS prefers dark UNLESS the user has
    manually picked light via the in-page toggle (which adds .theme-light).
-   bg/bg-soft/rule shifted +9% lightness. */
+   bg/bg-soft/rule shifted +3% lightness. */
 @media (prefers-color-scheme: dark) {
   :root:not(.theme-light) {
-    --bg:         #2c3120;
-    --bg-soft:    #373d29;
+    --bg:         #043e3c;
+    --bg-soft:    #05524e;
     --ink:        #ffffff;
-    --ink-soft:   #cccfb5;
-    --muted:      #a6a798;
-    --rule:       #454a35;
-    --accent:     #b9c66c;
-    --accent-soft:#c8d095;
+    --ink-soft:   #beede7;
+    --muted:      #a2c0bd;
+    --rule:       #1e5b56;
+    --accent:     #3fe0cf;
+    --accent-soft:#6fe3d7;
     --grain-svg: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.95  0 0 0 0 0.92  0 0 0 0 0.85  0 0 0 0.05 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
     --grain-blend: screen;
     --grain-opacity: 0.5;
@@ -63,14 +63,14 @@
 /* User-forced dark mode (toggle button in the top bar). Always wins,
    regardless of the OS preference. */
 :root.theme-dark {
-  --bg:         #2c3120;
-    --bg-soft:    #373d29;
+  --bg:         #043e3c;
+    --bg-soft:    #05524e;
     --ink:        #ffffff;
-    --ink-soft:   #cccfb5;
-    --muted:      #a6a798;
-    --rule:       #454a35;
-    --accent:     #b9c66c;
-    --accent-soft:#c8d095;
+    --ink-soft:   #beede7;
+    --muted:      #a2c0bd;
+    --rule:       #1e5b56;
+    --accent:     #3fe0cf;
+    --accent-soft:#6fe3d7;
   --grain-svg: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.95  0 0 0 0 0.92  0 0 0 0 0.85  0 0 0 0.05 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
     --grain-blend: screen;
     --grain-opacity: 0.5;

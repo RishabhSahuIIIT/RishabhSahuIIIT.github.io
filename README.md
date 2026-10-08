@@ -18,6 +18,8 @@ python3 -m http.server 8000    # plain server
 Then open <http://localhost:8000/>. For mobile layout checks, open
 <http://localhost:8000/preview> (see "Device preview" below). To see exactly
 what a visitor gets, with no editor loaded, open <http://localhost:8000/live>.
+To see several stylesheets side by side, open
+<http://localhost:8000/compare> (see "Comparing stylesheets" below).
 
 The site fetches `assets/resume.tex` over HTTP, so opening `index.html` via `file://`
 won't work — you need a local server (or GitHub Pages).
@@ -171,7 +173,14 @@ C++…" until it is opened.
 
 **How the section renders.** *Selected coursework* comes first, always
 open, and it is the colourful part: each card is filled with a colour of its
-own, the next hue round the colour wheel in the order the cards appear. By
+own, the next hue round the colour wheel in the order the cards appear.
+The hues are spaced by how different they look rather than by equal angles:
+dark greens and teals differ far less to the eye than blues and purples do,
+so equal angles left near-twins side by side there. The page measures the
+visible change along the wheel (in OKLab, a colour space built to match
+perceived difference) and spaces the cards evenly along that, so every
+neighbouring pair differs by about the same amount. Switching between light
+and dark repaints them in place, without closing anything that is open. By
 default the colours are deep and the text on them is white, at about 6:1.
 In dark mode the same hues are a step lighter and slightly less saturated
 (white text about 5:1): a deep colour sits closer to a dark page, so it
@@ -214,7 +223,7 @@ cards instead.) Three rules shape the rows:
   gives each a neighbouring name for the same territory (for example
   "Systems & Networking" becomes "Operating Environments").
 - **Online courses** (the source mentions Educative, NPTEL, Coursera, Udemy,
-  edX or "online") sit in their own block after the degree coursework,
+  edX, HackerRank, Udacity, DataCamp or "online") sit in their own block after the degree coursework,
   grouped by provider.
 
 On phones each category collapses to its heading; tapping it lists the
@@ -237,7 +246,7 @@ Some Course: what it covered [Coursera | AI & Machine Learning | cert=cert-some-
 | Entry | What it is | How it shows |
 |---|---|---|
 | `link=` | The course page, or the certificate's own verification page | A link on the course: "Verify certificate" when the address mentions a certificate, otherwise "Course page" |
-| `cert=` | An image or PDF of the certificate: a file in `assets/`, or a direct link to one | A **View certificate** button that opens it in a rectangle over the page |
+| `cert=` | An image or PDF of the certificate (a file in `assets/`, or a direct link to one), or a page made for embedding, such as HackerRank's **Iframe Link** | A **View certificate** button that opens it in a rectangle over the page |
 | `popup=page` | Show the `link=` page in the popup instead of a file | The same button, with the page in a frame |
 
 The popup shows an image as an image and anything else (a PDF, an
@@ -249,6 +258,23 @@ framed at all.
 `assets/cert-demo.svg` is a placeholder so the popup can be seen working:
 the Docker course points at it. Replace the file, or change the name after
 `cert=` to your own image or PDF.
+
+**A page made for embedding.** Some certificate sites offer a separate link
+meant to be shown inside other pages; HackerRank calls it the **Iframe
+Link** (under *Share this Certificate*). Put that at `cert=` and keep the
+normal certificate address at `link=`: the popup shows the embed, and
+**Verify certificate** still goes to the full page. The Java (Basic)
+certification is set up this way:
+
+```latex
+Java (Basic) Certification: ... [HackerRank | Software Engineering | featured | link=https://www.hackerrank.com/certificates/388867dc0d5f | cert=https://www.hackerrank.com/certificates/iframe/388867dc0d5f]
+```
+
+An embed can still be held back by the visitor's browser: one that blocks
+third-party cookies (Safari by default) may show the other site's
+"enable cookies" message inside the popup instead of the certificate.
+**Open in new tab** covers that, or download the certificate image from the
+site and point `cert=` at your own copy.
 
 **Showing the certificate page instead of a file.** With `popup=page` (or
 **Popup shows: link page** in the editor) the button opens the page at
@@ -563,9 +589,24 @@ width, with no script involved:
 
 Diagrams are matched to a project by a keyword in its title
 (`intrusion`, `agentic`, `citestat`, `crdt`, `cris`), case-insensitively, so
-a title can be reworded without breaking the link. Colours inside the
-diagrams are remapped per theme in `style.css`, so they hold their contrast
-on light and dark backgrounds.
+a title can be reworded without breaking the link.
+
+**Diagram colours follow the active stylesheet.** The drawings were made
+in one palette (a navy ground by night, warm paper by day), and on a teal,
+violet or wine page that looked pasted in. `style.css` now works out every
+neutral in them (the diagram's ground, panels, lines, edges and grey text)
+from the page's own `--bg` and `--ink`, in the same proportions the
+original colours had against the default palette. So the diagram takes on
+the tint of whichever stylesheet and theme are active, and editor colour
+overrides as well, and on the default palette it looks as before. The
+coloured parts (one hue per project, plus ok, warning and error) keep their
+hues; where they are used as text, their brightness is set from the panel
+behind them, so they stay readable on the darker day pages (Day & Night's
+amber, Rust's tan) and the lifted night pages. Checked on all thirteen
+stylesheets in both themes: every label reads at 4.5:1 or better, apart
+from the deliberately faint ones (an input's placeholder, an ignored
+packet), which sit near 3:1 as they did originally. Browsers without
+`color-mix()` keep the original fixed colours.
 
 Settings, all under `media` in `site-config.json` and all editable from the
 editor's **Project diagrams** group:
@@ -650,6 +691,15 @@ Every stylesheet holds a matched light and dark pair.
 - `style-olive-sand.css` — olive on sand
 - `style-rose-plum.css` — rose and plum
 - `style-graphite-cobalt.css` — neutral graphite with a cobalt accent
+- `style-aqua-lagoon.css` — teal on a pale aqua page; by night, turquoise on deep lagoon
+- `style-ultraviolet-mint.css` — electric violet on lilac; by night, mint on deep violet
+- `style-sky-berry.css` — berry on sky blue; by night, sky blue on wine
+
+The last three were chosen to sit apart from the rest, which mostly share a
+pale warm page and a brown or orange accent: their accents use hues no other
+palette has (teal, violet, berry by day; turquoise, mint, sky by night), their
+light pages are visibly tinted, and their dark pages are coloured rather than
+near-black.
 
 To change the deployed default, edit the stylesheet link in `index.html`:
 
@@ -685,6 +735,73 @@ an override made for one stylesheet never leaks into another. The hash is a
 fingerprint of the stylesheet's colour values: if you later edit those by
 hand, the editor warns that the saved overrides were made against an older
 version.
+
+
+## Comparing stylesheets
+
+`dev_server.py` serves **`/compare`**: the site drawn with several
+stylesheets at once, side by side, each a full working copy of the page.
+
+```
+http://localhost:8000/compare                   # style.css + altStyles/ the first time
+http://localhost:8000/compare?dir=altStyles     # one folder of the site
+dev> compare altStyles                          # prints that address
+```
+
+The editor's Palette section links to it as well.
+
+**Choosing the sheets**
+
+- **add folder**: the menu lists every folder inside the site that holds
+  `.css` files, with a count; this adds all of them from the chosen one.
+- **pick files…**: any `.css` files on the computer, through the browser's
+  file picker. Dropping files onto the page does the same.
+- **pick a folder…**: a folder anywhere on the computer; every `.css` file
+  in it is added.
+- Each sheet gets a chip in the top bar: click its name to hide or show it,
+  **×** to remove it. **clear** empties the list.
+
+**Only unique sheets are shown.** A sheet is left out when it is the same
+file as one already listed (the same contents, whatever its name or
+folder), or the same palette (the same theme id and colour hash on its
+identity line, e.g. a generated `style-olive-sand.css` and its copy in
+`altStyles/`, even when the copy is an older build). The first one listed
+is the one shown; its chip carries a **+1** whose tooltip names the copies.
+The count reads, for example, "13 shown of 13 unique · 9 copies hidden",
+and **show copies** brings them back when you do want to compare two builds
+of the same palette. Removing a sheet lets its first copy take its place.
+
+Picked files are sent to the dev server and kept in memory only (5 MB per
+sheet, 40 MB in all); the server itself never reads outside the site folder.
+They are gone when the server restarts. Sheets taken from the site's own
+folders are remembered, along with the width, columns and theme, the next
+time the page is opened.
+
+**Viewing**
+
+| Control | Does |
+|---|---|
+| **width** | The device width every view renders at (desktop 1440, laptop 1280, tablet 820, phone 390), scaled down to fit its column the way a browser zooms out |
+| **columns** | How many views per row; **auto** fits as many as stay readable |
+| **theme** | Light or dark in every view at once, through each page's own day/night buttons, so palettes, saved colour overrides and course colours all switch as they do on the real site |
+| **go to** | Jump every view to one section |
+| **sync scroll** | Scrolling one view scrolls the others to the same content. Positions are matched by section rather than by pixels, so sheets with different spacing still line up on the same heading |
+| **reload** | Reload every view, to pick up edits made to the sheets |
+
+**Focusing on one.** Click a sheet's name above its view to show it alone,
+large, at the same place on the page. **‹ prev** and **next ›** (or the
+arrow keys) step through the other sheets without losing that place, so you
+can flick between palettes on one section. **Esc** or **back to grid**
+returns to the side-by-side view, every view scrolled to where you were.
+**open ↗** opens a view in its own tab.
+
+How it works: each view is `index.html` served at `/__compare-view`, with the
+stylesheet link pointed at `/__compare-sheet.css`. Both sit at the site root,
+so addresses inside a sheet (`fonts/…`) resolve exactly as they do for
+`style.css`. The link is placed after `theme-init.js`, so a saved `?style=`
+preference cannot swap it, and the editor is left out. Nothing on disk
+changes. The dev server now answers requests in parallel, so a dozen views
+loading at once don't queue behind each other.
 
 
 ## Device preview
@@ -870,6 +987,7 @@ rejected, since this is still a web server.
 | Command | Does |
 |---|---|
 | `preview` | Print the device-preview URL |
+| `compare [folder]` | Print the stylesheet-comparison URL, optionally for one folder |
 | `devices` | List the device sizes |
 | `screen` | Re-probe the display and report what was found |
 | `help` | Show all commands |
@@ -890,6 +1008,48 @@ editing, and is organised into five tabs:
 | **Content** | Text overrides, images, project diagrams and media |
 | **Visibility** | Hidden sections, cards, courses and filters, with restore chips |
 | **Source** | The matching lines of `resume.tex`, opened at the right place for editing |
+
+**Section titles.** Right-click a section's heading, or the small
+numbered label above it ("/ 04 — selected work"), and Inspect opens for
+that title alone: its wording, its label, and an **edit in index.html**
+button that opens the source at that heading. Wording and label typed here
+are saved as overrides in `site-config.json` (`text.sectionTitles`,
+`text.sectionLabels`, keyed by the heading's `data-section-title`); put the
+italic word between asterisks, as in `Projects in *depth*.`, and
+**use index.html wording** removes them. A heading with no
+`data-section-title` (Recognition) is given one from its section id, so
+every title can be picked out and overridden. The Content tab's "Section
+titles" list covers the same keys, in page order. (Before this, the
+right-click went past the heading to the whole section, or to nothing; and
+saved title overrides, like hidden entries, were never applied when the page
+loaded. Both are fixed.)
+
+**Everything else with words on it.** Right-clicking a sub-heading, a
+course category label ("Systems & Networking"), a skills group heading, a
+line of Recognition, a contact entry or a top-bar link used to find nothing
+(or the whole section). It now opens a **text** panel that looks the words
+up in `resume.tex`, `index.html`, `site-config.json` and `projects.js` and
+offers an **edit in …** button for each place they were found, opened at
+that line. Where the page rearranges a line (a year moved to the margin),
+its opening words are looked up instead. A few labels are written by the
+page itself rather than taken from a file: "Selected coursework",
+"University", "Self-directed" and "courses taken outside the degree". For
+those the panel offers **Shown as**, saved as `text.labels` in
+`site-config.json`:
+
+```json
+"text": { "labels": { "Selected coursework": "Key courses" } }
+```
+
+**Finding an item without right-clicking.** Right-click needs the thing on
+screen, and some are easy to miss. The Inspect tab now starts with a search
+box and a list of everything the editor can target, grouped by section
+(section titles first, then the intro, each section in page order, the
+top-bar menu last). Type to filter; picking an entry scrolls to it and does
+exactly what right-clicking it would. The Source tab has the same list,
+where picking an entry opens its source directly, at the right line.
+Courses whose names sit inside longer ones ("Operating Systems" inside
+"Advanced Operating Systems") now open at their own line.
 
 **Phone view.** The **phone view** button at the top of the editor swaps
 the page area for a phone-width copy of the site, so the phone layout can be
