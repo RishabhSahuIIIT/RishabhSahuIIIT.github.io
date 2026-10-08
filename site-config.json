@@ -252,15 +252,20 @@
   },
   "courses": {
     "_comment": [
-      "labelStyle - \"box\" (filled hue, theme ink) or \"text\" (name in its own colour).",
+      "labelStyle - \"outline\" (plain box edged in the category colour), \"box\" (filled) or \"text\".",
+      "featuredStyle - \"colour\" (each Selected coursework card filled with its own colour, unrelated to category) or \"plain\".",
+      "featuredInk - text on the coloured cards: \"light\" (white on deep colours, the default) or \"dark\" (dark on brighter colours).",
       "domainOrder - order of the category rows; unlisted names fall to the end.",
       "altNames - what a category is called when it carries the lighter-weight",
       "           courses. These rows always sort after every main row. Use an",
       "           adjacent name for the same territory, not a marked-down version",
-      "           of the main one."
+      "           of the main one.",
+      "links - a course's page or certificate, set from the editor (right-click the",
+      "        course): links[name] = { link: URL, cert: file-in-assets or URL }.",
+      "        These win over link= / cert= written in resume.tex."
     ],
     "domainOrder": [
-      "Systems",
+      "Systems & Networking",
       "Distributed & Parallel",
       "Compilers",
       "Security",
@@ -274,11 +279,21 @@
       "Foundations",
       "Professional"
     ],
-    "labelStyle": "box",
+    "labelStyle": "outline",
     "altNames": {
       "Systems & Networking": "Operating Environments",
       "Distributed & Parallel": "Large-Scale & Decentralised Systems"
-    }
+    },
+    "links": {
+      "Flask — Develop Web Applications in Python": {
+        "cert": "FlaskCourseEducative Certificat.png"
+      },
+      "Working with Containers": {
+        "cert": "DockerEducativeCourseCertificate.png"
+      }
+    },
+    "featuredStyle": "colour",
+    "featuredInk": "light"
   },
   "symbols": {
     "map": {

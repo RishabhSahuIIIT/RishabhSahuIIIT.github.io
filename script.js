@@ -601,13 +601,46 @@
   function cleanTag(s) {
     return String(s || '').replace(/\\&/g, '&').replace(/\s+/g, ' ').trim();
   }
+  /* The bracketed tail of a course line: "Source | Category | flags". Flags
+     are `featured`, `minor`, and two optional pointers written key=value:
+       link=https://...   the course page or the certificate's own page
+       cert=file-or-URL   an image or PDF of the certificate, shown in a popup
+       popup=page         show the link's page in the popup instead of a file
+     Whatever isn't a flag is the category. */
+  function courseMeta(parts) {
+    const out = { source: parts[0] || '', domain: 'Other', featured: false, minor: false,
+                  link: '', cert: '', popup: '' };
+    let gotDomain = false;
+    parts.slice(1).forEach(f => {
+      const kv = /^(link|cert|popup)\s*=\s*(\S.*)$/i.exec(f);
+      if (kv) { out[kv[1].toLowerCase()] = kv[2].trim(); return; }
+      if (/^featured$/i.test(f)) out.featured = true;
+      else if (/^minor$/i.test(f)) out.minor = true;
+      else if (f && !gotDomain) { out.domain = f; gotDomain = true; }
+    });
+    return out;
+  }
 
+  /* The part of a course description shown before it is expanded: the
+     first clause (up to a semicolon), capped at nine words. When the cap
+     lands mid-item it backs up to the last comma, so the line ends on a
+     whole entry rather than half of one, and never on "and" or "with". */
   function briefOf(desc) {
     if (!desc) return '';
     const first = String(desc).split(/[;:]|\.\s/)[0].trim();
-    const words = first.split(/\s+/);
-    return (words.length > 7 ? words.slice(0, 7).join(' ') + '\u2026' : first)
-      .replace(/,$/, '');
+    let words = first.split(/\s+/);
+    if (words.length <= 9) return first.replace(/,$/, '');
+    words = words.slice(0, 9);
+    let cut = -1;
+    for (let i = words.length - 1; i >= 2; i--) {
+      if (/,$/.test(words[i])) { cut = i; break; }
+    }
+    if (cut >= 0) words = words.slice(0, cut + 1);
+    while (words.length > 3 &&
+           /^(and|or|of|the|a|an|in|on|with|for|to|via|over|using|&)$/i.test(words[words.length - 1])) {
+      words.pop();
+    }
+    return words.join(' ').replace(/,$/, '') + '\u2026';
   }
 
   function parseCourses(section, rawText) {
@@ -624,21 +657,13 @@
           /* "Name: description [Source]" — same shape as the \item form. */
           const m = /^([^:]+):\s*([\s\S]*?)\s*(?:\[([^\]]+)\])?\s*$/.exec(t);
           if (!m) return;
-          const parts = (m[3] || '').split('|').map(cleanTag);
-          const flags = parts.slice(1);
-          fromComment.push({
+          fromComment.push(Object.assign(courseMeta((m[3] || '').split('|').map(cleanTag)), {
             /* Same em-dash conversion the \\item path does — without it the
                comment-block courses showed a literal "---" on the page. */
             name:        m[1].trim().replace(/\s*---\s*/g, ' \u2014 '),
             description: (m[2] || '').trim(),
-            source:      parts[0] || '',
-            /* Anything in the tail that isn't the "featured" keyword is the
-               domain — one optional field without inventing more syntax. */
-            domain:      flags.filter(f => !/^(featured|minor)$/i.test(f))[0] || 'Other',
-            featured:    flags.some(f => f.toLowerCase() === 'featured'),
-            minor:       flags.some(f => f.toLowerCase() === 'minor'),
             brief:       briefOf((m[2] || '').trim())
-          });
+          }));
         });
         break;
       }
@@ -651,22 +676,15 @@
          on the pipe keeps the source usable for grouping while letting a
          course opt into the selected list without a second section in the
          LaTeX. */
-      const parts = (m ? m[2] : '').split('|').map(cleanTag);
-      const tail  = parts.slice(1);
-      const flags = tail.join(',').toLowerCase();
-      return {
+      /* `minor` marks lighter-weight coursework: it sorts to the bottom of
+         the section in its own row rather than being hidden or labelled. */
+      return Object.assign(courseMeta((m ? m[2] : '').split('|').map(cleanTag)), {
         /* LaTeX writes an em-dash as `---`; stripFormatting leaves it
            alone, so convert it here for display. */
         name:        String(entry.category).replace(/\s*---\s*/g, ' \u2014 '),
         description: (m ? m[1] : raw).trim(),
-        source:      parts[0] || '',
-        domain:      tail.filter(f => !/^(featured|minor)$/i.test(f))[0] || 'Other',
-        featured:    /\bfeatured\b/.test(flags),
-        /* `minor` marks lighter-weight coursework: it sorts to the bottom of
-           the section in its own row rather than being hidden or labelled. */
-        minor:       /\bminor\b/.test(flags),
         brief:       briefOf((m ? m[1] : raw).trim())
-      };
+      });
     }).filter(c => c.name);
 
     /* Visible items win on a name clash — the PDF is the deliberate
@@ -1404,6 +1422,30 @@
       }
     };
     document.addEventListener('click', e => {
+      const cb = e.target.closest ? e.target.closest('.course-cert') : null;
+      if (cb) { certPopup(cb.dataset.cert, cb.dataset.name); return; }
+      /* Featured projects: swap the summary line for the bullets and back. */
+      const fm = e.target.closest ? e.target.closest('.feat-more') : null;
+      if (fm) {
+        const card = fm.closest('.work-item');
+        const on = !card.classList.contains('is-detail');
+        card.classList.toggle('is-detail', on);
+        fm.setAttribute('aria-expanded', String(on));
+        const fl = fm.querySelector('.feat-more-l');
+        if (fl) fl.textContent = on ? 'Summary' : 'Details';
+        return;
+      }
+      /* Selected-coursework names on a phone are compact pills; tapping one
+         opens the block so its description can be read. */
+      const pill = e.target.closest ? e.target.closest('#courses-featured:not(.m-open) .course-card') : null;
+      if (pill && window.matchMedia('(max-width: 640px)').matches) {
+        const blk = document.getElementById('courses-featured');
+        blk.classList.add('m-open');
+        const hd = blk.querySelector('.course-featured-head');
+        if (hd) hd.setAttribute('aria-expanded', 'true');
+        setTimeout(() => pill.scrollIntoView({ block: 'center', behavior: 'smooth' }), 40);
+        return;
+      }
       const btn = e.target.closest ? e.target.closest('.m-more') : null;
       if (btn) {
         const card = btn.parentNode;
@@ -1562,12 +1604,18 @@
           escapeHTML(project.title) + '</a>'
       : escapeHTML(project.title);
     const showDesc = showDescription && project.description && !project.hideDescription;
+    /* The one-line description and the bullets say the same thing at two
+       lengths, so only one shows at a time: the line by default, the bullets
+       once "Details" is pressed (on phones, once the card is opened). A
+       project with only one of the two simply shows it. */
+    const swap = !!(showDesc && Array.isArray(project.bullets) && project.bullets.length);
 
     const P = placeDiagram(project.title);
     const meta = entryTile(project.title || '') + renderLinks(links);
     /* Beside mode needs the right-hand column for the diagram, so the links
        move into the body instead. */
-    return '<article class="work-item feature' + P.cls + mCls() + '" data-entry="' + escapeHTML(project.title || '') + '"' +
+    return '<article class="work-item feature' + P.cls + mCls() + (swap ? ' has-detail' : '') +
+        '" data-entry="' + escapeHTML(project.title || '') + '"' +
         (hue ? ' style="--feat:' + hue + '"' : '') + '>' +
       '<div class="feat-rail">' +
         '<span class="feat-num">' + num + '</span>' +
@@ -1585,6 +1633,9 @@
         (showDesc ? '<p class="feat-lede">' + escapeHTML(project.description) + '</p>' : '') +
         (project.summary ? '<p>' + escapeHTML(project.summary) + '</p>' : '') +
         renderBullets(project.bullets) +
+        (swap ? '<button type="button" class="feat-more" aria-expanded="false">' +
+                  '<span class="feat-more-l">Details</span>' +
+                  '<span class="feat-more-c" aria-hidden="true">\u25be</span></button>' : '') +
         renderStack(project.stack, 'stack', project.category) +
         P.below +
         (P.inline ? '<div class="feat-meta-inline">' + meta + '</div>' : '') +
@@ -2018,24 +2069,58 @@
   function pfAnyActive() {
     return PF.sel.domain.length || PF.sel.tech.length || PF.sel.status.length;
   }
-  function pfMatches(p) {
-    if (!pfAnyActive()) return true;
+  function pfMatches(p) { return pfMatchesSel(p, PF.sel); }
+  /* The same test against any selection, so a filter can be tried out
+     before it is applied (see pfCountIfToggled). */
+  function pfMatchesSel(p, sel) {
+    if (!(sel.domain.length || sel.tech.length || sel.status.length)) return true;
     const dHit = v => pfDomainsOf(p).indexOf(v) >= 0;
     const tHit = v => pfTechOf(p).indexOf(v) >= 0;
     const sHit = () => pfIsLive(p);
     if (PF.logic === 'and') {
-      return PF.sel.domain.every(dHit) && PF.sel.tech.every(tHit) &&
-             (!PF.sel.status.length || sHit());
+      return sel.domain.every(dHit) && sel.tech.every(tHit) &&
+             (!sel.status.length || sHit());
     }
     if (PF.logic === 'or') {
-      return PF.sel.domain.some(dHit) || PF.sel.tech.some(tHit) ||
-             (PF.sel.status.length ? sHit() : false);
+      return sel.domain.some(dHit) || sel.tech.some(tHit) ||
+             (sel.status.length ? sHit() : false);
     }
     // hybrid: OR inside each group, AND across groups
-    const d = PF.sel.domain.length ? PF.sel.domain.some(dHit) : true;
-    const t = PF.sel.tech.length   ? PF.sel.tech.some(tHit)   : true;
-    const s = PF.sel.status.length ? sHit()                    : true;
+    const d = sel.domain.length ? sel.domain.some(dHit) : true;
+    const t = sel.tech.length   ? sel.tech.some(tHit)   : true;
+    const s = sel.status.length ? sHit()                : true;
     return d && t && s;
+  }
+  /* How many projects would match if this one filter were clicked now: added
+     to the current selection if it is off, taken out if it is on. This is
+     what makes the filters context-aware: every button can say in advance
+     whether the combination it would create has any projects in it. */
+  function pfCountIfToggled(type, val) {
+    const sel = { domain: PF.sel.domain.slice(), tech: PF.sel.tech.slice(),
+                  status: PF.sel.status.slice() };
+    const i = sel[type].indexOf(val);
+    if (i >= 0) sel[type].splice(i, 1); else sel[type].push(val);
+    return PF.projects.filter(p => pfMatchesSel(p, sel)).length;
+  }
+  function pfHas(p, type, val) {
+    return type === 'domain' ? pfDomainsOf(p).indexOf(val) >= 0 :
+           type === 'tech'   ? pfTechOf(p).indexOf(val) >= 0 : pfIsLive(p);
+  }
+  /* What one filter control should say. Nothing selected: nothing to say on
+     the rail (a number beside every button is noise). Something selected: a
+     selected filter reports how many of the shown projects carry it; an
+     unselected one reports what clicking it would give, and is marked empty
+     when that is zero. Empty filters stay clickable. */
+  function pfFilterState(type, val, on) {
+    if (!pfAnyActive()) return { n: pfCount(type, val), empty: false, tip: '' };
+    if (on) {
+      const n = PF.projects.filter(p => pfMatches(p) && pfHas(p, type, val)).length;
+      return { n: n, empty: false, tip: n + ' of the matching projects' };
+    }
+    const n = pfCountIfToggled(type, val);
+    return { n: n, empty: n === 0,
+             tip: n === 0 ? 'No project matches this together with the current filters'
+                          : 'Adding this gives ' + n + ' project' + (n === 1 ? '' : 's') };
   }
   function pfMatchedFilters(p) {
     const out = [];
@@ -2254,6 +2339,11 @@
       const panel = document.createElement('div');
       panel.className = 'pf-dd-panel';
       panel.setAttribute('role', 'menu');
+      /* The form says where the current combination stands before another
+         option is added to it. */
+      const note = document.createElement('div');
+      note.className = 'pf-dd-note';
+      panel.appendChild(note);
 
       g.values.forEach(v => {
         const label = g.type === 'status' ? 'Live demo' : v;
@@ -2307,9 +2397,22 @@
         badge.hidden = sel.length === 0;
         badge.textContent = sel.length || '';
       }
+      const note = dd.querySelector('.pf-dd-note');
+      if (note) {
+        const shown = PF.projects.filter(pfMatches).length;
+        note.textContent = pfAnyActive()
+          ? shown + ' of ' + PF.projects.length + ' projects match so far. ' +
+            'Each number is what adding that option gives.'
+          : 'Each number is how many projects have it.';
+      }
       dd.querySelectorAll('.pf-opt').forEach(opt => {
         const on = sel.indexOf(opt.dataset.val) >= 0;
         opt.classList.toggle('is-on', on);
+        const st = pfFilterState(type, opt.dataset.val, on);
+        opt.classList.toggle('is-empty', st.empty);
+        opt.title = st.tip;
+        const cn = opt.querySelector('.pf-opt-n');
+        if (cn) cn.textContent = st.n;
         const tick = opt.querySelector('.pf-tick');
         if (tick) {
           tick.style.background = on ? (tick.dataset.color || 'var(--accent)') : 'transparent';
@@ -2474,9 +2577,14 @@
       b.style.color       = on ? '#fff' : 'var(--ink-soft)';
       b.style.borderColor = on ? color : 'var(--rule)';
       const n = b.querySelector('.pf-n');
+      if (!b.dataset.val) return;                 /* the "+ N more" expander */
+      const any = pfAnyActive();
+      const st = pfFilterState(b.dataset.type, b.dataset.val, on);
+      b.classList.toggle('is-empty', st.empty);
+      b.title = st.tip;
       if (n) {
-        n.hidden = !on;
-        n.textContent = on ? (b.dataset.count || '') : '';
+        n.hidden = !any;
+        n.textContent = any ? st.n : '';
       }
     });
     document.querySelectorAll('.pf-lg').forEach(b => {
@@ -2643,8 +2751,8 @@
      blue and yellow at equal HSL lightness differ hugely in perceived
      brightness, which left some categories indistinguishable from the page. */
   let _courseCols = null;
-  function courseColors(domains) {
-    const key = domains.join('|');
+  function courseColors(domains, fill) {
+    const key = (fill ? 'f|' : '') + domains.join('|');
     if (_courseCols && _courseCols.key === key) return _courseCols;
     const toHex = (r, g, b) =>
       '#' + [r, g, b].map(v => ('0' + Math.round(v * 255).toString(16)).slice(-2)).join('');
@@ -2664,16 +2772,41 @@
     const bg = _pageBg();
     const dark = _relLum(bg) < 0.5;
     domains.forEach((d, i) => {
-      const h = (i / domains.length + 0.58) % 1;
+      /* Hues are spread evenly, but not over the whole wheel. Yellow and
+         yellow-green only look like themselves when they are very bright;
+         at the brightness these boxes need they turn olive, khaki and
+         mustard, the one dull stretch of the spectrum. So that arc is left
+         out and the colours are spaced over the rest, starting from blue.
+         Outlines skip the browns as well (from 30 degrees); filled cards
+         keep orange and amber, at their own brightness (see below).
+         fill: 0 outlines, 1 bright cards with dark text, 2 deep cards with
+         white text. A deep orange is rust and a deep lime is moss, so deep
+         cards run from green round to red and leave out everything between. */
+      const deep = fill === 2;
+      const SKIP_FROM = deep ? 10 : fill ? 46 : 30, SKIP_TO = deep ? 110 : 100,
+            span = 360 - (SKIP_TO - SKIP_FROM);
+      const deg = (SKIP_TO + (209 - SKIP_TO + i * span / domains.length) % span) % 360;
+      const h = deg / 360;
+      /* An orange darkened to match the others is brown. On a filled card
+         it is kept at least as light as the pure hue instead: the card is
+         a block of colour, so it does not need the page contrast a thin
+         outline does, and its text is dark either way. */
+      const floor = fill === 1 && deg > 12 && deg < 50 ? 0.52 : 0;
       /* Solve for a luminance that clears the page by a wide margin either
          way, so a filled label is unmissable in both themes. */
-      const target = dark ? Math.max(0.32, _relLum(bg) * 9) : Math.min(0.30, _relLum(bg) / 3);
+      /* Deep cards: dark enough that white text reads at about 6:1 on a
+         light page. On a dark page the same colours sit closer to the
+         background and their saturation glares, so there they are a step
+         lighter and a little calmer (white text still about 5:1). */
+      const target = deep ? (dark ? 0.16 : 0.125)
+        : dark ? Math.max(0.32, _relLum(bg) * 9) : Math.min(0.30, _relLum(bg) / 3);
       let lo = 0, hi = 1, c = '#888';
       for (let k = 0; k < 30; k++) {
         const mid = (lo + hi) / 2;
-        c = toHex.apply(null, hls(h, mid, 0.70));
+        c = toHex.apply(null, hls(h, mid, deep && !dark ? 0.78 : 0.70));
         if (_relLum(c) < target) lo = mid; else hi = mid;
       }
+      if (lo < floor) c = toHex.apply(null, hls(h, floor, 0.82));
       out.vivid[d] = c;
       /* Pick whichever ink actually contrasts more. A fixed brightness
          cut-off put white text on mid-tone boxes in light mode, which read
@@ -2681,9 +2814,74 @@
       const L = _relLum(c);
       const onDark  = (L + 0.05) / (_relLum('#12101c') + 0.05);
       const onLight = (_relLum('#f4f2ff') + 0.05) / (L + 0.05);
-      out.ink[d] = onDark >= onLight ? '#12101c' : '#f4f2ff';
+      out.ink[d] = deep ? '#fff' : onDark >= onLight ? '#12101c' : '#f4f2ff';
     });
     return (_courseCols = out);
+  }
+
+  /* A course's link and certificate. resume.tex can carry them in the line's
+     tail; the editor stores its own in courses.links[name], which wins. */
+  function courseLinks(c) {
+    const o = ((SITE_CONFIG.courses || {}).links || {})[c.name] || {};
+    const link = o.link !== undefined ? o.link : c.link;
+    const out = { link: /^https?:\/\//i.test(link || '') ? link : '',
+                  cert: (o.cert !== undefined ? o.cert : c.cert) || '' };
+    /* What the popup shows: the certificate file, or (popup = "page") the
+       link's own page in a frame. */
+    const page = String(o.popup !== undefined ? o.popup : c.popup).toLowerCase() === 'page';
+    out.show = page && out.link ? out.link : out.cert;
+    return out;
+  }
+  function courseActs(c) {
+    const k = courseLinks(c);
+    if (!k.link && !k.show) return '';
+    return '<span class="course-acts">' +
+      (k.show ? '<button type="button" class="course-cert" data-cert="' + escapeHTML(k.show) +
+                '" data-name="' + escapeHTML(c.name) + '">View certificate</button>' : '') +
+      (k.link ? '<a class="course-link" href="' + escapeHTML(k.link) + '" target="_blank" rel="noopener">' +
+                (/certif|verify|credential/i.test(k.link) ? 'Verify certificate' : 'Course page') +
+                ' \u2197</a>' : '') +
+    '</span>';
+  }
+  /* The certificate in a rectangle over the page. An image file or link is
+     shown as an image; anything else (a PDF, an embeddable page) goes in a
+     frame. Nothing is fetched until the popup is opened, and "Open in new
+     tab" is always there for phones and for pages that refuse to be framed. */
+  function certPopup(src, title) {
+    const dir = (SITE_CONFIG.media || {}).imageDir || 'assets/';
+    const url = /^(https?:|\/|data:)/i.test(src) ? src : dir + src;
+    if (!window.HTMLDialogElement) { window.open(url, '_blank', 'noopener'); return; }
+    let dlg = document.getElementById('cert-pop');
+    if (!dlg) {
+      dlg = document.createElement('dialog');
+      dlg.id = 'cert-pop';
+      dlg.className = 'cert-pop';
+      document.body.appendChild(dlg);
+      dlg.addEventListener('click', e => {
+        if (e.target === dlg || (e.target.closest && e.target.closest('.cert-x'))) dlg.close();
+      });
+      dlg.addEventListener('close', () => { dlg.innerHTML = ''; });
+    }
+    const label = escapeHTML('Certificate: ' + title);
+    const isImg = /\.(png|jpe?g|webp|gif|svg|avif)([?#]|$)/i.test(url);
+    /* Someone else's web page (not a file): shown in a sandboxed frame that
+       can't navigate this page away, with a way out if the site refuses to
+       be shown inside another page, which a script here has no way to detect. */
+    const isPage = !isImg && /^https?:/i.test(url) && !/\.pdf([?#]|$)/i.test(url);
+    dlg.innerHTML =
+      '<div class="cert-hd"><span class="cert-t">' + escapeHTML(title) + '</span>' +
+        '<a class="cert-open" href="' + escapeHTML(url) + '" target="_blank" rel="noopener">Open in new tab \u2197</a>' +
+        '<button type="button" class="cert-x" aria-label="Close">\u00d7</button></div>' +
+      '<div class="cert-bd">' +
+        (isImg
+          ? '<img src="' + escapeHTML(url) + '" alt="' + label + '">'
+          : '<iframe src="' + escapeHTML(url) + '" title="' + label + '"' +
+            (isPage ? ' referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"' : '') +
+            '></iframe>') +
+      '</div>' +
+      (isPage ? '<div class="cert-note">Blank? This site doesn\u2019t allow being shown inside another page. ' +
+                '<a href="' + escapeHTML(url) + '" target="_blank" rel="noopener">Open it in a new tab \u2197</a></div>' : '');
+    dlg.showModal();
   }
 
   function renderCourses(courses) {
@@ -2702,7 +2900,12 @@
     const cfg = SITE_CONFIG.courses || {};
     const hidden = media.hiddenCourses || {};
     const visible = courses.filter(c => hidden[c.name] !== true);
-    const style = cfg.labelStyle === 'text' ? 'text' : 'box';
+    /* Category labels: "outline" (a plain box edged in the category's colour),
+       "box" (filled with it) or "text". Featured cards: "colour" (each filled
+       with a colour of its own) or "plain". The defaults put the colour on
+       the featured courses and leave the category index quiet beneath them. */
+    const style = /^(box|text)$/.test(cfg.labelStyle) ? cfg.labelStyle : 'outline';
+    const featColour = cfg.featuredStyle !== 'plain';
 
     const DEFAULT_ORDER = [
       'Systems & Networking', 'Distributed & Parallel', 'Compilers', 'Security',
@@ -2719,18 +2922,41 @@
 
     /* Featured stays its own block above; the list below carries no extra
        emphasis for those courses, since that job is already done. */
+    const isOnline = c => /educative|nptel|coursera|udemy|edx|online/i.test(c.source || '');
     const featured = visible.filter(c => c.featured);
     if (featEl) {
       if (featured.length && media.showFeaturedCourses !== false) {
-        featEl.innerHTML =
-          '<h4 class="course-featured-head">Selected coursework' +
-            '<span class="course-count">' + featured.length + '</span></h4>' +
-          '<div class="course-items is-open">' + featured.map(c =>
-          '<article class="course-card is-featured" data-entry="' + escapeHTML(c.name) + '">' +
+        /* University courses on the left, self-directed ones on the right
+           of a divider (stacked under their own labels on phones). With no
+           self-directed course featured it is one plain grid, as before. */
+        /* A featured card's colour says nothing about its category: nobody
+           reads the Selected block to learn categories, and anyone who wants
+           them has the index below. Each card simply takes the next hue
+           around the wheel, in the order shown, so no two cards match and
+           the block runs through the whole spectrum. */
+        const fUni = featured.filter(c => !isOnline(c)), fSelf = featured.filter(isOnline);
+        const FC = featColour ? courseColors(fUni.concat(fSelf).map(c => c.name), cfg.featuredInk === 'dark' ? 1 : 2) : null;
+        const fCard = c =>
+          '<article class="course-card is-featured' + (featColour ? ' is-filled' : '') +
+            '" data-entry="' + escapeHTML(c.name) + '"' +
+            (featColour ? ' style="--cat:' + FC.vivid[c.name] + ';--cat-ink:' + FC.ink[c.name] + '"' : '') + '>' +
             '<h5 class="course-name">' + escapeHTML(c.name) + '</h5>' +
             (c.description ? '<p class="course-desc">' + escapeHTML(c.description) + '</p>' : '') +
             '<span class="course-origin">' + escapeHTML(c.source || '') + '</span>' +
-          '</article>').join('') + '</div>';
+            courseActs(c) +
+          '</article>';
+        const col = (cls, lab, items) =>
+          '<div class="course-feat-col ' + cls + '">' +
+            (fSelf.length && fUni.length ? '<div class="course-feat-lab">' + lab + '</div>' : '') +
+            '<div class="course-items is-open">' + items.map(fCard).join('') + '</div>' +
+          '</div>';
+        featEl.innerHTML =
+          '<h4 class="course-featured-head">Selected coursework' +
+            '<span class="course-count">' + featured.length + '</span></h4>' +
+          '<div class="course-feat-split' + (fSelf.length && fUni.length ? ' has-self' : '') + '">' +
+            (fUni.length ? col('is-uni', 'University', fUni) : '') +
+            (fSelf.length ? col('is-self', 'Self-directed', fSelf) : '') +
+          '</div>';
         featEl.style.display = '';
       } else { featEl.innerHTML = ''; featEl.style.display = 'none'; }
     }
@@ -2761,19 +2987,38 @@
       /* Filled box. Secondary rows are deliberately uncoloured — a plain
          outline reads as "same category, less of it" without adding a
          second tone to keep track of. */
-      return '<div class="course-lab"><span class="lab-box' + (secondary ? ' is-b' : '') + '"' +
-             (secondary ? '' : ' style="background:' + COLS.vivid[d] + ';color:' + COLS.ink[d] + '"') + '>' +
+      return '<div class="course-lab"><span class="lab-box' + (secondary ? ' is-b' : '') +
+               (!secondary && style === 'outline' ? ' is-outline' : '') + '"' +
+             (secondary ? ''
+               : style === 'outline' ? ' style="border-color:' + COLS.vivid[d] + '"'
+               : ' style="background:' + COLS.vivid[d] + ';color:' + COLS.ink[d] + '"') + '>' +
              escapeHTML(text) +
              '<span class="course-count">' + n + '</span></span></div>';
     };
 
-    const line = c =>
-      '<span class="course-line" data-entry="' + escapeHTML(c.name) + '">' +
+    /* A line shows the course and the lead of its description. When there
+       is more to read, the line itself is the control: a click or tap opens
+       the full description in place. (On phones this is the only way to it:
+       the card grid that desktop shows on expanding a category is hidden
+       there, which used to leave descriptions unreachable.) */
+    const line = c => {
+      const more = !!(c.description && c.description !== c.brief);
+      return '<span class="course-line' + (more ? ' has-more' : '') +
+          '" data-entry="' + escapeHTML(c.name) + '"' +
+          (more ? ' role="button" tabindex="0" aria-expanded="false"' : '') + '>' +
         escapeHTML(c.name) +
         (c.source && /educative|nptel|coursera|udemy/i.test(c.source)
           ? '<span class="course-ext"> \u2197</span>' : '') +
         (c.brief ? '<span class="course-gloss">' + escapeHTML(c.brief) + '</span>' : '') +
+        (more
+          ? '<span class="course-more" aria-hidden="true"></span>' +
+            '<span class="course-full">' + escapeHTML(c.description) +
+              (c.source ? '<span class="course-full-src">' + escapeHTML(c.source) + '</span>' : '') +
+              courseActs(c) +
+            '</span>'
+          : '') +
       '</span>';
+    };
 
     const cards = (items, d) => items.map(c =>
       '<article class="course-card" data-entry="' + escapeHTML(c.name) + '"' +
@@ -2796,7 +3041,6 @@
     /* Online courses are a different kind of evidence from a degree — chosen
        rather than required — so they get their own block after the college
        coursework instead of being mixed into its categories. */
-    const isOnline = c => /educative|nptel|coursera|udemy|edx|online/i.test(c.source || '');
 
     /* College rows first, in domain order; the lighter-weight rows after
        them, renamed so they don't read as a demotion. */
@@ -2827,6 +3071,7 @@
                   (c.description
                     ? '<span class="course-online-desc">' + escapeHTML(c.description) + '</span>'
                     : '') +
+                  courseActs(c) +
                 '</article>').join('')
             ).join('') +
           '</div>' +
@@ -2840,6 +3085,25 @@
         g.classList.toggle('is-collapsed');
       });
     });
+    /* Bound once on the container, which outlives every re-render. */
+    if (!el._lineBound) {
+      el._lineBound = true;
+      const flip = ln => {
+        const open = !ln.classList.contains('is-open');
+        ln.classList.toggle('is-open', open);
+        ln.setAttribute('aria-expanded', String(open));
+      };
+      el.addEventListener('click', e => {
+        if (e.target.closest && e.target.closest('.course-acts')) return;   /* a link or button, not the line */
+        const ln = e.target.closest ? e.target.closest('.course-line.has-more') : null;
+        if (ln) flip(ln);
+      });
+      el.addEventListener('keydown', e => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        const ln = e.target.closest ? e.target.closest('.course-line.has-more') : null;
+        if (ln) { e.preventDefault(); flip(ln); }
+      });
+    }
   }
 
 
@@ -3368,7 +3632,8 @@
     });
   }
   if (typeof window !== 'undefined') {     /* the parser is also loaded in node */
-    window.__applyColourOverrides = () => applyColourOverrides(SITE_CONFIG);
+    /* sizes as well as colours: applySiteConfig ends by applying the colours */
+    window.__applyColourOverrides = () => applySiteConfig(SITE_CONFIG);
     window.__activeThemeId = activeThemeId;
   }
 
@@ -3378,8 +3643,18 @@
     const root = document.documentElement;
 
     const sizes = cfg.sizes || {};
-    if (sizes.textScale) root.style.setProperty('--text-scale', String(sizes.textScale));
-    if (sizes.density)   root.style.setProperty('--density',    String(sizes.density));
+    /* sizes.phone holds separate text and spacing scales for phone widths;
+       a value left out falls back to the general one. */
+    const onPhone = !!(window.matchMedia && window.matchMedia('(max-width: 640px)').matches);
+    const ph = (onPhone && sizes.phone) || {};
+    const ts = ph.textScale || sizes.textScale, dn = ph.density || sizes.density;
+    if (ts) root.style.setProperty('--text-scale', String(ts));
+    if (dn) root.style.setProperty('--density',    String(dn));
+    if (!applySiteConfig._mq && window.matchMedia) {
+      applySiteConfig._mq = window.matchMedia('(max-width: 640px)');
+      const again = () => applySiteConfig(SITE_CONFIG);
+      if (applySiteConfig._mq.addEventListener) applySiteConfig._mq.addEventListener('change', again);
+    }
     /* --block-pad-y is the actual spacing between sections (padding top and
        bottom on each block). The old --section-gap only added to it, so the
        slider read 0 while the page clearly had gaps. Drive the real value. */
@@ -3775,6 +4050,13 @@
         /* Hook for the dev editor: re-render the filter UI and redraw the
            connector lines after a colour change, without a page reload. */
         window.__pfRedraw = function () { pfRender(); };
+        /* Dev editor: re-apply text and per-section overrides in place. (The
+           editor's phone view drives a second copy of this page through
+           these hooks; the logic for that lives in editor.js, not here.) */
+        window.__pfApplyText = function () {
+          applySectionConfig(SITE_CONFIG, data.sectionMeta);
+          applyTextConfig(SITE_CONFIG, data.intro);
+        };
         window.__renderedProjects = projects;
         console.log('[Portfolio] Render complete.');
       })

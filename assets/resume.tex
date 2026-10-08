@@ -107,6 +107,75 @@
 % paragraph project descriptions that would otherwise crowd the resume.
 \usepackage{verbatim}
 
+% ============================================================
+% COURSES IN THE PDF
+% ------------------------------------------------------------
+% The Courses list further down is written once, for both the PDF and the
+% website, as
+%     \item \textbf{Name:} description [Source | Category | flags]
+% The three settings below decide what the PDF does with those lines. The
+% website ignores them: it always reads every line and every flag.
+%
+%   \pdfcoursesfeaturedonlytrue    print only the lines flagged "featured"
+%   \pdfcoursesfeaturedonlyfalse   print every \item line
+%
+%   \renewcommand{\pdfcoursestyle}{full}    name + the whole description
+%   \renewcommand{\pdfcoursestyle}{brief}   name + the description up to its
+%                                           first semicolon (the same part the
+%                                           website shows before expanding)
+%   \renewcommand{\pdfcoursestyle}{names}   names only, on one or two lines
+%
+%   \pdfcoursessourcetrue / false  print or drop "(IIIT Hyderabad)" after each
+%
+% The bracketed [Source | Category | flags] tail is never printed as written.
+% A course in the comment block below the list stays website-only whatever
+% its flags say, because LaTeX never reads a comment block: to get a course
+% into the PDF, move its line up into the \item list and flag it featured.
+% At least one \item line must qualify, or LaTeX reports an empty list.
+% ============================================================
+\usepackage{xstring}
+\newif\ifpdfcoursesfeaturedonly \pdfcoursesfeaturedonlytrue
+\newif\ifpdfcoursessource       \pdfcoursessourcetrue
+\newcommand{\pdfcoursestyle}{full}
+
+\makeatletter
+\newif\ifcourse@first
+\newcommand{\course@full}{full}
+\newcommand{\course@brief}{brief}
+% \courselist goes on the line after \begin{itemize} in the Courses section.
+% From there to \end{itemize}, \item reads its line apart instead of printing
+% it as written: #1 is "Name:", #2 the description, #3 the bracketed tail.
+\newcommand{\courselist}{%
+  \let\course@item\item
+  \course@firsttrue
+  \def\item\textbf##1##2[##3]{\course@print{##1}{##2}{##3}}%
+}
+\newcommand{\course@print}[3]{%
+  \begingroup\noexpandarg
+  \IfSubStr{#3}{featured}{\def\course@show{1}}{%
+    \ifpdfcoursesfeaturedonly\def\course@show{0}\else\def\course@show{1}\fi}%
+  \IfSubStr{#3}{|}{\StrBefore{#3}{|}[\course@src]}{\def\course@src{#3}}%
+  \if1\course@show
+    \ifx\pdfcoursestyle\course@full
+      \course@item \textbf{#1} \ignorespaces#2\unskip\course@source
+    \else\ifx\pdfcoursestyle\course@brief
+      \IfSubStr{#2}{;}{\StrBefore{#2}{;}[\course@desc]}{\def\course@desc{#2}}%
+      \course@item \textbf{#1} \expandafter\ignorespaces\course@desc\unskip\course@source
+    \else
+      \StrDel{#1}{:}[\course@name]%
+      \ifcourse@first\course@item[]\else\unskip\nobreak\hspace{.5em}\textbullet\hspace{.5em}\fi
+      \textbf{\course@name}\ignorespaces
+    \fi\fi
+    \aftergroup\course@firstfalse
+  \fi
+  \endgroup
+}
+\newcommand{\course@source}{%
+  % \hfil\penalty0\hfilneg: if the source doesn't fit on the line it drops to
+  % the next one whole, instead of sticking out into the margin.
+  \ifpdfcoursessource\hfil\penalty0\hfilneg\ \mbox{\small\itshape(\expandafter\ignorespaces\course@src\unskip)}\fi}
+\makeatother
+
 % --- Remove paragraph indent and extra paragraph spacing ---
 \setlength{\parindent}{0pt}  % No paragraph indentation
 \setlength{\parskip}{0pt}    % No extra space between paragraphs
@@ -562,24 +631,36 @@ Five tabular RL methods implemented from scratch on a stochastic gridworld, comp
 %               by itself, but shows on the card
 %   Category    which row it lands in; must match a name in
 %               courses.domainOrder in site-config.json
-%   flags       | featured  -> also appears in the Selected block above
-%               | minor     -> drops to the uncoloured "b" row at the bottom
+%   flags       | featured  -> also appears in the Selected block above,
+%                              and is what the PDF prints (see below)
+%               | minor     -> drops to the quieter rows at the bottom
 %               (a course should not be both)
+%
+% Order inside a description matters. The website shows roughly the first
+% nine words before a course is expanded, and stops early at a semicolon, so
+% lead with what you most want read and put a semicolon where the headline
+% part ends. The PDF's "brief" style prints up to that same semicolon.
+%
+% What the PDF prints from this list is set near the top of this file, under
+% COURSES IN THE PDF: featured only or all, and full / brief / names.
+% \courselist on the line after \begin{itemize} is what applies it; without
+% it the lines print exactly as written, bracketed tail included.
 %
 % Escape & as \& on these \item lines. The comment block below needs no
 % escaping, since LaTeX never parses it.
 % ---------------------------------------------------------------------
 \begin{itemize}[leftmargin=*, itemsep=1pt, parsep=0pt]
-	\item \textbf{Compilers:} Lexing, parsing, semantic analysis, LLVM IR generation;  dataflow analysis, Graph coloring based register allocation and optimisation passes written in C++ [IIIT Hyderabad | Compilers | featured]
-	\item \textbf{Distributed Systems:} Distributed time, Consistency; RPC services over gRPC and Protocol Buffers, Map reduce, Global snapshoting, Mutual Exclusion, Agreement protocols, Deadlocks [IIIT Hyderabad | Distributed \& Parallel | featured]
-	\item \textbf{Advanced Operating Systems:} Os structure and layers, scheduling and virtual memory; systems-level concurrency against the Linux API in C, Introduction to HPCs, POSIX threads, signals and system calls in C [IIIT Hyderabad | Systems \& Networking  | minor]
-	\item \textbf{System and Network Security:} Cryptography, Diffie Hellman key exchange, Digital signatures, Hash and MAC, Digital Certificate, KerberosThreat models and intrusion detection; packet capture with Scapy, firewall automation via iptables [IIIT Hyderabad | Security | featured]
-	\item \textbf{Statistical Methods in AI:} Mathematical basics of AI,Regression, Regularization, Principal component analysis, Singular Value Decomposition, Naive Bayes calssifier, Dimensionality reduction, Decision trees, Support vector machines, Neural networks, CNN, Transformer and Self Attention basics [IIIT Hyderabad | AI \& Machine Learning | featured]
-	\item \textbf{Robotics --- Planning and Navigation:} Kinematic planning, RRT, Holonomic and Non Holonomic constraints, Configuration spaces, Frenet frame, MPC,  sampling-based planners, trajectory optimisation, obstacle avoidance; simulations in PyBullet and Matplotlib [IIIT Hyderabad | Robotics | featured]
-	\item \textbf{Data Structures and Algorithms:} Asymptotic analysis, graph and tree algorithms and dynamic programming, implemented data structures in C [LNMIIT Jaipur | Algorithms \& Theory | featured]
-	\item \textbf{Compiler Design:} Topdown and Bottom up parsing, intermediate representations  [LNMIIT Jaipur | Compilers | featured]
-	\item \textbf{Computer Networks:} OSI and TCP/IP models, Switching, Framing, Error detection and correction, routing and congestion control; Protocols: TCP, UDP, HTTP, Email, raw socket programming and packet inspection with wireshark [LNMIIT Jaipur | Systems \& Networking | featured]
-	\item \textbf{Operating Systems:} Process synchronization, CPU scheduling, memory management and file management,  [LNMIIT Jaipur | Systems \& Networking | featured]
+	\courselist
+	\item \textbf{Compilers:} LLVM IR generation, optimisation passes written in C++, dataflow analysis, Graph coloring based register allocation; lexing, parsing, semantic analysis [IIIT Hyderabad | Compilers | featured]
+	\item \textbf{Distributed Systems:} RPC services over gRPC and Protocol Buffers, Agreement protocols, Consistency; Map reduce, Distributed time, Global snapshotting, Mutual Exclusion, Deadlocks [IIIT Hyderabad | Distributed \& Parallel | featured]
+	\item \textbf{Advanced Operating Systems:} Systems-level concurrency against the Linux API in C, POSIX threads, signals and system calls; scheduling and virtual memory, OS structure and layers, Introduction to HPCs [IIIT Hyderabad | Systems \& Networking | minor]
+	\item \textbf{System and Network Security:} Threat models and intrusion detection, packet capture with Scapy, firewall automation via iptables; Cryptography, Diffie Hellman key exchange, Digital signatures, Hash and MAC, Digital Certificate, Kerberos [IIIT Hyderabad | Security | featured]
+	\item \textbf{Statistical Methods in AI:} Neural networks, CNN, Transformer and Self Attention basics; Support vector machines, Decision trees, Naive Bayes classifier, Regression, Regularization; Dimensionality reduction, Principal component analysis, Singular Value Decomposition, Mathematical basics of AI [IIIT Hyderabad | AI \& Machine Learning | featured]
+	\item \textbf{Robotics --- Planning and Navigation:} Sampling-based planners, RRT, trajectory optimisation, obstacle avoidance; simulations in PyBullet and Matplotlib; MPC, Kinematic planning, Configuration spaces, Holonomic and Non Holonomic constraints, Frenet frame [IIIT Hyderabad | Robotics | featured]
+	\item \textbf{Data Structures and Algorithms:} Graph and tree algorithms, dynamic programming, asymptotic analysis; implemented data structures in C [LNMIIT Jaipur | Algorithms \& Theory | featured]
+	\item \textbf{Compiler Design:} Topdown and Bottom up parsing, intermediate representations [LNMIIT Jaipur | Compilers | featured]
+	\item \textbf{Computer Networks:} Raw socket programming and packet inspection with Wireshark, routing and congestion control; Protocols: TCP, UDP, HTTP, Email; OSI and TCP/IP models, Switching, Framing, Error detection and correction [LNMIIT Jaipur | Systems \& Networking | featured]
+	\item \textbf{Operating Systems:} CPU scheduling, Process synchronization, memory management and file management [LNMIIT Jaipur | Systems \& Networking | featured]
 \end{itemize}
 
 % ---- AND HERE -------------------------------------------------------
@@ -588,58 +669,75 @@ Five tabular RL methods implemented from scratch on a stochastic gridworld, comp
 %     Name: description [Source | Category | flags]
 % Moving a course between the two lists is how you decide whether it
 % appears in the printed resume.
+%
+% Lines in this block can also point at a course page or certificate, by
+% adding to the bracketed tail:
+%     | link=https://...      the course page, or the certificate's own page;
+%                             shown as a link on the course
+%     | cert=name.pdf         an image or PDF of the certificate (a file in
+%                             assets/, or a direct link to one); the site shows
+%                             it in a popup behind a "View certificate" button
+%     | popup=page            show the link's page in that popup instead of a
+%                             file (works only if the site allows being shown
+%                             inside another page; the editor can check)
+% cert-demo.svg on the Docker course is a placeholder image: replace the file,
+% or change the name after cert= to your own.
+% The same two can be set per course from the dev-server editor instead
+% (right-click the course), which can also download a certificate file into
+% assets/ for you. Use these in this block only, not on the \item lines: a
+% link's % or # would break LaTeX there.
 % ---------------------------------------------------------------------
 \begin{comment}
 courses:
-Topics in Reinforcement Learning: Markov decision processes, Markov chains, Bellman optimality equation, Q function, value and policy methods;Q learning, agents and rewards, basics of deep RL,  Hamiltonian Jacobi Bellman equation,  [IIIT Hyderabad | AI & Machine Learning]
-Modern Complexity Theory: Complexity classes, Turing machines, reductions, hardness results, randomised computation, Quantum complexity classes  [IIIT Hyderabad | Algorithms & Theory]
-Data Structures & Algorithms for Problem Solving: Algorithmic problem solving over advanced data structures, Graph traversals and related proofs, Pattern matching, Topological sorting, amortized analysis, Heaps, approximation [IIIT Hyderabad | Algorithms & Theory]
-Data Systems: Storage engines, page representations, indexing, BTrees, query execution, query optimization [IIIT Hyderabad | Data & Databases]
-Software Systems Development: Non relational and relational database query languages, Javascript events, MERN stack, REST api,  [IIIT Hyderabad | Software Engineering]
-Topics in Software Engineering: Software lifecycle, MLOps and DevsecOps basics,   [IIIT Hyderabad | Software Engineering]
-Digital Image Processing: Filtering, transforms and segmentation; pipelines built with NumPy and OpenCV [IIIT Hyderabad | AI & Machine Learning]
-Probability and Statistics (MCS 1): Random variables, Expectation and Variance, Distributions, Conditional Distributions, Joint Distribution estimation [IIIT Hyderabad | Mathematics]
-Linear Algebra (MCS 2): Vector spaces, matrix decompositions and eigenvalue problems [IIIT Hyderabad | Mathematics]
+Topics in Reinforcement Learning: Q learning, value and policy methods, basics of deep RL; Markov decision processes, Bellman optimality equation, Q function, agents and rewards; Markov chains, Hamiltonian Jacobi Bellman equation [IIIT Hyderabad | AI & Machine Learning]
+Modern Complexity Theory: Complexity classes, reductions, hardness results; randomised computation, Quantum complexity classes, Turing machines [IIIT Hyderabad | Algorithms & Theory]
+Data Structures & Algorithms for Problem Solving: Algorithmic problem solving over advanced data structures; Graph traversals and related proofs, Pattern matching, amortized analysis; Topological sorting, Heaps, approximation [IIIT Hyderabad | Algorithms & Theory]
+Data Systems: Storage engines, query optimization, indexing, BTrees; query execution, page representations [IIIT Hyderabad | Data & Databases]
+Software Systems Development: MERN stack, REST API, Javascript events; Non relational and relational database query languages [IIIT Hyderabad | Software Engineering]
+Topics in Software Engineering: MLOps and DevSecOps basics, Software lifecycle [IIIT Hyderabad | Software Engineering]
+Digital Image Processing: Pipelines built with NumPy and OpenCV; filtering, transforms and segmentation [IIIT Hyderabad | AI & Machine Learning]
+Probability and Statistics (MCS 1): Distributions, Joint Distribution estimation, Conditional Distributions; Random variables, Expectation and Variance [IIIT Hyderabad | Mathematics]
+Linear Algebra (MCS 2): Matrix decompositions and eigenvalue problems, vector spaces [IIIT Hyderabad | Mathematics]
 PG Independent Study: Theoretical analysis of Dynamic programming and Greedy algorithms from a research paper [IIIT Hyderabad | Software Engineering]
-Business Finance: Financial statements, Financial ratios, Forcasting, Time value of money, Risk and return, Cost of capital, valuations  [IIIT Hyderabad | Professional]
-Computer Security: CIA triad, Cryptographic primitives, authentication protocols, access control, and common attack classes with hands-on exploitation [LNMIIT Jaipur | Security]
-Design and Analysis of Algorithms: Greedy and divide-and-conquer strategies, Dynamic programming, NP-completeness [LNMIIT Jaipur | Algorithms & Theory]
-Advanced Data Structures and Algorithms: Balanced trees, Hashing, advanced graph algorithms, Tries,  Maximum flow and flow network, Sorting networks, Computational geometry  [LNMIIT Jaipur | Algorithms & Theory]
+Business Finance: Valuations, Risk and return, Cost of capital, Time value of money; Financial statements, Financial ratios, Forecasting [IIIT Hyderabad | Professional]
+Computer Security: Common attack classes with hands-on exploitation, Cryptographic primitives, authentication protocols; access control, CIA triad [LNMIIT Jaipur | Security]
+Design and Analysis of Algorithms: Dynamic programming, Greedy and divide-and-conquer strategies, NP-completeness [LNMIIT Jaipur | Algorithms & Theory]
+Advanced Data Structures and Algorithms: Advanced graph algorithms, Maximum flow and flow network, Balanced trees, Tries; Hashing, Sorting networks, Computational geometry [LNMIIT Jaipur | Algorithms & Theory]
 Theory of Computation: Automata, formal languages, decidability and computational complexity [LNMIIT Jaipur | Algorithms & Theory]
-Computer Organization and Architecture: Instruction sets, pipelining, memory hierarchy and caching [LNMIIT Jaipur | Systems \& Networking]
-Artificial Intelligence: Search, knowledge representation, planning and reasoning under uncertainty [LNMIIT Jaipur | AI & Machine Learning]
-Deep Learning: Neural networks, Optimization algorithms, CNNs and DL for Computer vision, Parameters and Hyperparameters   [LNMIIT Jaipur | AI & Machine Learning]
-Natural Language Processing: Regular expressions, N Gram Language modelling, POS tagging, vector semantics and embeddings, information extraction; n-gram models in Python [LNMIIT Jaipur | AI & Machine Learning]
-Data Mining: Data preparation, Classification, Market basket analysis, Pattern discovery, clustering, association rules, Outlier analysis [LNMIIT Jaipur | Data & Databases]
-Introduction to Data Science: Statistical analysis and Hypothesis testing, Data preprocessing, Classification algorithms, Text analytics [LNMIIT Jaipur | Data & Databases]
+Computer Organization and Architecture: Pipelining, memory hierarchy and caching, instruction sets [LNMIIT Jaipur | Systems & Networking]
+Artificial Intelligence: Search, planning and reasoning under uncertainty, knowledge representation [LNMIIT Jaipur | AI & Machine Learning]
+Deep Learning: CNNs and DL for Computer vision, Neural networks, Optimization algorithms; Parameters and Hyperparameters [LNMIIT Jaipur | AI & Machine Learning]
+Natural Language Processing: Vector semantics and embeddings, N Gram Language modelling, n-gram models in Python; POS tagging, information extraction, Regular expressions [LNMIIT Jaipur | AI & Machine Learning]
+Data Mining: Classification, clustering, association rules, Pattern discovery; Market basket analysis, Outlier analysis, Data preparation [LNMIIT Jaipur | Data & Databases]
+Introduction to Data Science: Classification algorithms, Text analytics, Statistical analysis and Hypothesis testing; Data preprocessing [LNMIIT Jaipur | Data & Databases]
 Big Data Computing: Distributed processing and large-scale analytics with PySpark [LNMIIT Jaipur | Distributed & Parallel | minor]
-Information and Database Management Systems: Relational modelling, normalisation, query processing and transactions [LNMIIT Jaipur | Data & Databases]
-Information Security & Privacy: Security principles, Access control, privacy models, Containerization, Privacy, Water marking and steganography [LNMIIT Jaipur | Security]
+Information and Database Management Systems: Query processing and transactions, relational modelling, normalisation [LNMIIT Jaipur | Data & Databases]
+Information Security & Privacy: Access control, privacy models, Containerization; Water marking and steganography, Security principles, Privacy [LNMIIT Jaipur | Security]
 Blockchain Foundation & Smart Contracts: Consensus mechanisms, Bitcoin basics [LNMIIT Jaipur | Distributed & Parallel | minor]
-Quantum Computing and Quantum Information: Qubits, quantum gates, bell states, no cloning theorem, quantum circuits Shor's algorithm [LNMIIT Jaipur | Mathematics]
-Knowledge Representation and Reasoning: Logical formalisms (propositional logic and F Predicate calculus), frame based, semantic nets,  [LNMIIT Jaipur | AI & Machine Learning]
+Quantum Computing and Quantum Information: Shor's algorithm, quantum circuits, quantum gates; Qubits, Bell states, no cloning theorem [LNMIIT Jaipur | Mathematics]
+Knowledge Representation and Reasoning: Logical formalisms (propositional logic and F Predicate calculus), frame based, semantic nets [LNMIIT Jaipur | AI & Machine Learning]
 Digital Image Processing (UG): Image enhancement, filtering and feature extraction [LNMIIT Jaipur | AI & Machine Learning]
-Advanced Programming I: Java and Object oriented programming, Exception handling,  [LNMIIT Jaipur | Software Engineering]
+Advanced Programming I: Java and Object oriented programming, Exception handling [LNMIIT Jaipur | Software Engineering]
 Computer Programming: Programming fundamentals, control flow and problem decomposition [LNMIIT Jaipur | Software Engineering]
-Software Engineering: Requirements, development lifecycles, testing strategies, cost estimation, UML Diagrams. [LNMIIT Jaipur | Software Engineering]
+Software Engineering: Testing strategies, development lifecycles, UML Diagrams; Requirements, cost estimation [LNMIIT Jaipur | Software Engineering]
 Integrated Software Development Lab: Team-based development of a complete software project [LNMIIT Jaipur | Software Engineering]
-Digital Systems: Boolean logic, combinational and sequential circuit design [LNMIIT Jaipur | Systems \& Networking]
+Digital Systems: Boolean logic, combinational and sequential circuit design [LNMIIT Jaipur | Systems & Networking]
 Basic Electronics: Signals devices, amplifiers, logic gates and analogue circuit fundamentals [LNMIIT Jaipur | Foundations]
-Discrete Mathematical Structures: Logic, set theory, combinatorics, graph theory and proof techniques [LNMIIT Jaipur | Mathematics]
-Probability and Statistics: Distributions, Probabilistic inequalities, Weak and strong law of large numbers, Central limit theorem,  estimation and hypothesis testing [LNMIIT Jaipur | Mathematics]
+Discrete Mathematical Structures: Graph theory, combinatorics, proof techniques; Logic, set theory [LNMIIT Jaipur | Mathematics]
+Probability and Statistics: Estimation and hypothesis testing, Central limit theorem, Distributions; Probabilistic inequalities, Weak and strong law of large numbers [LNMIIT Jaipur | Mathematics]
 Optimization Techniques and Applications: Linear and non-linear programming, convexity and search methods [LNMIIT Jaipur | Mathematics]
-Mathematics I / II / III: Calculus, differential equations, linear algebra sequences,complex numbers and complex integrals [LNMIIT Jaipur | Mathematics]
+Mathematics I / II / III: Calculus, differential equations, linear algebra sequences, complex numbers and complex integrals [LNMIIT Jaipur | Mathematics]
 Classical Physics: Mechanics, electromagnetism and waves [LNMIIT Jaipur | Foundations]
 Nuclear Physics: Nuclear structure, radioactivity and particle interactions [LNMIIT Jaipur | Foundations]
 Economics for Engineers: Micro economics, Demand and supply analysis, Production analysis, Cost and investment analysis, market structures and Macroeconomics [LNMIIT Jaipur | Professional]
 Organizational Behaviour: Human psychology at work, team dynamics and motivation [LNMIIT Jaipur | Professional]
 Psychology, Technology and Society: Human cognition, Social cognition and group dynamics, Stress adjustment and Coping, Technology impact [LNMIIT Jaipur | Professional]
-Environment and Human Behavior: Influence of environment and risk perception, Social norms and dilemmas, [LNMIIT Jaipur | Professional]
+Environment and Human Behavior: Influence of environment and risk perception, Social norms and dilemmas [LNMIIT Jaipur | Professional]
 Environmental Ecology & Biology: Ecosystems, biodiversity and environmental impact [LNMIIT Jaipur | Foundations]
 Technical Communication in English: Technical writing, documentation, presentation, phonetics [LNMIIT Jaipur | Professional]
 Value Education and Ethics: Codes of ethics, Rights and duties, Work ethics [LNMIIT Jaipur | Professional]
-Working with Containers: Docker, Docker Compose and Swarm for building, networking and orchestrating images [Educative.io | Software Engineering]
-Flask --- Develop Web Applications in Python: Routing, templating, forms and deployment of Python web services with Flask and Jinja [Educative.io | Software Engineering]
+Working with Containers: Docker, Docker Compose and Swarm for building, networking and orchestrating images [Educative.io | Software Engineering | featured | link=https://www.educative.io/verify-certificate/Y5xyKBov0ppTp41gXrqlx5c3LGP7RAWBVHJ | cert=cert-demo.svg]
+Flask --- Develop Web Applications in Python: Routing, templating, forms and deployment of Python web services with Flask and Jinja [Educative.io | Software Engineering | link=https://www.educative.io/verify-certificate/j2l3BzfZ3O94zqGqKSjXR9PNLqr7uA]
 \end{comment}
 % -----------------------------------
 \section*{Skills}

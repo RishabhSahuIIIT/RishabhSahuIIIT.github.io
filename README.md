@@ -155,16 +155,60 @@ Note that `&` must be escaped as `\&` in the `\item` lines — LaTeX reads a
 bare `&` as an alignment tab. The comment block needs no escaping, since
 LaTeX never parses it.
 
-**How the section renders.** *Selected coursework* comes first, always
-open. Below it, one row per category: the category name on the left, its
-courses on the right, each with a one-line summary that expands to the full
-description. Three rules shape the rows:
+**Order inside a description matters.** Before a course is expanded the
+site shows only the lead of its description: the first clause (up to a
+semicolon), capped at about nine words and trimmed back to a whole
+comma-separated entry. So put what you most want read first, and a semicolon
+where that headline part ends:
 
-- **Category labels** are either a filled box in the category's own hue with
-  theme-coloured text (`courses.labelStyle: "box"`, the default) or the name
-  alone in that hue (`"text"`). All boxes are the same width. Ink colour is
-  picked per box by whichever of the theme's light or dark text gives the
-  higher contrast, so labels stay readable in every palette.
+```latex
+\item \textbf{Compilers:} LLVM IR generation, optimisation passes written in C++,
+      dataflow analysis; lexing, parsing, semantic analysis [IIIT Hyderabad | Compilers | featured]
+```
+
+shows as "Compilers — LLVM IR generation, optimisation passes written in
+C++…" until it is opened.
+
+**How the section renders.** *Selected coursework* comes first, always
+open, and it is the colourful part: each card is filled with a colour of its
+own, the next hue round the colour wheel in the order the cards appear. By
+default the colours are deep and the text on them is white, at about 6:1.
+In dark mode the same hues are a step lighter and slightly less saturated
+(white text about 5:1): a deep colour sits closer to a dark page, so it
+needs the lift to stand apart, and full saturation glares against black.
+The type is set larger and heavier than on a plain card (name 15.5px
+bold, description 13px medium), because type on a colour has to work harder
+than type on the page. The wheel is not used whole: a deep yellow is olive,
+a deep orange is rust and a deep lime is moss, so the cards run from green
+round through blue and purple to red and leave out everything between.
+`courses.featuredInk: "dark"` gives the other treatment, dark text (at
+least 5.5:1) on brighter colours; there orange and amber are kept, at their
+own brightness rather than darkened to match the others. (Category outlines
+skip yellow and orange too: a thin line cannot be that light and still show
+on a pale page.) These colours
+say nothing about category; anyone who wants categories has the index
+beneath, which is deliberately quieter, its labels plain boxes edged in
+their category colours. When a
+self-directed course is featured too, that block splits in two
+with a vertical rule between: **University** on the left, **Self-directed**
+on the right (on phones and narrow windows the two stack, the rule turning
+horizontal). Below it, one row per category: the category name on the left, its
+courses on the right, each with that lead. A line marked **+** has more:
+click or tap the line and the full description opens beneath it, in place.
+(Clicking the category label on a wide screen opens the whole category as
+cards instead.) Three rules shape the rows:
+
+- **Category labels** come in three styles, set by `courses.labelStyle`:
+  `"outline"` (the default: a plain box edged in the category's own hue),
+  `"box"` (filled with it) or `"text"` (the name alone in that hue). All
+  boxes are the same width. On a filled box or card the ink is picked by
+  whichever of light or dark text gives the higher contrast, so it stays
+  readable in every palette.
+- **Featured cards** are each filled with their own colour
+  (`courses.featuredStyle: "colour"`, the default) or left plain
+  (`"plain"`). Their text is white on deep colours
+  (`courses.featuredInk: "light"`, the default) or dark on brighter ones
+  (`"dark"`). All three choices have switches in the editor under Courses.
 - **`minor` courses** drop into a quieter second set of rows at the bottom,
   uncoloured. Those rows are not labelled as second-tier: `courses.altNames`
   gives each a neighbouring name for the same territory (for example
@@ -173,8 +217,79 @@ description. Three rules shape the rows:
   edX or "online") sit in their own block after the degree coursework,
   grouped by provider.
 
-On phones each category collapses to its heading; tapping it opens the
-courses. The Selected coursework titles stay visible above.
+On phones each category collapses to its heading; tapping it lists the
+courses, and tapping a course opens its description. The Selected
+coursework titles stay visible above as compact names; tapping one, or the
+heading, opens their descriptions.
+Everything that opens on a tap says so: headings, category labels and the
+Selected coursework names carry a small chevron, and a course line with more
+to read has a ringed **+** at its right edge that turns to **−** when open.
+
+**Course links and certificates.** Any course can point at its course page
+or certificate, and show the certificate itself in a popup. Two optional
+entries in the bracketed tail of a comment-block line:
+
+```latex
+Working with Containers: Docker, Docker Compose and Swarm [Educative.io | Software Engineering | featured | link=https://www.educative.io/verify-certificate/...]
+Some Course: what it covered [Coursera | AI & Machine Learning | cert=cert-some-course.pdf]
+```
+
+| Entry | What it is | How it shows |
+|---|---|---|
+| `link=` | The course page, or the certificate's own verification page | A link on the course: "Verify certificate" when the address mentions a certificate, otherwise "Course page" |
+| `cert=` | An image or PDF of the certificate: a file in `assets/`, or a direct link to one | A **View certificate** button that opens it in a rectangle over the page |
+| `popup=page` | Show the `link=` page in the popup instead of a file | The same button, with the page in a frame |
+
+The popup shows an image as an image and anything else (a PDF, an
+embeddable page) in a frame. Nothing is downloaded until it is opened, Esc
+or a click outside closes it, and **Open in new tab** is always there:
+phones often won't draw a PDF inside a page, and some sites refuse to be
+framed at all.
+
+`assets/cert-demo.svg` is a placeholder so the popup can be seen working:
+the Docker course points at it. Replace the file, or change the name after
+`cert=` to your own image or PDF.
+
+**Showing the certificate page instead of a file.** With `popup=page` (or
+**Popup shows: link page** in the editor) the button opens the page at
+`link=` inside the popup. Whether that works is up to the other site: many
+send a header (`X-Frame-Options`, or a `frame-ancestors` rule) telling
+browsers not to show them inside another page, and the frame then simply
+stays blank. A script on the page cannot detect that, so the popup always
+carries an "open it in a new tab" line beneath a framed page, and the
+editor's **check page** button asks the dev server to read those headers and
+tells you beforehand whether the page will show. The framed page is
+sandboxed, so it cannot navigate your site away.
+
+The same two can be set from the editor instead: right-click the course and
+fill in **Link**, **Certificate** and **Popup shows** (stored in
+`courses.links` in `site-config.json`, which wins over the line in
+`resume.tex`). There,
+**fetch into assets** downloads the image or PDF at a link into your image
+folder, so the site shows its own copy instead of depending on that link;
+the dev server checks that what came back really is an image or a PDF
+(15 MB at most) before saving it as `cert-<course>.<type>`. Commit the file
+with the site. Use `link=` / `cert=` in the comment block only, not on the
+`\item` lines: a `%` or `#` in an address would break LaTeX there.
+
+**Courses in the PDF.** The same `\item` lines feed the PDF, and three
+settings near the top of `resume.tex` (under *COURSES IN THE PDF*) decide
+what it prints:
+
+| Setting | Effect |
+|---|---|
+| `\pdfcoursesfeaturedonlytrue` / `false` | Print only the lines flagged `featured`, or every `\item` line |
+| `\renewcommand{\pdfcoursestyle}{full}` | Name and the whole description |
+| `\renewcommand{\pdfcoursestyle}{brief}` | Name and the description up to its first semicolon |
+| `\renewcommand{\pdfcoursestyle}{names}` | Names only, run together on a line or two |
+| `\pdfcoursessourcetrue` / `false` | Print or drop "(IIIT Hyderabad)" after each |
+
+The bracketed `[Source | Category | flags]` tail is never printed as
+written. This works through `\courselist`, the line after
+`\begin{itemize}` in the Courses section: it makes `\item` read each line
+apart instead of printing it verbatim (it needs the `xstring` package, part
+of every TeX Live). A course in the comment block stays website-only
+whatever its flags say, because LaTeX never reads a comment block.
 
 To move a course into the PDF, cut its line from the comment block
 and add it as an `\item` — the parser prefers the visible entry when a name
@@ -212,6 +327,16 @@ tech chips, and links. Nothing is hidden behind a click. Filters change what's
 - **Status** — Live demo (only shown when at least one project qualifies)
 - **Domain** — parent domains from `topics:`
 - **Tech** — keywords used by 2+ projects, top 12 by frequency
+
+**Filters know what is already selected.** With nothing selected the rail
+shows names only. Once any filter is on, every other filter shows a number:
+how many projects you would have if you clicked it, under the current
+combine mode. A filter that would leave none has its text faded; its box
+and border stay as they are. It can still be clicked, but you can see
+beforehand that the combination is empty.
+A selected filter shows how many of the matching projects carry it. On
+phones the dropdowns do the same per option, and each open dropdown states
+how many projects match so far.
 
 **Combine logic** — a switch above the filters:
 
@@ -316,6 +441,11 @@ projects: {
   "Some Old Project": { show: false }
 }
 ```
+
+A featured project shows its one-line description by default. **Details**
+swaps that line for the bullet points, and **Summary** swaps back: the two
+say the same thing at different lengths, so only one is on screen at a
+time. A project that has only one of the two simply shows it.
 
 | Key | Effect |
 |---|---|
@@ -459,18 +589,26 @@ Below 640px the page is rearranged rather than shrunk:
 
 - **Menu.** The top-bar links fold into a menu button; the day/night toggle
   stays in the bar.
-- **Selected work.** The four featured projects stack as full-width rows,
-  diagram strip over title, sized so all four fit on one screen with no
-  frames or padding. Tap one to open it; **Less** closes it.
+- **Selected work.** The four featured projects stack as full-width rows:
+  diagram strip, title, then the one-line description (two lines of it on
+  tall phones, one on short ones), sized so all four fit on one screen with
+  no frames or padding. Tap one to open it, which swaps the description
+  for the bullet points; **Less** closes it.
 - **All projects.** Each card collapses to one line plus a **More** toggle.
   Turn this off with `media.mobileCollapse: false`.
-- **Courses.** Categories collapse to their headings (see Courses above).
+- **Courses.** Categories collapse to their headings, and each course opens
+  on a tap (see Courses above).
 - **Skills.** Three cards to a row.
 - **Internship.** Its diagram is sized so the diagram, title and dates fit
   on one screen.
 
 The 860px breakpoint described under "The All Projects section" is separate:
 it switches the filter rail to dropdowns.
+
+Phones can also have their own text size and spacing: `sizes.phone.textScale`
+and `sizes.phone.density` in `site-config.json`, applied below 640px only and
+set from the editor's **Phone text size** / **Phone density** sliders. Left
+unset, phones use the general values.
 
 
 ## Page weight
@@ -479,15 +617,20 @@ Measured against the visitor view (`/live`), gzip-compressed:
 
 | File | Size |
 |---|---|
-| `script.js` | 61 KB |
-| `style.css` | 26 KB |
-| `assets/resume.tex` | 13 KB |
+| `script.js` | 65 KB |
+| `style.css` | 28 KB |
+| `assets/resume.tex` | 16 KB |
 | `site-config.json` | 5 KB |
 | `index.html`, `projects.js`, `theme-init.js` | 7 KB |
-| **Total, 7 requests** | **about 113 KB** |
+| **Total, 7 requests** | **about 121 KB** |
 
-First paint is about 1.7 s on a throttled slow-4G connection with a 4x CPU
-slowdown. `editor.js` (the largest file in the folder) is never requested by
+On a throttled slow-4G connection with a 4x CPU slowdown, the first paint
+comes at about 0.8 s and the resume content is on screen at about 1.6 s.
+Those figures are from a copy served with gzip, as GitHub Pages serves it;
+`dev_server.py` sends files uncompressed, so timing a load against it reads
+about twice as slow and says nothing about the live site. First paint waits
+only for `style.css`, so that file's size is the one that matters most.
+`editor.js` (the largest file in the folder) is never requested by
 a visitor. Three habits keep it this way: images load lazily, anything only
 the editor needs stays in `editor.js`, and `site-config.json` carries only
 what the page shows.
@@ -649,6 +792,9 @@ platform feature the browser already ships. Links go to MDN.
 | Small-viewport units (`svh`) with `min()` | Size the phone project rows so four fit one screen, toolbars included | [MDN](https://developer.mozilla.org/en-US/docs/Web/CSS/length#relative_length_units_based_on_viewport) |
 | `currentColor` | Skill symbols take the theme accent from CSS, so one drawing serves every palette | [MDN](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value#currentcolor_keyword) |
 | `<details>` / `<summary>` | The "How it works" diagram toggle, with no script | [MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details) |
+| `<dialog>` with `showModal()` | The certificate popup: the browser supplies the backdrop, focus trapping and Esc-to-close | [MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/dialog) |
+| `-webkit-line-clamp` | Cuts the phone cards' summary line to one or two lines with an ellipsis | [MDN](https://developer.mozilla.org/en-US/docs/Web/CSS/-webkit-line-clamp) |
+| Height media queries (`max-height`) | Short phones get one summary line and tighter gaps so four cards still fit | [MDN](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/height) |
 
 ### JavaScript
 
@@ -666,6 +812,9 @@ platform feature the browser already ships. Links go to MDN.
 | Inline SVG built from strings | Skill symbols and project diagrams: no image requests, sharp at any size | [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/SVG_In_HTML_Introduction) |
 | `SVGGraphicsElement.getBBox()` | Trims each diagram's viewBox to its drawn content so none carries blank margins | [MDN](https://developer.mozilla.org/en-US/docs/Web/API/SVGGraphicsElement/getBBox) |
 | `getComputedStyle()` on custom properties | Reads `--theme-id` / `--theme-hash` to know which stylesheet is active | [MDN](https://developer.mozilla.org/en-US/docs/Web/API/Window/getComputedStyle) |
+| Event delegation with `Element.closest()` | One listener handles every course line, card toggle and Details button, and survives re-renders | [MDN](https://developer.mozilla.org/en-US/docs/Web/API/Element/closest) |
+| Same-origin `<iframe>` + CSS `transform: scale()` | The editor's phone view: a real phone-width copy of the page, enlarged without changing its layout, driven from the parent page | [MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe) |
+| TeX delimited macro arguments (`\def\item\textbf#1#2[#3]`) | Lets the PDF read a course line apart (name, description, tail) without changing how the line is written | [TeX by Topic, "Macros"](https://texdoc.org/serve/texbytopic/0) |
 | `localStorage` | Theme and palette choice, and the preview DPI calibration | [MDN](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage) |
 
 ### The parser
@@ -742,6 +891,26 @@ editing, and is organised into five tabs:
 | **Visibility** | Hidden sections, cards, courses and filters, with restore chips |
 | **Source** | The matching lines of `resume.tex`, opened at the right place for editing |
 
+**Phone view.** The **phone view** button at the top of the editor swaps
+the page area for a phone-width copy of the site, so the phone layout can be
+edited from the desktop without going to `/preview`. It is a real copy at
+that width, so every phone rule and tap behaviour is the genuine one.
+
+- **device** picks the phone's size; **size** shows it at 100% to 200%, or
+  fitted to the window. Enlarging changes only how big it is drawn, not the
+  layout, so small items are easier to hit. **tall** stretches the phone to
+  the window height to show more of the page at once.
+- **Right-click anything in the phone** and Inspect opens for it, exactly as
+  on the desktop page. Clicks work as taps.
+- Edits made in the editor show in the phone straight away, unsaved ones
+  included; open cards stay open. Theme and palette follow the editor.
+  **reload** loads the phone again from the files on disk.
+- **back to desktop** returns to the normal page. The choice of view,
+  device and size is remembered.
+
+`/preview` is still the place for comparing device frames side by side at
+true physical size; phone view is for editing.
+
 Across those tabs it covers:
 
 - **Palette** — switch between the `style-*.css` files
@@ -779,11 +948,14 @@ top of the colour section switch both the page theme and which override set
 you're editing; the line beneath shows how many overrides each currently has.
 Domain colours are the exception — they're shared across both themes, since a
 domain's hue shouldn't change when the page does.
-- **Size** — text scale and spacing sliders, globally
+- **Size** — text scale and spacing sliders, globally, plus a separate pair
+  for phones (below 640px) with a "same as desktop" reset
 - **Per-section text** — an independent scale for each section
 - **Skill cards** — icon or text, which symbol, a file badge, or an official
   icon file (see "Skill symbols")
-- **Courses** — box or text category labels; hide a course
+- **Courses** — outline, box or text category labels; coloured or plain
+  featured cards; hide a course; give a course a
+  link and a certificate, and download a certificate file into `assets/`
 - **Project diagrams** — placement, image / GIF / both, per-project GIF file
 
 **Colour rows say what they do.** Each row names its role ("card
@@ -985,6 +1157,20 @@ replaced by grouped chips.
 
 **`style.css` edits not showing.** Hard-refresh (Cmd/Ctrl+Shift+R). With
 `dev_server.py` a normal refresh is enough.
+
+**The PDF prints `[IIIT Hyderabad | Compilers | featured]` after each
+course.** `\courselist` is missing from the line after `\begin{itemize}` in
+the Courses section, so the lines print as written.
+
+**LaTeX says "perhaps a missing \item" in Courses.** No course line
+qualified: with `\pdfcoursesfeaturedonlytrue`, at least one `\item` line
+must carry the `featured` flag.
+
+**The certificate popup is blank.** The file is a PDF on a phone (use
+**Open in new tab**), or the popup is set to show a web page that refuses to
+be shown inside another site (the editor's **check page** tells you). An
+image or PDF in **Certificate** always works, and "fetch into assets" makes
+a local copy of one.
 
 **Skill cards show names but no symbols.** `site-config.json` has no
 `symbols` block, usually because an older copy of the file was restored.

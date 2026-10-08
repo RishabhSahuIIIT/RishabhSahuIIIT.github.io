@@ -466,6 +466,114 @@ BACKUP_DIR   = '.site-config-backups'
 
 
 
+FETCH_MAX_BYTES = 15 * 1024 * 1024
+
+
+def fetch_remote_file(url, name=None, folder='assets'):
+    """Download an image or PDF from a link into the assets folder.
+
+    Used by the editor's "fetch into assets" button for course certificates,
+    so the site can show the file from its own folder instead of depending on
+    someone else's server each time a visitor opens it.
+
+    Returns (ok, info): info is {'file', 'bytes', 'kind'} or an error string.
+    Only http(s) links are followed, the size is capped, and the file type is
+    decided from the bytes themselves, never from the link or the server's
+    say-so, so a web page (or anything else) can't be saved as "a.pdf".
+    """
+    import re
+    import urllib.request
+    import urllib.parse
+    url = str(url or '').strip()
+    if not re.match(r'^https?://', url, re.I):
+        return False, 'only http:// and https:// links can be fetched'
+    try:
+        req = urllib.request.Request(url, headers={
+            'User-Agent': 'Mozilla/5.0 (portfolio dev server)',
+            'Accept': 'image/*,application/pdf,*/*;q=0.5'})
+        with urllib.request.urlopen(req, timeout=25) as r:
+            ctype = (r.headers.get('Content-Type') or '').split(';')[0].strip().lower()
+            data = r.read(FETCH_MAX_BYTES + 1)
+    except Exception as e:
+        return False, f'could not download: {e.__class__.__name__}: {e}'
+    if len(data) > FETCH_MAX_BYTES:
+        return False, f'file is larger than {FETCH_MAX_BYTES // (1024 * 1024)} MB'
+    head = data[:16]
+    if head.startswith(b'%PDF'):
+        ext = 'pdf'
+    elif head.startswith(b'\x89PNG\r\n\x1a\n'):
+        ext = 'png'
+    elif head.startswith(b'\xff\xd8\xff'):
+        ext = 'jpg'
+    elif head[:6] in (b'GIF87a', b'GIF89a'):
+        ext = 'gif'
+    elif head[:4] == b'RIFF' and data[8:12] == b'WEBP':
+        ext = 'webp'
+    elif ctype == 'image/svg+xml' and b'<svg' in data[:2048].lower():
+        ext = 'svg'
+    else:
+        what = ctype or 'an unrecognised type'
+        return False, (f'that link returned {what}, not an image or a PDF. '
+                       'If it is a web page, use it as the Link instead.')
+    base = str(name or '').strip() or os.path.basename(urllib.parse.urlparse(url).path)
+    base = re.sub(r'\.[A-Za-z0-9]{2,5}$', '', base)
+    base = re.sub(r'[^A-Za-z0-9]+', '-', base).strip('-').lower()[:60] or 'certificate'
+    fname = f'cert-{base}.{ext}'
+    ok, dest = _safe_path(os.path.join(folder, fname))
+    if not ok:
+        return False, 'refusing to write outside the site folder'
+    try:
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        with open(dest, 'wb') as f:
+            f.write(data)
+    except Exception as e:
+        return False, f'could not save: {e.__class__.__name__}: {e}'
+    return True, {'file': fname, 'bytes': len(data), 'kind': ext}
+
+
+def check_embeddable(url):
+    """Ask a web page whether it allows being shown inside another site.
+
+    A page refuses through one of two response headers: X-Frame-Options, or
+    a Content-Security-Policy with a frame-ancestors rule. A browser enforces
+    them silently (the frame just stays blank) and a script on the page can't
+    see them, which is why the editor asks this server to look instead.
+
+    Returns (ok, info): info is {'embeddable': True/False, 'reason': str},
+    or an error string when the page could not be reached at all.
+    """
+    import re
+    import urllib.request
+    import urllib.error
+    url = str(url or '').strip()
+    if not re.match(r'^https?://', url, re.I):
+        return False, 'only http:// and https:// links can be checked'
+    req = urllib.request.Request(url, headers={
+        'User-Agent': 'Mozilla/5.0 (portfolio dev server)', 'Accept': 'text/html,*/*;q=0.5'})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            headers, status = r.headers, r.status
+    except urllib.error.HTTPError as e:
+        headers, status = e.headers, e.code          # refusals still carry the headers
+    except Exception as e:
+        return False, f'could not reach the page: {e.__class__.__name__}: {e}'
+    xfo = (headers.get('X-Frame-Options') or '').strip().lower()
+    csp = '; '.join(headers.get_all('Content-Security-Policy') or [])
+    m = re.search(r'frame-ancestors\s+([^;]*)', csp, re.I)
+    if m:
+        allowed = m.group(1).split()
+        if '*' in allowed or 'https:' in allowed:
+            return True, {'embeddable': True, 'reason': 'its frame-ancestors rule allows any site'}
+        return True, {'embeddable': False,
+                      'reason': 'it only allows itself or named sites to show it '
+                                f'(frame-ancestors {" ".join(allowed) or "none"})'}
+    if xfo:
+        return True, {'embeddable': False, 'reason': f'it sends X-Frame-Options: {xfo}'}
+    if status >= 400:
+        return True, {'embeddable': False, 'reason': f'the page answered with an error (HTTP {status})'}
+    return True, {'embeddable': True, 'reason': 'no header forbids it'}
+
+
 def _safe_path(rel):
     """Resolve a user-typed path inside ROOT.
 
@@ -1187,6 +1295,38 @@ class DevHandler(http.server.SimpleHTTPRequestHandler):
             print("  ----------------------------------------------------")
             print("dev> ", end="", flush=True)
             self._send_json({'ok': True})
+            return
+
+        if path == '/__fetch-file':
+            try:
+                length = int(self.headers.get('Content-Length') or 0)
+                body = json.loads(self.rfile.read(length) or b'{}')
+            except Exception as e:
+                self._send_json({'ok': False, 'error': f'bad payload: {e}'})
+                return
+            ok, info = fetch_remote_file(body.get('url'), body.get('name'),
+                                         (body.get('folder') or 'assets').strip('/'))
+            print("\n  [editor] fetch " +
+                  (f"saved {info['file']} ({info['bytes']} bytes)" if ok else f"failed - {info}"))
+            print("dev> ", end="", flush=True)
+            out = {'ok': ok, 'error': None if ok else info}
+            if ok:
+                out.update(info)
+            self._send_json(out)
+            return
+
+        if path == '/__frame-check':
+            try:
+                length = int(self.headers.get('Content-Length') or 0)
+                body = json.loads(self.rfile.read(length) or b'{}')
+            except Exception as e:
+                self._send_json({'ok': False, 'error': f'bad payload: {e}'})
+                return
+            ok, info = check_embeddable(body.get('url'))
+            out = {'ok': ok, 'error': None if ok else info}
+            if ok:
+                out.update(info)
+            self._send_json(out)
             return
 
         if path == '/__save-tex':

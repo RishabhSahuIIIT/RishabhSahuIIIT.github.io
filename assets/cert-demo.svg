@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 850" font-family="Georgia, 'Times New Roman', serif">
+  <!-- Placeholder shown by the certificate popup until a real certificate replaces it. -->
+  <rect width="1200" height="850" fill="#f7f3ea"/>
+  <rect x="28" y="28" width="1144" height="794" fill="none" stroke="#b9a988" stroke-width="3"/>
+  <rect x="44" y="44" width="1112" height="762" fill="none" stroke="#b9a988" stroke-width="1" stroke-dasharray="6 6"/>
+  <text x="600" y="300" text-anchor="middle" font-size="76" letter-spacing="10" fill="#8a7a5c">DEMO IMAGE</text>
+  <text x="600" y="372" text-anchor="middle" font-size="30" fill="#8a7a5c">This is a placeholder, not a certificate.</text>
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="22" fill="#6d6048" text-anchor="middle">
+    <text x="600" y="492">Put your certificate (an image or a PDF) in assets/</text>
+    <text x="600" y="530">and point the course at it:  cert=your-file.pdf</text>
+    <text x="600" y="590">It is downloaded only when this popup is opened.</text>
+  </g>
+</svg>

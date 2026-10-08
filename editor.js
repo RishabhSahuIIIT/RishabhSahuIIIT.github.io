@@ -814,9 +814,260 @@
   function relayoutPage() {
     clearTimeout(relayoutPage._t);
     relayoutPage._t = setTimeout(function () {
+      if (phone.on) layoutPhone();
       if (window.__pfRedraw) { try { window.__pfRedraw(); } catch (e) {} }
       if (dock.selEl && dock.active === 'inspect') renderClonePreview();
     }, 240);
+  }
+
+  /* ============================================================
+     Phone view
+     ------------------------------------------------------------
+     Edit the phone layout from the desktop editor, without going to the
+     /preview page. The page area is replaced by a phone-width copy of the
+     site in a frame (a real copy at that width, so every phone rule, tap
+     behaviour and breakpoint is the genuine one), which can be shown
+     enlarged so small things are easy to hit. Right-click anything in it
+     and the same Inspect panel opens; every edit made in the panel is
+     applied to the phone at once, unsaved changes included.
+
+     The frame loads the site with ?editor=0 so it carries no editor of its
+     own. This editor listens inside it for right-clicks and hands it the
+     config being edited, through the page's own redraw hooks (applyToPhone).
+     ============================================================ */
+  var PHONE_DEVICES = [
+    ['iPhone SE', 375, 667], ['Small Android', 360, 740], ['iPhone 15', 393, 852],
+    ['Pixel 8', 412, 915], ['Large phone', 430, 932]
+  ];
+  var PHONE_ZOOMS = [['fit', 'Fit window'], ['1', '100%'], ['1.25', '125%'],
+                     ['1.5', '150%'], ['2', '200%']];
+  var phone = { on: false, dev: 2, zoom: '1.5', fill: false, ready: false,
+                stage: null, box: null, frame: null, scroll: null, info: null };
+  var PHONE_CSS = [
+    '#ed-phone-stage{position:fixed;top:0;left:0;bottom:0;right:var(--ed-w,400px);z-index:99990;',
+    '  display:none;flex-direction:column;background:var(--bg-soft,#e9e4d8);color:var(--ink,#222);',
+    '  font-family:var(--mono,ui-monospace,monospace);font-size:11px;}',
+    'html.ed-phone #ed-phone-stage{display:flex;}',
+    'html.ed-phone:not(.ed-docked) #ed-phone-stage{right:0;}',
+    'html.ed-phone body{overflow:hidden;}',
+    '.ed-ph-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:9px 14px;',
+    '  background:var(--bg,#f3ede1);border-bottom:1px solid var(--rule,#ccc);}',
+    '.ed-ph-bar b{letter-spacing:.1em;text-transform:uppercase;font-size:10.5px;}',
+    '.ed-ph-bar label{display:inline-flex;align-items:center;gap:5px;color:var(--muted,#777);}',
+    '.ed-ph-bar select,.ed-ph-bar button{font:inherit;color:inherit;background:var(--bg-soft,#eee);',
+    '  border:1px solid var(--rule,#ccc);border-radius:5px;padding:3px 7px;cursor:pointer;}',
+    '.ed-ph-bar button:hover{border-color:var(--accent,#b5452a);}',
+    '.ed-ph-bar .sp{flex:1;}',
+    '.ed-ph-info{color:var(--muted,#777);}',
+    '.ed-ph-hint{padding:5px 14px;color:var(--muted,#777);border-bottom:1px solid var(--rule,#ccc);}',
+    '.ed-ph-scroll{flex:1;overflow:auto;padding:18px;text-align:center;}',
+    '.ed-ph-box{display:inline-block;position:relative;overflow:hidden;text-align:left;',
+    '  border:1px solid var(--rule,#bbb);border-radius:14px;background:var(--bg,#fff);',
+    '  box-shadow:0 10px 34px rgba(0,0,0,.22);}',
+    '.ed-ph-box iframe{display:block;border:0;transform-origin:0 0;background:var(--bg,#fff);}',
+    '.ed-dock-ic.is-on{background:var(--accent,#b5452a);color:#fff;border-color:transparent;}'
+  ].join('');
+
+  function buildPhoneStage() {
+    if (phone.stage) return;
+    var st = el('style'); st.textContent = PHONE_CSS; document.head.appendChild(st);
+    try {
+      var saved = JSON.parse(localStorage.getItem('ed-phone') || '{}');
+      if (PHONE_DEVICES[saved.dev]) phone.dev = saved.dev;
+      if (saved.zoom) phone.zoom = String(saved.zoom);
+      phone.fill = !!saved.fill;
+    } catch (err) {}
+
+    var stage = el('div'); stage.id = 'ed-phone-stage';
+    var bar = el('div', 'ed-ph-bar');
+    bar.appendChild(el('b', null, 'Phone view'));
+
+    var dl = el('label', null, 'device ');
+    var ds = el('select');
+    PHONE_DEVICES.forEach(function (d, i) {
+      var o = el('option', null, d[0] + '  ' + d[1] + ' × ' + d[2]); o.value = i; ds.appendChild(o);
+    });
+    ds.value = phone.dev;
+    ds.addEventListener('change', function () { phone.dev = +ds.value; savePhone(); layoutPhone(); });
+    dl.appendChild(ds); bar.appendChild(dl);
+
+    var zl = el('label', null, 'size ');
+    var zs = el('select');
+    PHONE_ZOOMS.forEach(function (z) { var o = el('option', null, z[1]); o.value = z[0]; zs.appendChild(o); });
+    zs.value = phone.zoom;
+    zs.title = 'Show the phone larger than life so small things are easier to right-click';
+    zs.addEventListener('change', function () { phone.zoom = zs.value; savePhone(); layoutPhone(); });
+    zl.appendChild(zs); bar.appendChild(zl);
+
+    var fl = el('label'); var fc = el('input'); fc.type = 'checkbox'; fc.checked = phone.fill;
+    fl.title = 'Stretch the phone to the height of the window to see more of the page at once';
+    fc.addEventListener('change', function () { phone.fill = fc.checked; savePhone(); layoutPhone(); });
+    fl.appendChild(fc); fl.appendChild(document.createTextNode(' tall'));
+    bar.appendChild(fl);
+
+    var rl = el('button', null, 'reload');
+    rl.title = 'Load the phone copy again from the files on disk';
+    rl.addEventListener('click', function () { loadPhoneFrame(); });
+    bar.appendChild(rl);
+    phone.info = el('span', 'ed-ph-info', '');
+    bar.appendChild(phone.info);
+    bar.appendChild(el('span', 'sp'));
+    var ex = el('button', null, 'back to desktop');
+    ex.addEventListener('click', function () { setPhoneView(false); });
+    bar.appendChild(ex);
+    stage.appendChild(bar);
+    stage.appendChild(el('div', 'ed-ph-hint',
+      'Right-click anything in the phone to edit it. Clicks and taps work as they do on a phone. ' +
+      'Edits show here straight away; Save writes them.'));
+
+    var sc = el('div', 'ed-ph-scroll');
+    var box = el('div', 'ed-ph-box');
+    var fr = el('iframe'); fr.title = 'Phone view of the site';
+    fr.addEventListener('load', wirePhoneFrame);
+    box.appendChild(fr); sc.appendChild(box); stage.appendChild(sc);
+    document.body.appendChild(stage);
+    stage.addEventListener('contextmenu', function (ev) { ev.preventDefault(); ev.stopPropagation(); });
+    phone.stage = stage; phone.box = box; phone.frame = fr; phone.scroll = sc;
+    window.addEventListener('resize', function () { if (phone.on) layoutPhone(); });
+  }
+  function savePhone() {
+    try {
+      localStorage.setItem('ed-phone', JSON.stringify({ dev: phone.dev, zoom: phone.zoom, fill: phone.fill }));
+    } catch (err) {}
+  }
+  /* The frame keeps its true CSS width, so the site lays out exactly as on
+     that phone; a transform enlarges the picture without changing layout. */
+  function layoutPhone() {
+    if (!phone.stage) return;
+    var d = PHONE_DEVICES[phone.dev], w = d[1], h = d[2];
+    var availH = Math.max(240, phone.scroll.clientHeight - 38);
+    var availW = Math.max(200, phone.scroll.clientWidth - 38);
+    var s = phone.zoom === 'fit' ? Math.min(availH / h, availW / w, 3) : parseFloat(phone.zoom) || 1;
+    if (phone.fill) h = Math.max(h, Math.round(availH / s));
+    phone.frame.style.width = w + 'px';
+    phone.frame.style.height = h + 'px';
+    phone.frame.style.transform = 'scale(' + s + ')';
+    phone.box.style.width = Math.round(w * s) + 'px';
+    phone.box.style.height = Math.round(h * s) + 'px';
+    phone.info.textContent = w + ' × ' + h + ' px, shown at ' + Math.round(s * 100) + '%';
+  }
+  function loadPhoneFrame() {
+    phone.ready = false;
+    var u = location.pathname + '?editor=0&phoneview=' + Date.now();
+    phone.frame.src = u;
+  }
+  function wirePhoneFrame() {
+    var w, d;
+    try { w = phone.frame.contentWindow; d = phone.frame.contentDocument; } catch (err) { return; }
+    if (!w || !d || !d.body || !/phoneview=/.test(String(w.location.search))) return;
+    var tries = 0;
+    (function wait() {
+      if (w.__resumeData && w.__siteConfig && w.__pfRedraw) return ready();
+      if (tries++ < 120) setTimeout(wait, 100);
+    })();
+    function ready() {
+      var st = d.createElement('style');
+      st.textContent =
+        '.ed-selected{outline:2px dashed var(--accent,#8a5a44)!important;outline-offset:3px;}' +
+        '.reveal{opacity:1!important;transform:none!important;}';
+      d.head.appendChild(st);
+      d.addEventListener('contextmenu', onPageContext);
+      /* the phone's own sun/moon toggle changes the theme for both copies */
+      ['btn-day', 'btn-night'].forEach(function (id) {
+        var b = d.getElementById(id);
+        if (b) b.addEventListener('click', function () {
+          if (phone.syncing) return;
+          var ob = document.getElementById(id);
+          phone.syncing = true; if (ob) ob.click(); phone.syncing = false;
+          setTimeout(syncEditorToTheme, 60);
+        });
+      });
+      phone.ready = true; phone.last = {};
+      syncPhoneLook();
+      pushToPhone(true);
+    }
+  }
+  /* Keep the phone on the same theme and stylesheet as the page behind it. */
+  function syncPhoneLook() {
+    if (!phone.on || !phone.ready) return;
+    var d = phone.frame.contentDocument; if (!d) return;
+    var want = document.documentElement.getAttribute('data-theme');
+    if (want && d.documentElement.getAttribute('data-theme') !== want && !phone.syncing) {
+      var b = d.getElementById(want === 'dark' ? 'btn-night' : 'btn-day');
+      phone.syncing = true; if (b) b.click(); phone.syncing = false;
+    }
+    var mine = document.getElementById('main-style'), theirs = d.getElementById('main-style');
+    if (mine && theirs && theirs.getAttribute('href') !== mine.getAttribute('href')) {
+      theirs.onload = function () { pushToPhone(true); };
+      theirs.href = mine.getAttribute('href');
+    }
+  }
+  /* Hand the phone the config as it stands in the editor right now. Only
+     the parts whose settings changed are redrawn, and cards that were open
+     stay open, so an edit doesn't reset what you were looking at. All of
+     this lives here rather than in script.js so visitors don't download it. */
+  var PHONE_KEYS = ['colors', 'sizes', 'sections', 'media', 'filters', 'courses',
+                    'symbols', 'text', 'logos'];
+  function applyToPhone(force) {
+    var w = phone.frame.contentWindow, d = phone.frame.contentDocument;
+    if (!w || !d || !w.__siteConfig || !state.config) return;
+    var changed = {}, any = false;
+    if (!phone.last) phone.last = {};
+    PHONE_KEYS.forEach(function (k) {
+      if (state.config[k] === undefined) return;
+      var j = JSON.stringify(state.config[k]);
+      if (j === phone.last[k]) return;
+      phone.last[k] = j; changed[k] = true; any = true;
+      w.__siteConfig[k] = JSON.parse(j);
+    });
+    if (!any && !force) return;
+    var open = [];
+    d.querySelectorAll('.m-collapsible.is-open').forEach(function (n) {
+      open.push(n.getAttribute('data-entry') || n.getAttribute('data-title'));
+    });
+    var data = w.__resumeData || {};
+    if (force || changed.colors || changed.sizes || changed.media) {
+      if (w.__applyColourOverrides) w.__applyColourOverrides();
+    }
+    if (changed.media || changed.symbols || changed.logos) {
+      if (w.__pfRenderSkills) w.__pfRenderSkills(data.skills || []);
+      if (w.__pfRenderWork) w.__pfRenderWork();
+    }
+    if (changed.courses || changed.media) {
+      if (w.__pfRenderCourses) w.__pfRenderCourses(data.courses || []);
+    }
+    if ((changed.sections || changed.text) && w.__pfApplyText) w.__pfApplyText();
+    if (w.__pfRedraw) w.__pfRedraw();
+    open.forEach(function (name) {
+      d.querySelectorAll('.m-collapsible:not(.is-open)').forEach(function (n) {
+        if ((n.getAttribute('data-entry') || n.getAttribute('data-title')) !== name) return;
+        var b = n.querySelector(':scope > .m-more');
+        if (b) b.click();
+      });
+    });
+  }
+  function pushToPhone(force) {
+    if (!phone.on || !phone.ready) return;
+    clearTimeout(pushToPhone._t);
+    pushToPhone._t = setTimeout(function () {
+      try { applyToPhone(force); }
+      catch (err) { console.warn('[dev-editor] phone view update failed', err); }
+    }, force ? 0 : 140);
+  }
+  function setPhoneView(on) {
+    buildPhoneStage();
+    phone.on = !!on;
+    document.documentElement.classList.toggle('ed-phone', phone.on);
+    if (dock.phoneBtn) dock.phoneBtn.classList.toggle('is-on', phone.on);
+    if (dock.selEl) { dock.selEl.classList.remove('ed-selected'); dock.selEl = null; }
+    try { localStorage.setItem('ed-phone-on', phone.on ? '1' : '0'); } catch (err) {}
+    if (phone.on) {
+      layoutPhone();
+      if (!phone.ready) loadPhoneFrame(); else { syncPhoneLook(); pushToPhone(true); }
+      note('Phone view: right-click anything in the phone to edit it.');
+    } else {
+      relayoutPage();
+    }
   }
 
   function dockify() {
@@ -838,7 +1089,11 @@
     var x = el('button', 'ed-dock-ic', '\u00d7');
     x.title = 'Close (Esc)';
     x.addEventListener('click', function (e) { e.stopPropagation(); hide(); });
-    top.appendChild(wide); top.appendChild(x);
+    var ph = el('button', 'ed-dock-ic', '\u25af phone view');
+    ph.title = 'Edit the phone layout here: a phone-width copy of the page, enlarged if you like';
+    ph.addEventListener('click', function (e) { e.stopPropagation(); setPhoneView(!phone.on); });
+    dock.phoneBtn = ph;
+    top.appendChild(ph); top.appendChild(wide); top.appendChild(x);
     hd.appendChild(top);
     var tabs = el('div', 'ed-tabs');
     DOCK_TABS.forEach(function (t) {
@@ -1036,6 +1291,11 @@
   function renderClonePreview() {
     var src = dock.selEl;
     var body = document.getElementById('ed-pvwin-body');
+    if (src && body && src.ownerDocument !== document) {
+      body.innerHTML = '';
+      body.appendChild(el('div', 'ed-note', 'Selected in the phone view (outlined there).'));
+      return true;
+    }
     if (!src || !body || !document.body.contains(src)) return false;
     var r = src.getBoundingClientRect();
     var w = Math.max(1, r.width), h = Math.max(1, r.height);
@@ -1489,11 +1749,19 @@
       return cfg.courses;
     }
     function paintLabelStyle() {
-      var s = (coursesStore().labelStyle === 'text') ? 'text' : 'box';
-      lsBox.style.background = s === 'box' ? 'var(--accent)' : 'transparent';
-      lsBox.style.color = s === 'box' ? '#fff' : 'inherit';
-      lsTxt.style.background = s === 'text' ? 'var(--accent)' : 'transparent';
-      lsTxt.style.color = s === 'text' ? '#fff' : 'inherit';
+      var v = coursesStore().labelStyle;
+      var s = (v === 'text' || v === 'box') ? v : 'outline';
+      [[lsOut, 'outline'], [lsBox, 'box'], [lsTxt, 'text']].forEach(function (p) {
+        p[0].style.background = s === p[1] ? 'var(--accent)' : 'transparent';
+        p[0].style.color = s === p[1] ? '#fff' : 'inherit';
+      });
+      var col = coursesStore().featuredStyle !== 'plain';
+      fsCol.style.background = col ? 'var(--accent)' : 'transparent'; fsCol.style.color = col ? '#fff' : 'inherit';
+      fsPln.style.background = col ? 'transparent' : 'var(--accent)'; fsPln.style.color = col ? 'inherit' : '#fff';
+      var wht = coursesStore().featuredInk !== 'dark';
+      fiWht.style.background = wht ? 'var(--accent)' : 'transparent'; fiWht.style.color = wht ? '#fff' : 'inherit';
+      fiDrk.style.background = wht ? 'transparent' : 'var(--accent)'; fiDrk.style.color = wht ? 'inherit' : '#fff';
+      fiRow.style.display = col ? '' : 'none';
     }
     function setLabelStyle(s) {
       coursesStore().labelStyle = s;
@@ -1505,14 +1773,56 @@
         note('Label style set to "' + s + '". Save + reload to see it.');
       }
     }
+    var lsOut = el('button', 'ed-pick', 'outline');
+    lsOut.style.width = 'auto'; lsOut.style.padding = '3px 9px';
+    lsOut.title = 'A plain box edged in the category colour';
+    lsOut.addEventListener('click', function (e) { e.stopPropagation(); setLabelStyle('outline'); });
     lsBox.addEventListener('click', function (e) { e.stopPropagation(); setLabelStyle('box'); });
     lsTxt.addEventListener('click', function (e) { e.stopPropagation(); setLabelStyle('text'); });
-    clRow.appendChild(lsBox); clRow.appendChild(lsTxt);
+    clRow.appendChild(lsOut); clRow.appendChild(lsBox); clRow.appendChild(lsTxt);
     panel.appendChild(clRow);
+    /* The Selected coursework cards: each filled with its own colour, or plain. */
+    var fsRow = el('div', 'ed-row');
+    fsRow.appendChild(el('label', null, 'Featured cards'));
+    var fsCol = el('button', 'ed-pick', 'coloured');
+    var fsPln = el('button', 'ed-pick', 'plain');
+    [fsCol, fsPln].forEach(function (b) { b.style.width = 'auto'; b.style.padding = '3px 9px'; });
+    function setFeaturedStyle(v) {
+      coursesStore().featuredStyle = v;
+      markDirty(); paintLabelStyle();
+      if (window.__pfRenderCourses && window.__resumeData) {
+        window.__pfRenderCourses(window.__resumeData.courses || []);
+      }
+    }
+    fsCol.addEventListener('click', function (e) { e.stopPropagation(); setFeaturedStyle('colour'); });
+    fsPln.addEventListener('click', function (e) { e.stopPropagation(); setFeaturedStyle('plain'); });
+    fsRow.appendChild(fsCol); fsRow.appendChild(fsPln);
+    panel.appendChild(fsRow);
+    /* Text on the coloured cards: white on deep colours, or dark on bright ones. */
+    var fiRow = el('div', 'ed-row');
+    fiRow.appendChild(el('label', null, 'Card text'));
+    var fiWht = el('button', 'ed-pick', 'white');
+    var fiDrk = el('button', 'ed-pick', 'dark');
+    [fiWht, fiDrk].forEach(function (b) { b.style.width = 'auto'; b.style.padding = '3px 9px'; });
+    fiWht.title = 'White text on deep colours';
+    fiDrk.title = 'Dark text on brighter colours';
+    function setFeaturedInk(v) {
+      coursesStore().featuredInk = v;
+      markDirty(); paintLabelStyle();
+      if (window.__pfRenderCourses && window.__resumeData) {
+        window.__pfRenderCourses(window.__resumeData.courses || []);
+      }
+    }
+    fiWht.addEventListener('click', function (e) { e.stopPropagation(); setFeaturedInk('light'); });
+    fiDrk.addEventListener('click', function (e) { e.stopPropagation(); setFeaturedInk('dark'); });
+    fiRow.appendChild(fiWht); fiRow.appendChild(fiDrk);
+    panel.appendChild(fiRow);
     panel._paintLabelStyle = paintLabelStyle;
     panel.appendChild(el('div', 'ed-note',
-      'Box: filled hue per category, page ink on top. Text: the name in its ' +
-      'own colour. Secondary "b" rows stay uncoloured either way.'));
+      'Category labels: outline (a plain box edged in the category colour), box (filled) ' +
+      'or text. Featured cards: each filled with a colour of its own, or plain. Card text: ' +
+      'white on deep colours, or dark on brighter ones. The quieter ' +
+      'second set of rows stays uncoloured either way.'));
 
     /* ---- Nav dropdown --------------------------------------------
        Every domain the top-bar Projects menu can show, with a switch each.
@@ -1701,6 +2011,32 @@
        with near-identical labels and no way to reach small values. */
     addSlider(panel, 'textScale', 'Text size', 0.7, 1.8, 0.01);
     addSlider(panel, 'density',   'Inner density', 0.2, 2.0, 0.05);
+    /* Phones can have their own text and spacing scale (sizes.phone in
+       site-config.json), applied below 640px only. Until one is set, a
+       phone uses the two values above. */
+    addSlider(panel, 'phone.textScale', 'Phone text size', 0.7, 1.6, 0.01);
+    addSlider(panel, 'phone.density',   'Phone density', 0.2, 2.0, 0.05);
+    var phRow = el('div', 'ed-row');
+    phRow.appendChild(el('label', null, 'Phone sizes'));
+    var phSame = el('button', 'ed-pick', 'same as desktop');
+    phSame.style.width = 'auto'; phSame.style.padding = '3px 9px';
+    phSame.title = 'Drop the phone-only values so phones follow the sliders above';
+    phSame.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var s = ensure().sizes; delete s.phone;
+      panel.querySelectorAll('input[data-size-key^="phone."]').forEach(function (r) {
+        r.value = s[r.dataset.sizeKey.slice(6)] || 1;
+        if (r.nextSibling) r.nextSibling.textContent = (+r.value).toFixed(2);
+      });
+      markDirty(); note('Phones now use the desktop text size and density.');
+    });
+    var phOpen = el('button', 'ed-pick', 'open phone view');
+    phOpen.style.width = 'auto'; phOpen.style.padding = '3px 9px';
+    phOpen.addEventListener('click', function (e) { e.stopPropagation(); setPhoneView(true); });
+    phRow.appendChild(phSame); phRow.appendChild(phOpen);
+    panel.appendChild(phRow);
+    panel.appendChild(el('div', 'ed-note',
+      'The two phone sliders apply below 640px only. Open phone view to see them take effect.'));
 
     /* Gap BETWEEN sections, distinct from density (which is padding
        inside a section). */
@@ -2468,6 +2804,7 @@
      current theme (they exist only in state.config) and repaint the panel
      so the swatches show the set actually being edited. */
   function syncEditorToTheme() {
+    syncPhoneLook();
     reapplyColours();
     paintColors();
     paintColourSummary();
@@ -3285,6 +3622,13 @@
     });
   }
   function setSize(key, val) {
+    if (key.indexOf('phone.') === 0) {
+      var sz = ensure().sizes;
+      if (!sz.phone) sz.phone = {};
+      sz.phone[key.slice(6)] = val;
+      markDirty();
+      return;
+    }
     ensure().sizes[key] = val;
     document.documentElement.style.setProperty(
       key === 'textScale' ? '--text-scale' : '--density', String(val));
@@ -3316,6 +3660,7 @@
   function markDirty() {
     state.dirty = true;
     mirrorToPage();
+    pushToPhone();
     if (statusEl) {
       statusEl.className = 'ed-note ed-dirty';
       statusEl.textContent = 'Unsaved changes — Save writes site-config.json.';
@@ -3339,6 +3684,7 @@
       link.href = 'style.css';
     };
     link.onload = function () {
+      syncPhoneLook();
       reapplyColours();
       paintColors(); paintColourSummary(); paintThemeState();
       if (typeof renderItemColours === 'function') renderItemColours();
@@ -3567,7 +3913,10 @@
           document.documentElement.style.setProperty('--block-pad-y', s.sectionGap + 'rem');
         }
         panel.querySelectorAll('input[data-size-key]').forEach(function (r) {
-          var v = s[r.dataset.sizeKey];
+          var k = r.dataset.sizeKey;
+          /* a phone slider with no value of its own shows what phones get */
+          var v = k.indexOf('phone.') === 0
+            ? ((s.phone || {})[k.slice(6)] || s[k.slice(6)]) : s[k];
           if (v) { r.value = v; r.nextSibling.textContent = (+v).toFixed(2); }
         });
       })
@@ -4220,6 +4569,134 @@
       paintCourse();
       cRow.appendChild(cBtn);
       box.appendChild(cRow);
+
+      /* Link and certificate. Stored in courses.links[name]; these win over
+         a link= / cert= written on the course's line in resume.tex. */
+      var ccfg = ensure(); if (!ccfg.courses) ccfg.courses = {};
+      if (!ccfg.courses.links) ccfg.courses.links = {};
+      var cl = ccfg.courses.links;
+      var texC = ((window.__resumeData || {}).courses || []).filter(function (c) { return c.name === name; })[0] || {};
+      function redrawCourses() {
+        if (window.__pfRenderCourses && window.__resumeData) {
+          window.__pfRenderCourses(window.__resumeData.courses || []);
+        }
+      }
+      function setCourseLink(key, val) {
+        var o = cl[name] || {};
+        if (val) o[key] = val; else delete o[key];
+        if (Object.keys(o).length) cl[name] = o; else delete cl[name];
+        markDirty(); redrawCourses();
+      }
+      function linkField(label, key, ph, tip) {
+        var r = el('div', 'ed-row');
+        r.appendChild(el('label', null, label));
+        var inp = el('input'); inp.type = 'text'; inp.style.width = '190px';
+        inp.placeholder = ph; inp.title = tip;
+        inp.value = (cl[name] || {})[key] || '';
+        inp.addEventListener('click', function (ev) { ev.stopPropagation(); });
+        inp.addEventListener('change', function () { setCourseLink(key, inp.value.trim()); });
+        r.appendChild(inp); box.appendChild(r);
+        return inp;
+      }
+      linkField('Link', 'link', texC.link || 'https://course-or-certificate-page',
+        'The course page, or the certificate’s own verification page. Shown as a link on the course.');
+      var certIn = linkField('Certificate', 'cert', texC.cert || 'file in assets/, or a link',
+        'An image or PDF of the certificate: a file in your image folder, or a direct link to one. ' +
+        'Opens in a popup from a "View certificate" button.');
+      /* What the popup shows: the certificate file, or the Link's own page. */
+      var pvRow = el('div', 'ed-row');
+      pvRow.appendChild(el('label', null, 'Popup shows'));
+      var pvFile = el('button', 'ed-pick', 'certificate file');
+      var pvPage = el('button', 'ed-pick', 'link page');
+      var pvChk = el('button', 'ed-pick', 'check page');
+      [pvFile, pvPage, pvChk].forEach(function (b) { b.style.width = 'auto'; b.style.padding = '3px 9px'; });
+      pvPage.title = 'Show the page at Link inside the popup, instead of an image or PDF';
+      pvChk.title = 'Ask whether the page at Link allows being shown inside another site';
+      function popupMode() {
+        var v = (cl[name] || {}).popup;
+        return String(v !== undefined ? v : (texC.popup || '')).toLowerCase() === 'page' ? 'page' : 'file';
+      }
+      function paintPopupMode() {
+        var pg = popupMode() === 'page';
+        pvFile.style.background = pg ? 'transparent' : 'var(--accent)'; pvFile.style.color = pg ? 'inherit' : '#fff';
+        pvPage.style.background = pg ? 'var(--accent)' : 'transparent'; pvPage.style.color = pg ? '#fff' : 'inherit';
+      }
+      pvFile.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        /* "file" must be stored when resume.tex says page, or it would win */
+        setCourseLink('popup', String(texC.popup || '').toLowerCase() === 'page' ? 'file' : '');
+        paintPopupMode();
+      });
+      pvPage.addEventListener('click', function (ev) {
+        ev.stopPropagation(); setCourseLink('popup', 'page'); paintPopupMode();
+        var u = (cl[name] || {}).link || texC.link;
+        fOut.textContent = u ? 'The popup now shows the page at Link. Press "check page" to see whether that site allows it.'
+                             : 'Set a Link first: that is the page the popup will show.';
+      });
+      pvChk.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        var u = (cl[name] || {}).link || texC.link || '';
+        if (!/^https?:\/\//i.test(u)) { fOut.textContent = 'Set a Link (https://\u2026) first.'; return; }
+        fOut.textContent = 'Checking\u2026';
+        fetch('/__frame-check', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ url: u }) })
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            if (!res.ok) { fOut.textContent = 'Could not check: ' + (res.error || 'unknown error'); return; }
+            fOut.textContent = res.embeddable
+              ? 'This page can be shown in the popup (' + res.reason + ').'
+              : 'This page will NOT show in the popup: ' + res.reason + '. Visitors would get a blank ' +
+                'frame with an "open in a new tab" link. Use a certificate file for the popup instead.';
+          })
+          .catch(function (err) { fOut.textContent = 'Could not check: ' + err.message + ' (is dev_server.py running?)'; });
+      });
+      pvRow.appendChild(pvFile); pvRow.appendChild(pvPage); pvRow.appendChild(pvChk);
+      box.appendChild(pvRow);
+
+      var fRow = el('div', 'ed-row');
+      fRow.appendChild(el('label', null, ''));
+      var fBtn = el('button', 'ed-pick', 'fetch into assets');
+      var pBtn = el('button', 'ed-pick', 'open popup');
+      [fBtn, pBtn].forEach(function (b) { b.style.width = 'auto'; b.style.padding = '3px 9px'; });
+      fBtn.title = 'Download the image or PDF at the Certificate link into your image folder, ' +
+                   'so the site shows your own copy rather than relying on that link';
+      var fOut = el('div', 'ed-note', '');
+      fBtn.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        var u = certIn.value.trim();
+        if (!/^https?:\/\//i.test(u)) { fOut.textContent = 'Put a link (https://…) in Certificate first.'; return; }
+        fOut.textContent = 'Downloading…';
+        fetch('/__fetch-file', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                 body: JSON.stringify({ url: u, name: name,
+                                   folder: (mediaStore().imageDir || 'assets/') }) })
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            if (!res.ok) { fOut.textContent = 'Not fetched: ' + (res.error || 'unknown error'); return; }
+            certIn.value = res.file;
+            setCourseLink('cert', res.file);
+            fOut.textContent = 'Saved ' + res.file + ' (' + Math.round(res.bytes / 1024) +
+              ' KB) in your image folder. Save to keep the setting, and commit the file with the site.';
+          })
+          .catch(function (err) { fOut.textContent = 'Not fetched: ' + err.message + ' (is dev_server.py running?)'; });
+      });
+      pBtn.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        var b = null;
+        document.querySelectorAll('.course-cert').forEach(function (n) {
+          if (!b && n.getAttribute('data-name') === name) b = n;
+        });
+        if (b) b.click(); else fOut.textContent = 'No certificate set for this course yet.';
+      });
+      fRow.appendChild(fBtn); fRow.appendChild(pBtn);
+      box.appendChild(fRow);
+      box.appendChild(fOut);
+      paintPopupMode();
+      box.appendChild(el('div', 'ed-note',
+        'Link: opens in a new tab. Certificate: an image or PDF shown in a popup on the page. ' +
+        'A PDF or image link works directly; fetching it makes a local copy. ' +
+        'To show a web page in the popup instead, put it in Link and choose "link page"; ' +
+        'many sites forbid that, so check it first. ' +
+        (texC.link || texC.cert ? ' The grey values come from resume.tex; type here to override them.' : '')));
     }
 
     /* Diagram on/off for anything that has one. */
@@ -4879,7 +5356,24 @@
         setTimeout(syncEditorToTheme, 60);
       });
     });
-    document.addEventListener('contextmenu', function (e) {
+    document.addEventListener('contextmenu', onPageContext);
+    try { if (localStorage.getItem('ed-phone-on') === '1') { show(); setPhoneView(true); } } catch (e) {}
+    /* Clicking the page no longer closes the editor: with the panel docked
+       beside the page it isn't in the way, and closing on every click made
+       it impossible to use the page while editing. Esc or x closes it. */
+    document.addEventListener('keydown', function (e) {
+      /* Esc with a popup open (a certificate, say) closes the popup only. */
+      if (e.key === 'Escape' && !document.querySelector('dialog[open]')) hide();
+    });
+    console.log('[dev-editor] v11 ready \u2014 click the "style editor" button ' +
+                '(bottom-right), or right-click any project / education row / ' +
+                'internship to edit that item directly.');
+    console.log('[dev-editor] media targets loaded:',
+                (document.getElementById('ed-media-target') || {children: []}).children.length);
+  }
+
+  /* Right-click on the page, or inside the phone view's copy of it. */
+  function onPageContext(e) {
       e.preventDefault();
       var hit = targetNameFromEvent(e.target);
       show();
@@ -4900,18 +5394,6 @@
       /* Always preview the area, even when it has no editable item of its
          own (a section heading, the contact block). */
       setTimeout(function () { renderClonePreview(); renderItemColours(); }, 0);
-    });
-    /* Clicking the page no longer closes the editor: with the panel docked
-       beside the page it isn't in the way, and closing on every click made
-       it impossible to use the page while editing. Esc or x closes it. */
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') hide();
-    });
-    console.log('[dev-editor] v11 ready — click the "style editor" button ' +
-                '(bottom-right), or right-click any project / education row / ' +
-                'internship to edit that item directly.');
-    console.log('[dev-editor] media targets loaded:',
-                (document.getElementById('ed-media-target') || {children: []}).children.length);
   }
 
   if (document.readyState === 'loading') {
