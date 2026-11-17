@@ -432,6 +432,33 @@ right-clicked back.
 
 Types are `domain`, `tech` and `status`. Only `domain` appears in the nav.
 
+### Hiding contact entries
+
+The Contact section is read from the resume header: email, LinkedIn, GitHub,
+GitLab and Kaggle from its `\href` links, the phone from the text after
+`\textbf{Phone:}`. Any of them can be kept off the page while the resume
+and its PDF keep the line.
+
+**From the editor:** right-click any contact entry. The panel lists every
+entry with a **shown / hidden** switch, so one you've hidden (and can no
+longer right-click) is brought back from any other. It also has **edit in
+resume.tex** and **rename label**.
+
+**From `site-config.json`:**
+
+```json
+"contact": {
+  "phone": { "hide": true }
+}
+```
+
+`{ "override": "text" }` replaces what an entry shows instead. The same
+block in `projects.js` still works and is applied first.
+
+A Kaggle row appears by itself when the header has a `kaggle.com` link;
+`index.html` needs no change. With six entries showing, wide screens lay
+them out as two rows of three.
+
 Worth being clear about the limits: hiding removes the *button* or the menu
 entry, nothing else. Every project stays visible and keeps its chips — a
 project tagged "Optimization" still shows that chip on its card. To remove a
@@ -527,7 +554,7 @@ tool's name), and no two cards share a silhouette.
 
 | What | Where | Who downloads it |
 |---|---|---|
-| All 40 drawings (`ICON_CATALOG.symbols`) | `editor.js` | nobody but you |
+| All 44 drawings (`ICON_CATALOG.symbols`) | `editor.js` | nobody but you |
 | Tool-to-symbol rules (`ICON_CATALOG.symbolFor`) | `editor.js` | nobody but you |
 | The drawings and rules *this resume uses* (`symbols.defs`, `symbols.map`) | `site-config.json` | visitors |
 | Per-card choices (`media.cardSymbols`) | `site-config.json` | visitors |
@@ -1024,9 +1051,12 @@ right-click went past the heading to the whole section, or to nothing; and
 saved title overrides, like hidden entries, were never applied when the page
 loaded. Both are fixed.)
 
+**A contact entry** opens its own panel: a shown / hidden switch for every
+entry, plus edit in resume.tex and rename label (see Hiding contact entries).
+
 **Everything else with words on it.** Right-clicking a sub-heading, a
 course category label ("Systems & Networking"), a skills group heading, a
-line of Recognition, a contact entry or a top-bar link used to find nothing
+line of Recognition or a top-bar link used to find nothing
 (or the whole section). It now opens a **text** panel that looks the words
 up in `resume.tex`, `index.html`, `site-config.json` and `projects.js` and
 offers an **edit in …** button for each place they were found, opened at

@@ -780,6 +780,12 @@ section.block {
   color: var(--accent);
   background-size: 100% 1px;
 }
+/* Six entries (with Kaggle) read better as two rows of three than as
+   six narrow columns, where handles break mid-word. script.js sets
+   data-count to the number of entries showing. */
+@media (min-width: 881px) {
+  .colophon .contact-grid[data-count="6"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 @media (max-width: 880px) {
   .colophon .contact-grid { grid-template-columns: 1fr 1fr; gap: 28px 20px; }
 }

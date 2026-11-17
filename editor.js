@@ -50,7 +50,7 @@
      is dev-only and never reaches a visitor, so an extra file
      bought nothing but complexity. Size is irrelevant here.
 
-     ICON_CATALOG.symbols   - skill symbols, original drawings (40)
+     ICON_CATALOG.symbols   - skill symbols, original drawings (44)
      ICON_CATALOG.symbolFor - which symbol each tool gets
      ICON_CATALOG.emoji — keyworded emoji for the picker
      ICON_CATALOG.logos — inline brand SVGs, tiered:
@@ -115,7 +115,15 @@
       'link': '<circle cx="5" cy="12" r="2.5"/><circle cx="19" cy="12" r="2.5"/><path d="M8.8 12h1.6M11.2 12h1.6M13.6 12h1.6"/>',
       'panels': '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9.5 9v12"/>',
       'wall': '<rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M3 9.3h18M3 14.7h18M12 4v5.3M8 9.3v5.4M16 9.3v5.4M12 14.7V20"/>',
-      'robot': '<rect x="4" y="8.5" width="16" height="11.5" rx="3"/><path d="M12 8.5V5"/><circle cx="12" cy="3.8" r="1.2"/><path d="M9 13v2M15 13v2M2 13.5V16M22 13.5V16"/>'
+      'robot': '<rect x="4" y="8.5" width="16" height="11.5" rx="3"/><path d="M12 8.5V5"/><circle cx="12" cy="3.8" r="1.2"/><path d="M9 13v2M15 13v2M2 13.5V16M22 13.5V16"/>',
+      /* trains a model: a ball settling in a valley (gradient descent) */
+      'descent': '<path d="M3 4.5C4.6 13.49 7.2 19 12 19S19.4 13.49 21 4.5"/><circle cx="7.47" cy="8.54" r="2.15" fill="currentColor" stroke="none"/>',
+      /* image datasets: a stack of pictures */
+      'image-stack': '<path d="M7.5 3.5h12A1.5 1.5 0 0 1 21 5v11.5"/><rect x="3" y="7" width="14.5" height="14" rx="1.8"/><path d="M3 18l4.2-4.2 3.3 3.3 2.3-2.3 4.7 4.7"/><circle cx="13" cy="11" r="1.4"/>',
+      /* computer vision: an eye in a camera frame */
+      'eye-frame': '<path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M5.5 12c1.8-3 4-4.5 6.5-4.5s4.7 1.5 6.5 4.5c-1.8 3-4 4.5-6.5 4.5S7.3 15 5.5 12z"/><circle cx="12" cy="12" r="1.9"/>',
+      /* experiment tracking: a clipboard logging a metric */
+      'run-log': '<rect x="4.5" y="4" width="15" height="17.5" rx="2"/><rect x="9" y="2.5" width="6" height="3.5" rx="1"/><path d="M7.5 17.5l3-3.6 2.6 1.9 3.4-5.3"/><path d="M7.5 9.5h3"/>'
     },
     /* Which symbol each tool gets. Keys are normTerm() forms (lower case, no
        spaces or punctuation). "ext:py" is a file badge reading "py".
@@ -147,7 +155,8 @@
       datastructuresandalgorithms: 'tree', objectorientedprogramming: 'cube',
       // data and ML
       numpy: 'grid', pandas: 'dataframe', pyspark: 'merge', pybullet: 'robot-arm',
-      pymupdf: 'file-text',
+      pymupdf: 'file-text', pytorch: 'descent', torchvision: 'image-stack',
+      opencv: 'eye-frame', 'weights&biases': 'run-log', weightsandbiases: 'run-log', wandb: 'run-log',
       // AI tools
       claude: 'chat', perplexity: 'search', ollama: 'laptop',
       llama: 'neural-net', 'llama3132': 'neural-net', moyaframework: 'robot'
@@ -470,6 +479,10 @@
     '  color:inherit;text-transform:lowercase;}',
     '.ed-row input[type=range]{flex:2;}',
     '.ed-row .ed-val{width:36px;text-align:right;opacity:.65;}',
+    '.ed-contact-list{margin:4px 0 10px;}',
+    '.ed-contact-row{padding:2px 4px;border-radius:5px;}',
+    '.ed-contact-row.is-this{background:color-mix(in srgb,var(--accent,#c55) 14%,transparent);font-weight:700;}',
+    '.ed-contact-none{opacity:.55;font-style:italic;}',
     '.ed-sw{display:flex;flex-wrap:wrap;gap:3px;margin:3px 0 8px;}',
     '.ed-symgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(30px,1fr));gap:4px;margin:4px 0 8px;}',
     '.ed-sym{height:30px;padding:4px;border:1px solid var(--rule,#ccc);border-radius:5px;background:transparent;cursor:pointer;line-height:0;}',
@@ -1024,7 +1037,7 @@
      stay open, so an edit doesn't reset what you were looking at. All of
      this lives here rather than in script.js so visitors don't download it. */
   var PHONE_KEYS = ['colors', 'sizes', 'sections', 'media', 'filters', 'courses',
-                    'symbols', 'text', 'logos'];
+                    'symbols', 'text', 'logos', 'contact'];
   function applyToPhone(force) {
     var w = phone.frame.contentWindow, d = phone.frame.contentDocument;
     if (!w || !d || !w.__siteConfig || !state.config) return;
@@ -1054,6 +1067,7 @@
       if (w.__pfRenderCourses) w.__pfRenderCourses(data.courses || []);
     }
     if ((changed.sections || changed.text) && w.__pfApplyText) w.__pfApplyText();
+    if ((force || changed.contact || changed.media) && w.__pfRenderContact) w.__pfRenderContact();
     if (w.__pfRedraw) w.__pfRedraw();
     open.forEach(function (name) {
       d.querySelectorAll('.m-collapsible:not(.is-open)').forEach(function (n) {
@@ -3699,7 +3713,7 @@
   function mirrorToPage() {
     var page = window.__siteConfig, cfg = state.config;
     if (!page || !cfg || page === cfg) return;
-    ['media', 'sections', 'filters', 'courses', 'text', 'logos', 'sizes', 'symbols'].forEach(function (k) {
+    ['media', 'sections', 'filters', 'courses', 'text', 'logos', 'sizes', 'symbols', 'contact'].forEach(function (k) {
       if (cfg[k] !== undefined) page[k] = cfg[k];
     });
   }
@@ -4045,6 +4059,12 @@
           el.dataset && el.dataset.val) {
         return { name: el.dataset.val, kind: 'filter', ftype: el.dataset.type };
       }
+      /* A row of the Contact section (script.js tags each with its field). */
+      var ck = el.getAttribute('data-contact');
+      if (ck) {
+        var lab = el.querySelector('h5');
+        return { name: lab ? lab.textContent.trim() : ck, key: ck, kind: 'contact', el: el };
+      }
       var t = el.getAttribute('data-title');            // project cards
       if (t) return { name: t, kind: 'project' };
       var m = el.getAttribute('data-entry');            // rows, cards, intro regions
@@ -4354,6 +4374,121 @@
     if (box.scrollIntoView) box.scrollIntoView({ block: 'nearest' });
   }
 
+  /* ---- The Contact section ---------------------------------------------
+     Every entry comes from the resume header (its \href links and the
+     Phone: label). Each one can be kept off the page without touching the
+     resume: site-config.json `contact: { phone: { hide: true } }`. All
+     entries are listed here, so one that is hidden (and so can no longer
+     be right-clicked) can be brought back from any other. */
+  var CONTACT_ROWS = [
+    ['email', 'Email'], ['phone', 'Phone'], ['linkedin', 'LinkedIn'],
+    ['github', 'GitHub'], ['gitlab', 'GitLab'], ['kaggle', 'Kaggle']
+  ];
+  function openContactPanel(key) {
+    var box = document.getElementById('ed-item');
+    if (!box) return;
+    box.innerHTML = '';
+    box.dataset.name = key;
+    var raw = (window.__resumeData || {}).contact || {};
+    var cfg = ensure();
+    if (!cfg.contact) cfg.contact = {};
+    var store = cfg.contact;
+    var label = key;
+    CONTACT_ROWS.forEach(function (r) { if (r[0] === key) label = r[1]; });
+
+    var hd = el('div', 'ed-item-hd');
+    hd.appendChild(el('span', 'ed-item-kind', 'contact'));
+    hd.appendChild(el('span', null, 'Contact section'));
+    var close = el('button', 'ed-item-close', '\u00d7');
+    close.title = 'Close';
+    close.addEventListener('click', function (e) {
+      e.stopPropagation(); box.classList.remove('open');
+    });
+    hd.appendChild(close);
+    box.appendChild(hd);
+    box.appendChild(el('div', 'ed-item-name', label));
+
+    box.appendChild(el('div', 'ed-note',
+      'Shown on the page. Switching an entry off hides it here only; the ' +
+      'resume and its PDF keep the line.'));
+
+    var list = el('div', 'ed-contact-list');
+    function shortVal(v) {
+      return String(v || '').replace(/^mailto:/, '')
+        .replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+    }
+    function paint() {
+      list.innerHTML = '';
+      CONTACT_ROWS.forEach(function (r) {
+        var k = r[0], v = raw[k];
+        var row = el('div', 'ed-row ed-contact-row' + (k === key ? ' is-this' : ''));
+        var name = el('label', null, r[1]);
+        name.title = v ? shortVal(v) : '';
+        row.appendChild(name);
+        if (!v) {
+          var none = el('span', 'ed-contact-none', 'not in resume');
+          row.appendChild(none);
+          list.appendChild(row);
+          return;
+        }
+        var off = !!(store[k] && store[k].hide);
+        var btn = el('button', 'ed-pick', off ? 'hidden' : 'shown');
+        btn.style.width = 'auto'; btn.style.padding = '3px 12px';
+        btn.style.background = off ? 'transparent' : 'var(--accent)';
+        btn.style.color = off ? 'inherit' : '#fff';
+        btn.setAttribute('aria-pressed', off ? 'false' : 'true');
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var now = !(store[k] && store[k].hide);
+          if (now) store[k] = Object.assign({}, store[k], { hide: true });
+          else {
+            delete store[k].hide;
+            if (!Object.keys(store[k]).length) delete store[k];
+          }
+          markDirty();
+          if (window.__pfRenderContact) window.__pfRenderContact();
+          paint();
+        });
+        row.appendChild(btn);
+        list.appendChild(row);
+      });
+    }
+    paint();
+    box.appendChild(list);
+
+    var srcRow = el('div', 'ed-row');
+    var openTex = el('button', 'ed-pick', 'edit in resume.tex');
+    openTex.style.width = 'auto'; openTex.style.padding = '3px 9px';
+    openTex.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var v = raw[key];
+      /* the phone number is plain text after its label; the rest are links */
+      openTexEditor(key === 'phone' ? 'Phone:' : (v ? (key === 'email' ? v : v.replace(/\/$/, '')) : 'begin{center}'));
+    });
+    srcRow.appendChild(openTex);
+    var item = document.querySelector('[data-contact="' + key + '"] h5');
+    if (item) {
+      var relabel = el('button', 'ed-pick', 'rename label');
+      relabel.style.width = 'auto'; relabel.style.padding = '3px 9px';
+      relabel.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var t = textTargetFor(item);
+        if (t) openTextPanel(t);
+      });
+      srcRow.appendChild(relabel);
+    }
+    box.appendChild(srcRow);
+
+    box.appendChild(el('div', 'ed-note',
+      'Source: assets/resume.tex, the header block at the top. Email, ' +
+      'LinkedIn, GitHub, GitLab and Kaggle are read from its \\href links, ' +
+      'the phone from the text after \\textbf{Phone:}. Hidden entries are ' +
+      'saved in site-config.json under "contact".'));
+
+    box.classList.add('open');
+    if (box.scrollIntoView) box.scrollIntoView({ block: 'nearest' });
+  }
+
   /* ---- A section title on its own -------------------------------------
      Its wording and the numbered label above it, written as overrides in
      site-config.json (text.sectionTitles / text.sectionLabels), with
@@ -4589,7 +4724,7 @@
     '.topbar nav a,.nav-sub-link';
   var FINDER_KIND = { title: 'title', project: 'project', course: 'course', card: 'skill',
     education: 'education', internship: 'experience', intro: 'intro', nav: 'menu',
-    filter: 'filter', section: 'section', text: 'text' };
+    filter: 'filter', section: 'section', text: 'text', contact: 'contact' };
   function finderTargets() {
     var out = [], seen = {};
     Array.prototype.forEach.call(document.querySelectorAll(FINDER_NODES), function (n) {
@@ -5826,6 +5961,8 @@
         openFilterPanel(hit.ftype, hit.name);
       } else if (hit && hit.kind === 'nav') {
         openNavPanel(hit.name);
+      } else if (hit && hit.kind === 'contact') {
+        openContactPanel(hit.key);
       } else if (hit && hit.kind === 'title') {
         openTitlePanel(hit.name, hit.el);
       } else if (hit) {

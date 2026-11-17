@@ -204,7 +204,7 @@ Most of what I build starts as a question about how something works underneath, 
 \begin{center}
 	{\Huge \textbf{Rishabh Sahu}} \\ \vspace{3pt}
 
-	% multiset<int>towerTops;Address: Slightly smaller than body text to keep it on one line
+	% Address: Slightly smaller than body text to keep it on one line
 	{\fontsize{12pt}{12.5pt}\selectfont \faIcon{map-marker-alt}\enspace \textbf{Address:} Lig 139 Harshwardhan Nagar, Bhopal, Madhya Pradesh, India} \\ \vspace{3pt}
 
 	% Contact Info: 10.5pt Font
@@ -215,14 +215,16 @@ Most of what I build starts as a question about how something works underneath, 
 	} \\ \vspace{3pt}
 
 	% Links: 10.5pt Font
+	% Two lines on purpose: all five on one line overflow the page.
 	{\fontsize{12pt}{12.5pt}\selectfont
 		\faIcon{linkedin}\enspace \textbf{LinkedIn:} \href{https://www.linkedin.com/in/rishabh-sahu325}{rishabh-sahu325}
 		\quad \textbullet \quad
 		\faIcon{github}\enspace \textbf{GitHub:} \href{https://github.com/RishabhSahuIIIT}{RishabhSahuIIIT}
 		\quad \textbullet \quad
-		\faIcon{gitlab}\enspace \textbf{GitLab:} \href{https://gitlab.com/rishabhsahu325}{rishabhsahu325}
-		\quad \textbullet \quad
+		\faIcon{gitlab}\enspace \textbf{GitLab:} \href{https://gitlab.com/rishabhsahu325}{rishabhsahu325} \\ \vspace{3pt}
 		\faIcon{globe}\enspace \textbf{Portfolio:} \href{https://rishabhsahuiiit.github.io/}{rishabhsahuiiit.github.io}
+		\quad \textbullet \quad
+		\faIcon{kaggle}\enspace \textbf{Kaggle:} \href{https://www.kaggle.com/rishabhsahu325}{rishabhsahu325}
 	}
 \end{center}
 % -----------------------------------
@@ -246,7 +248,7 @@ Most of what I build starts as a question about how something works underneath, 
 \noindent\large\textbf{Web and Mobile app development Intern at C.R.I.S. Secunderabad} \hfill 1 June 2025 -- 30 July 2025
 
 \vspace{2pt}
-\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Git, Flutter, Dart, Javascript, Nodejs, MySQL, POSTMAN} \hfill \href{https://gitlab.com/rishabhsahu325/cris_sec25_divjan}{\faIcon{link}\textbf{Project repository}}
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Git, Flutter, Dart, Javascript, Nodejs, MySQL, POSTMAN \hfill \href{https://gitlab.com/rishabhsahu325/cris_sec25_divjan}{\faIcon{link}\textbf{Project repository}}}
 
 \begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
 	\item {\fontsize{11.5pt}{13.5pt}\selectfont Worked on a prototype mobile application for Divyangjan card application website}
@@ -309,7 +311,7 @@ A character-level N-gram model predicting word completions in real time, with a 
 \end{comment}
 \subsection*{N-gram Language Model for Next-Word Prediction\hfill {\normalfont\itshape\small Machine Learning}}
 
-\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Python, Character N-gram, Curses (TUI)\hfill \href{https://gitlab.com/projectsa2/wineclassifier}{\faIcon{link}\textbf{Project repository}}}
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Python, Character N-gram, Curses (TUI)\hfill \href{https://github.com/RishabhSahuIIIT/NgramModelKeyboardAutopredict}{\faIcon{link}\textbf{Project repository}}}
 
 \begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
 	\item {\itemsize Developed a Character-level N-gram model to suggest word completions in real-time as the user types.}
@@ -437,7 +439,7 @@ A multi-agent pipeline that parses, summarises, and surveys academic PDFs, using
 featured: true
 topics: Web Development
 description:
-A client-side citation analytics dashboard querying Crossref and OpenCitations, computing bibliometric metrics entirely in the browser with no backend.
+A client-side citation analytics dashboard that computes bibliometric metrics entirely in the browser with no backend and shows chart visualizations of publications and citations by querying Crossref and OpenCitations APIs.
 \end{comment}
 \subsection*{Citestat -- Academic Citation Analytics Dashboard \hfill {\normalfont\itshape\small Web Development}}
 
@@ -602,6 +604,24 @@ Five tabular RL methods implemented from scratch on a stochastic gridworld, comp
 	\item {\itemsize Analyzed convergence and instantaneous/cumulative regret against an exact Value-Iteration baseline}
 \end{itemize}
 
+\centerline{\rule{0.8\textwidth}{0.05pt}}
+
+% --- PROJECT : Face and Emotion Recognition (Transfer Learning) ---
+\begin{comment}
+topics: Machine Learning > Deep Learning; Computer Vision
+description:
+A PyTorch comparison of face-pretrained, ImageNet-pretrained and from-scratch CNNs for face recognition and 3-class emotion recognition, analysing where transfer learning helps and why validation accuracy overstated test performance.
+\end{comment}
+\subsection*{Face \& Emotion Recognition via Transfer Learning \hfill {\normalfont\itshape\small Deep Learning, Computer Vision}}
+
+\noindent\hspace{15pt}{\fontsize{11.5pt}{13.5pt}\selectfont \textbf{Keywords:} Python, PyTorch, torchvision, CNN, Transfer Learning, Weights \& Biases\hfill \href{https://www.kaggle.com/code/rishabhsahu325/model-fine-tuning-for-face-and-emotion-recognition}{\faIcon{kaggle}\textbf{Kaggle notebook}}}
+
+\begin{itemize}[leftmargin=15pt, topsep=0pt, itemsep=2pt]
+    \item {\itemsize Compared VGGFace, ImageNet-pretrained ResNet18 (partially frozen) and ResNet18 trained from scratch for binary face recognition and 3-class emotion recognition}
+    \item {\itemsize Fine-tuned with layer freezing, a lower learning rate for pretrained backbones and image augmentation, tracking all runs in Weights \& Biases}
+    \item {\itemsize Pretrained ResNet18 reached 100\% test accuracy on face recognition versus 90.5\% from scratch}
+    \item {\itemsize Analysed an 88\% validation versus 43\% test gap on emotion recognition, attributing it to near-duplicate images leaking across a random train/validation split}
+\end{itemize}
 % -----------------------------------
 \section*{Certifications}
 \begin{itemize}
@@ -751,7 +771,7 @@ Java (Basic) Certification: Timed skills assessment in core Java, covering class
 	\item \textbf{Web Technologies:} Flask, React, Node.js, Express, Flutter, Vite, Tailwind CSS, Chart.js, HTML5, CSS, Javascript
 	\item \textbf{DevOps \& Tools:} BASH, Linux, Docker, Git, LLVM, MPI, SLURM, GNU Flex/Lex, iptables, Scapy
 	\item \textbf{Core Concepts:} Data Structures and Algorithms, Object Oriented Programming
-	\item \textbf{ML \& Data:} NumPy, Pandas, Pyspark, PyBullet, PyMuPDF
+	\item \textbf{ML \& Data:} PyTorch, torchvision, NumPy, Pandas, Pyspark, OpenCV, Weights \& Biases, PyBullet, PyMuPDF
 	\item \textbf{AI Tools:} Claude, Perplexity, Ollama, Llama, Moya framework
 \end{itemize}
 
