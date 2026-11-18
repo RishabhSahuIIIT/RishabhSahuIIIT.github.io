@@ -145,7 +145,9 @@
     "about": [],
     "sectionTitles": {
       "Featured": "Projects in depth.",
-      "Projects": "Everything I've \"built\""
+      "Projects": "Everything I've \"built\"",
+      "Milestones": "*Achievements*.",
+      "Achievements": "*Achievements*."
     },
     "meta": [],
     "corner": [
@@ -153,7 +155,9 @@
     ],
     "sectionLabels": {
       "Featured": "/ 04 — Main projects",
-      "Projects": "/ 05 — all projects"
+      "Projects": "/ 05 — all projects",
+      "Milestones": "/ 08 — milestones",
+      "Achievements": "/ 08 — milestones"
     }
   },
   "filters": {
